@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1000</width>
+    <height>650</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ZX Toolkit</string>
+  </property>
+  <widget class="QWidget" name="centralWidget"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1000</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuDebug">
+    <property name="title">
+     <string>&amp;Debug</string>
+    </property>
+    <addaction name="actionBuild"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuDebug"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <action name="actionBuild">
+   <property name="text">
+    <string>&amp;Build</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>&amp;About...</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

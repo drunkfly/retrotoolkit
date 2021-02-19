@@ -1,0 +1,24 @@
+
+add(ZXToolkit
+    QT_EXECUTABLE
+    USES
+        Core
+        Gui
+        Widgets
+        Multimedia
+        Network
+    LIBS
+        Common
+        Assembler
+    SOURCES
+        AboutDialog.cpp
+        AboutDialog.h
+        AboutDialog.ui
+        MainWindow.cpp
+        MainWindow.h
+        MainWindow.ui
+        ThirdPartyDialog.cpp
+        ThirdPartyDialog.h
+        ThirdPartyDialog.ui
+        main.cpp
+    )
