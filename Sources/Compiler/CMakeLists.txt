@@ -22,6 +22,8 @@ add(Compiler
         Lexer.h
         LexerUtils.cpp
         LexerUtils.h
+        Project.cpp
+        Project.h
         Token.cpp
         Token.h
     )

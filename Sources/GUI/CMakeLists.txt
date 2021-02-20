@@ -11,12 +11,18 @@ add(ZXToolkit
         Common
         Compiler
     SOURCES
+        Util/Exception.cpp
+        Util/Exception.h
+        Util/Localization.cpp
+        Util/Localization.h
         AboutDialog.cpp
         AboutDialog.h
         AboutDialog.ui
         MainWindow.cpp
         MainWindow.h
         MainWindow.ui
+        Settings.cpp
+        Settings.h
         ThirdPartyDialog.cpp
         ThirdPartyDialog.h
         ThirdPartyDialog.ui

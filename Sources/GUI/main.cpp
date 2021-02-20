@@ -1,4 +1,4 @@
-#include "MainWindow.h"
+#include "GUI/MainWindow.h"
 #include <QApplication>
 
 int main(int argc, char** argv)
@@ -12,6 +12,12 @@ int main(int argc, char** argv)
 
     QApplication app(argc, argv);
     MainWindow mainWindow;
+
+    auto args = app.arguments();
+    if (args.length() > 1)
+        mainWindow.openProject(args[1], false);
+    else
+        mainWindow.openLastProject();
 
     mainWindow.show();
     return app.exec();

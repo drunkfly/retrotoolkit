@@ -1,5 +1,5 @@
 #include "AboutDialog.h"
-#include "ThirdPartyDialog.h"
+#include "GUI/ThirdPartyDialog.h"
 #include "ui_AboutDialog.h"
 #include <QMessageBox>
 
