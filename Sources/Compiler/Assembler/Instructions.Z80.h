@@ -1,8 +1,8 @@
-#ifndef ASSEMBLER_INSTRUCTIONS_Z80_H
-#define ASSEMBLER_INSTRUCTIONS_Z80_H
+#ifndef COMPILER_ASSEMBLER_INSTRUCTIONS_Z80_H
+#define COMPILER_ASSEMBLER_INSTRUCTIONS_Z80_H
 
-#include "Assembler/Instruction.h"
-#include "Assembler/OpcodeParseContext.h"
+#include "Compiler/Assembler/Instruction.h"
+#include "Compiler/Assembler/OpcodeParseContext.h"
 #include <sstream>
 #include <stdint.h>
 

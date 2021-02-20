@@ -1,0 +1,21 @@
+
+add(Compiler
+    STATIC_LIBRARY
+    LIBS
+        Common
+    SOURCES
+        Assembler/Instruction.cpp
+        Assembler/Instruction.h
+        Assembler/Instructions.Z80.cpp
+        Assembler/Instructions.Z80.h
+        Assembler/Instructions.Z80.hh
+        Assembler/OpcodeParseContext.cpp
+        Assembler/OpcodeParseContext.h
+        Tree/Expr.cpp
+        Tree/Expr.h
+        Tree/SourceLocation.h
+        Tree/SymbolTable.cpp
+        Tree/SymbolTable.h
+        Tree/Value.cpp
+        Tree/Value.h
+    )

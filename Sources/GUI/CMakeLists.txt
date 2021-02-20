@@ -9,7 +9,7 @@ add(ZXToolkit
         Network
     LIBS
         Common
-        Assembler
+        Compiler
     SOURCES
         AboutDialog.cpp
         AboutDialog.h

@@ -3,6 +3,8 @@ add(Common
     STATIC_LIBRARY
     SOURCES
         Common.h
-        SourceLocation.cpp
-        SourceLocation.h
+        CompilerError.cpp
+        CompilerError.h
+        GC.cpp
+        GC.h
     )
