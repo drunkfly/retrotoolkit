@@ -15,9 +15,16 @@ add(RetroToolkit
         Util/Exception.h
         Util/Localization.cpp
         Util/Localization.h
+        Widgets/BuildStatusLabel.cpp
+        Widgets/BuildStatusLabel.h
+        Widgets/LogWidget.cpp
+        Widgets/LogWidget.h
         AboutDialog.cpp
         AboutDialog.h
         AboutDialog.ui
+        BuildDialog.cpp
+        BuildDialog.h
+        BuildDialog.ui
         MainWindow.cpp
         MainWindow.h
         MainWindow.ui

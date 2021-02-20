@@ -1,6 +1,7 @@
 #ifndef GUI_ABOUT_ABOUTDIALOG_H
 #define GUI_ABOUT_ABOUTDIALOG_H
 
+#include "Common/Common.h"
 #include <QDialog>
 #include <memory>
 
@@ -20,7 +21,7 @@ private:
     Q_SLOT void on_aboutQtButton_clicked();
     Q_SLOT void on_thirdPartyButton_clicked();
 
-    Q_DISABLE_COPY(AboutDialog)
+    DISABLE_COPY(AboutDialog);
 };
 
 #endif

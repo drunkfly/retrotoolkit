@@ -1,6 +1,6 @@
 #include "Lexer.h"
-#include "Common/CompilerError.h"
 #include "Compiler/LexerUtils.h"
+#include "Compiler/CompilerError.h"
 #include "Compiler/Token.h"
 #include <sstream>
 

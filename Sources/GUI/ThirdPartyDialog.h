@@ -1,6 +1,7 @@
 #ifndef GUI_ABOUT_THIRDPARTYDIALOG_H
 #define GUI_ABOUT_THIRDPARTYDIALOG_H
 
+#include "Common/Common.h"
 #include <QDialog>
 #include <memory>
 
@@ -17,7 +18,7 @@ public:
 private:
     std::unique_ptr<Ui_ThirdPartyDialog> mUi;
 
-    Q_DISABLE_COPY(ThirdPartyDialog)
+    DISABLE_COPY(ThirdPartyDialog);
 };
 
 #endif

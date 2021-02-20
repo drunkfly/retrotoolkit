@@ -1,10 +1,12 @@
 #ifndef GUI_MAINWINDOW_H
 #define GUI_MAINWINDOW_H
 
+#include "Common/Common.h"
 #include <QMainWindow>
 #include <memory>
 
 class Project;
+class BuildStatusLabel;
 class Ui_MainWindow;
 
 class MainWindow : public QMainWindow
@@ -21,8 +23,10 @@ public:
 private:
     std::unique_ptr<Ui_MainWindow> mUi;
     std::unique_ptr<Project> mProject;
+    BuildStatusLabel* mStatusLabel;
 
     void setProject(const QString& file, std::unique_ptr<Project> project);
+    bool buildProject();
 
     void updateUi();
 
@@ -32,7 +36,7 @@ private:
 
     Q_SLOT void on_actionAbout_triggered();
 
-    Q_DISABLE_COPY(MainWindow)
+    DISABLE_COPY(MainWindow);
 };
 
 #endif

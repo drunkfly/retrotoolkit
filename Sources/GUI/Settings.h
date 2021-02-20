@@ -39,7 +39,7 @@ public:
 private:
     QSettings mSettings;
 
-    Q_DISABLE_COPY(Settings)
+    DISABLE_COPY(Settings);
     #undef PROPERTY
 };
 

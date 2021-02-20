@@ -19,6 +19,8 @@ add(Compiler
         Tree/SymbolTable.h
         Tree/Value.cpp
         Tree/Value.h
+        CompilerError.cpp
+        CompilerError.h
         Lexer.cpp
         Lexer.h
         LexerUtils.cpp
