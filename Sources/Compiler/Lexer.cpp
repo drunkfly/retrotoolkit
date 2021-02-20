@@ -130,6 +130,47 @@ void Lexer::scan(const char* file, const char* p)
                     token(TOK_ASSIGN, "'='");
                 continue;
 
+            case '!':
+                ++p;
+                if (*p == '=') {
+                    ++p;
+                    token(TOK_INEQ, "'!='");
+                } else
+                    token(TOK_EXCLAMATION, "'!'");
+                continue;
+
+            case '<':
+                ++p;
+                if (*p == '<') {
+                    ++p;
+                    if (*p == '=') {
+                        ++p;
+                        token(TOK_SHLEQ, "'<<='");
+                    } else
+                        token(TOK_SHL, "'<<'");
+                } else if (*p == '=') {
+                    ++p;
+                    token(TOK_LESSEQ, "'<='");
+                } else
+                    token(TOK_LESS, "'<'");
+                continue;
+
+            case '>':
+                ++p;
+                if (*p == '>') {
+                    ++p;
+                    if (*p == '=') {
+                        ++p;
+                        token(TOK_SHREQ, "'>>='");
+                    } else
+                        token(TOK_SHR, "'>'");
+                } else if (*p == '=') {
+                    ++p;
+                    token(TOK_GREATEREQ, "'>='");
+                } else
+                    token(TOK_GREATER, "'>'");
+                continue;
+
             case '+':
                 ++p;
                 if (*p == '=') {
