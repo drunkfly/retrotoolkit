@@ -40,7 +40,7 @@
       </font>
      </property>
      <property name="text">
-      <string>ZX Spectrum Toolkit</string>
+      <string>Retro Toolkit</string>
      </property>
      <property name="textFormat">
       <enum>Qt::PlainText</enum>

@@ -3,9 +3,9 @@
 #include <sstream>
 #include <rapidxml.hpp>
 
-const char* Project::FileSuffix = "8bit";
+const char* Project::FileSuffix = "retro";
 
-static const char XmlRootElement[] = "eightbitproject";
+static const char XmlRootElement[] = "RetroProject";
 
 Project::Project()
 {

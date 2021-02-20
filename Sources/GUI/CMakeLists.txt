@@ -1,5 +1,5 @@
 
-add(ZXToolkit
+add(RetroToolkit
     QT_EXECUTABLE
     USES
         Core

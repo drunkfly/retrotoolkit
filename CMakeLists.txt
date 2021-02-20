@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-project(ZXToolkit)
+project(RetroToolkit)
 
 include(CMake/Common.cmake)
-set_directory_properties(PROPERTIES VS_STARTUP_PROJECT "ZXToolkit")
+set_directory_properties(PROPERTIES VS_STARTUP_PROJECT "RetroToolkit")
 
 add_subdirectory(Libs)
 add_subdirectory(Sources)

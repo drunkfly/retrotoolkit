@@ -9,7 +9,7 @@
     <key>CFBundleIconFile</key>
     <string>${MACOSX_BUNDLE_ICON_FILE}</string>
     <key>CFBundleIdentifier</key>
-    <string>team.drunkfly.zxtoolkit</string>
+    <string>team.drunkfly.retrotoolkit</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

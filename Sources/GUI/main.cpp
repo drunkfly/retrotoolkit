@@ -7,7 +7,7 @@ int main(int argc, char** argv)
 
     QApplication::setOrganizationName(QStringLiteral("DrunkFly"));
     QApplication::setOrganizationDomain(QStringLiteral("drunkfly.team"));
-    QApplication::setApplicationName(QStringLiteral("ZX Toolkit"));
+    QApplication::setApplicationName(QStringLiteral("RetroToolkit"));
     QApplication::setApplicationVersion(QStringLiteral("1.0"));
 
     QApplication app(argc, argv);
