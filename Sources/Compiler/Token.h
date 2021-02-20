@@ -1,0 +1,110 @@
+#ifndef COMPILER_TOKEN_H
+#define COMPILER_TOKEN_H
+
+#include "Common/GC.h"
+#include <stdint.h>
+
+enum TokenID
+{
+    TOK_EOF,
+    TOK_NUMBER,
+    TOK_IDENTIFIER,
+    TOK_LABEL_FULL,
+    TOK_LABEL_GLOBAL,
+    TOK_LABEL_LOCAL,
+    TOK_CHAR,
+    TOK_STRING,
+    TOK_COMMA,
+    TOK_SEMICOLON,
+    TOK_COLON,
+    TOK_QUESTION,
+    TOK_CARET,
+    TOK_TILDE,
+    TOK_PLUS,
+    TOK_MINUS,
+    TOK_ASTERISK,
+    TOK_PERCENT,
+    TOK_ASSIGN,
+    TOK_AT,
+    TOK_SLASH,
+    TOK_LPAREN,
+    TOK_RPAREN,
+    TOK_LBRACKET,
+    TOK_RBRACKET,
+    TOK_LCURLY,
+    TOK_RCURLY,
+    TOK_AMPERSAND,
+    TOK_DOUBLEAMPERSAND,
+    TOK_VBAR,
+    TOK_DOUBLEVBAR,
+    TOK_EQ,
+    TOK_ADDEQ,
+    TOK_SUBEQ,
+    TOK_MULEQ,
+    TOK_DIVEQ,
+    TOK_MODEQ,
+    KW_BOOL,
+    KW_BYTE,
+    KW_CONST,
+    KW_DWORD,
+    KW_ELSE,
+    KW_FALSE,
+    KW_IF,
+    KW_INT,
+    KW_LONG,
+    KW_NULL,
+    KW_SBYTE,
+    KW_STRING,
+    KW_TRUE,
+    KW_VOID,
+    KW_WORD,
+};
+
+class SourceLocation;
+
+class Token : public GCObject
+{
+public:
+    Token(SourceLocation* location, TokenID id, const char* name)
+        : mID(id)
+        , mNext(nullptr)
+        , mLocation(location)
+        , mName(name)
+    {
+    }
+
+    Token(SourceLocation* location, TokenID id, const char* name, const char* text)
+        : Token(location, id, name)
+    {
+        mValue.text = text;
+    }
+
+    Token(SourceLocation* location, TokenID id, const char* name, uint64_t number)
+        : Token(location, id, name)
+    {
+        mValue.number = number;
+    }
+
+    TokenID id() const { return mID; }
+    Token* next() const { return mNext; }
+    SourceLocation* location() const { return mLocation; }
+    const char* name() const { return mName; }
+    const char* text() const { return mValue.text; }
+    uint64_t number() const { return mValue.number; }
+
+    Token* append(Token* token);
+
+private:
+    TokenID mID;
+    Token* mNext;
+    SourceLocation* mLocation;
+    const char* mName;
+    union {
+        const char* text;
+        uint64_t number;
+    } mValue;
+
+    DISABLE_COPY(Token);
+};
+
+#endif

@@ -14,9 +14,9 @@ public:
     GCHeap* heap() const noexcept { return mHeap; }
 
     void* operator new(size_t size, GCHeap* heap);
+    void operator delete(void* ptr, GCHeap* heap) {}
 
     void operator delete(void* ptr) = delete;
-    void operator delete(void* ptr, GCHeap* heap) = delete;
 
 protected:
     void registerFinalizer();

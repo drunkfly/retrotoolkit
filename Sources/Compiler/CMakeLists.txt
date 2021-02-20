@@ -18,4 +18,10 @@ add(Compiler
         Tree/SymbolTable.h
         Tree/Value.cpp
         Tree/Value.h
+        Lexer.cpp
+        Lexer.h
+        LexerUtils.cpp
+        LexerUtils.h
+        Token.cpp
+        Token.h
     )
