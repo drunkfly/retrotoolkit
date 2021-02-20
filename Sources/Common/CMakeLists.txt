@@ -7,4 +7,6 @@ add(Common
         CompilerError.h
         GC.cpp
         GC.h
+        IO.cpp
+        IO.h
     )

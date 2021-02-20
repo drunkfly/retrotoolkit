@@ -36,7 +36,7 @@ void MainWindow::openProject(const QString& file, bool mayLaunchNewInstance)
 
     auto project = std::make_unique<Project>();
     TRY {
-        project->load(file.toLocal8Bit().constData());
+        project->load(file.toUtf8().constData());
     } CATCH(e) {
         e.show(this);
         return;
@@ -74,7 +74,7 @@ void MainWindow::on_actionNewProject_triggered()
 
     auto project = std::make_unique<Project>();
     TRY {
-        project->save(file.toLocal8Bit().constData(), true);
+        project->save(file.toUtf8().constData(), true);
     } CATCH(e) {
         e.show(this);
         return;

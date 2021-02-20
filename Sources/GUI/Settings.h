@@ -10,22 +10,28 @@ public:
     template <typename T> class Property
     {
     public:
-        Property(QSettings& settings, const QString& name) : mSettings(settings), mName(name) {}
+        Property(QSettings& settings, const QString& name, const T& initialValue)
+            : mSettings(settings)
+            , mName(name)
+            , mInitialValue(initialValue)
+        {
+        }
 
         void operator=(const T& value) const { mSettings.setValue(mName, value); }
-        operator T() const { return mSettings.value(mName).value<T>(); }
+        operator T() const { return mSettings.value(mName, mInitialValue).value<T>(); }
 
     private:
         QSettings& mSettings;
         QString mName;
+        T mInitialValue;
 
         DISABLE_COPY(Property);
     };
 
-    #define PROPERTY(TYPE, NAME) Property<TYPE> NAME{mSettings, QStringLiteral(#NAME)}
+    #define PROPERTY(TYPE, NAME, DEFAULT) Property<TYPE> NAME{mSettings, QStringLiteral(#NAME), DEFAULT}
 
-    PROPERTY(bool, loadLastProjectOnStart);
-    PROPERTY(QString, lastProjectFile);
+    PROPERTY(bool, loadLastProjectOnStart, true);
+    PROPERTY(QString, lastProjectFile, QString());
 
     Settings();
     ~Settings();

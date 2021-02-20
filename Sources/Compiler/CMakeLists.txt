@@ -3,6 +3,7 @@ add(Compiler
     STATIC_LIBRARY
     LIBS
         Common
+        RapidXML
     SOURCES
         Assembler/Instruction.cpp
         Assembler/Instruction.h

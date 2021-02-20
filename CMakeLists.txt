@@ -4,4 +4,5 @@ project(ZXToolkit)
 include(CMake/Common.cmake)
 set_directory_properties(PROPERTIES VS_STARTUP_PROJECT "ZXToolkit")
 
+add_subdirectory(Libs)
 add_subdirectory(Sources)
