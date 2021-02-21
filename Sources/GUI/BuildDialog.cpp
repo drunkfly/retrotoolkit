@@ -1,5 +1,4 @@
 #include "BuildDialog.h"
-#include "Compiler/Compiler.h"
 #include "Compiler/CompilerError.h"
 #include "GUI/Util/Conversion.h"
 #include "ui_BuildDialog.h"
@@ -14,8 +13,9 @@ namespace
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BuildThread::BuildThread(QObject* parent)
+BuildThread::BuildThread(const QString& projectFile, QObject* parent)
     : QObject(parent)
+    , mProjectFile(projectFile)
     , mCancelRequested(0)
 {
 }
@@ -27,13 +27,8 @@ BuildThread::~BuildThread()
 void BuildThread::compile()
 {
     try {
-        Compiler compiler;
-        /* FIXME */
-        for (int i = 0; i < 20; i++) {
-            QThread::msleep(100);
-            checkCancelation();
-            emit progress(i+1, 20, QStringLiteral("Step %1").arg(i+1));
-        }
+        Compiler compiler(this);
+        compiler.buildProject(toPath(mProjectFile));
     } catch (const Canceled&) {
         emit canceled();
         return;
@@ -50,20 +45,26 @@ void BuildThread::compile()
     emit success();
 }
 
+void BuildThread::requestCancel()
+{
+    mCancelRequested.storeRelease(1);
+}
+
 void BuildThread::checkCancelation() const
 {
     if (mCancelRequested.loadAcquire() != 0)
         throw Canceled();
 }
 
-void BuildThread::requestCancel()
+void BuildThread::compilerProgress(int current, int total, const std::string& message)
 {
-    mCancelRequested.storeRelease(1);
+    checkCancelation();
+    emit progress(current, total, fromUtf8(message));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BuildDialog::BuildDialog(QWidget* parent)
+BuildDialog::BuildDialog(const QString& projectFile, QWidget* parent)
     : QDialog(parent)
     , mUi(new Ui_BuildDialog)
 {
@@ -71,8 +72,8 @@ BuildDialog::BuildDialog(QWidget* parent)
     mUi->progressBar->setRange(0, 0);
     setWindowModality(Qt::ApplicationModal);
 
-    mThread = QThread::create([this]() {
-            BuildThread thread;
+    mThread = QThread::create([this, projectFile]() {
+            BuildThread thread(projectFile);
 
             connect(this, &BuildDialog::cancelRequested, &thread, &BuildThread::requestCancel, Qt::DirectConnection);
 
@@ -100,6 +101,7 @@ BuildDialog::BuildDialog(QWidget* parent)
 
 BuildDialog::~BuildDialog()
 {
+    mThread->wait();
 }
 
 void BuildDialog::done(int result)

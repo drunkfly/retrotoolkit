@@ -2,6 +2,7 @@
 #define GUI_BUILDDIALOG_H
 
 #include "Common/Common.h"
+#include "Compiler/Compiler.h"
 #include <QDialog>
 #include <memory>
 
@@ -9,12 +10,12 @@ class QThread;
 class SourceLocation;
 class Ui_BuildDialog;
 
-class BuildThread : public QObject
+class BuildThread : public QObject, public ICompilerListener
 {
     Q_OBJECT
 
 public:
-    explicit BuildThread(QObject* parent = nullptr);
+    explicit BuildThread(const QString& projectFile, QObject* parent = nullptr);
     ~BuildThread() override;
 
     void compile();
@@ -29,10 +30,13 @@ signals:
     void canceled();
 
 protected:
-    void checkCancelation() const;
+    void checkCancelation() const override;
 
 private:
     QAtomicInt mCancelRequested;
+    QString mProjectFile;
+
+    void compilerProgress(int current, int total, const std::string& message) override;
 
     DISABLE_COPY(BuildThread);
 };
@@ -42,7 +46,7 @@ class BuildDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit BuildDialog(QWidget* parent = nullptr);
+    explicit BuildDialog(const QString& projectFile, QWidget* parent = nullptr);
     ~BuildDialog() override;
 
 signals:
@@ -58,6 +62,7 @@ private:
     class Thread;
 
     std::unique_ptr<Ui_BuildDialog> mUi;
+    QString mProjectFile;
     QThread* mThread;
 
     Q_SIGNAL void cancelRequested();

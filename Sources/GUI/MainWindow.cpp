@@ -63,6 +63,7 @@ void MainWindow::setProject(const QString& file, std::unique_ptr<Project> projec
             QMessageBox::critical(this, tr("Error"), tr("Unable to launch new instance of the application."));
     } else {
         mProject = std::move(project);
+        mProjectFile = file;
         setWindowTitle(QStringLiteral("%1[*] - %2").arg(QFileInfo(file).completeBaseName()).arg(windowTitle()));
         updateUi();
     }
@@ -71,9 +72,17 @@ void MainWindow::setProject(const QString& file, std::unique_ptr<Project> projec
 bool MainWindow::buildProject()
 {
     mUi->outputWidget->clear();
+
+    TRY {
+        mProject->load(toPath(mProjectFile));
+    } CATCH(e) {
+        e.show(this);
+        return false;
+    }
+
     mStatusLabel->setBuildStatus(tr("Building..."));
 
-    BuildDialog dlg(this);
+    BuildDialog dlg(mProjectFile, this);
     connect(&dlg, &BuildDialog::success, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::canceled, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::failure, mStatusLabel, &BuildStatusLabel::setBuildError);

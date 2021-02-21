@@ -23,6 +23,7 @@ public:
 private:
     std::unique_ptr<Ui_MainWindow> mUi;
     std::unique_ptr<Project> mProject;
+    QString mProjectFile;
     BuildStatusLabel* mStatusLabel;
 
     void setProject(const QString& file, std::unique_ptr<Project> project);
