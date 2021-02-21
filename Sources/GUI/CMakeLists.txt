@@ -11,6 +11,8 @@ add(RetroToolkit
         Common
         Compiler
     SOURCES
+        Util/Conversion.cpp
+        Util/Conversion.h
         Util/Exception.cpp
         Util/Exception.h
         Util/Localization.cpp

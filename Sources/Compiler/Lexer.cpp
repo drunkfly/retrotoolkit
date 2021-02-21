@@ -15,7 +15,7 @@ Lexer::~Lexer()
 {
 }
 
-void Lexer::scan(const char* file, const char* p)
+void Lexer::scan(const FileID* file, const char* p)
 {
     mFile = file;
     mLine = 1;

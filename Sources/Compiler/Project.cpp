@@ -15,7 +15,7 @@ Project::~Project()
 {
 }
 
-void Project::load(const std::string& file)
+void Project::load(const std::filesystem::path& file)
 {
     std::string text = loadFile(file);
 
@@ -30,7 +30,7 @@ void Project::load(const std::string& file)
     }
 }
 
-void Project::save(const std::string& file, bool createNew)
+void Project::save(const std::filesystem::path& file, bool createNew)
 {
     std::stringstream ss;
     ss << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";

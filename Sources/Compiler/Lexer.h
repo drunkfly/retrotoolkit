@@ -3,6 +3,9 @@
 
 #include "Common/Common.h"
 #include "Compiler/Token.h"
+#include <filesystem>
+
+class FileID;
 
 class Lexer
 {
@@ -12,13 +15,13 @@ public:
 
     Token* firstToken() const { return mFirstToken; }
 
-    void scan(const char* file, const char* p);
+    void scan(const FileID* file, const char* p);
 
 private:
     GCHeap* mHeap;
     Token* mFirstToken;
     Token* mLastToken;
-    const char* mFile;
+    const FileID* mFile;
     const char* mStart;
     int mStartLine;
     int mLine;

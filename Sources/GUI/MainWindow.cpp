@@ -4,6 +4,7 @@
 #include "GUI/Settings.h"
 #include "GUI/Widgets/BuildStatusLabel.h"
 #include "GUI/Util/Exception.h"
+#include "GUI/Util/Conversion.h"
 #include "Compiler/Project.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "ui_MainWindow.h"
@@ -46,7 +47,7 @@ void MainWindow::openProject(const QString& file, bool mayLaunchNewInstance)
 
     auto project = std::make_unique<Project>();
     TRY {
-        project->load(file.toUtf8().constData());
+        project->load(toPath(file));
     } CATCH(e) {
         e.show(this);
         return;
@@ -102,7 +103,7 @@ void MainWindow::on_actionNewProject_triggered()
 
     auto project = std::make_unique<Project>();
     TRY {
-        project->save(file.toUtf8().constData(), true);
+        project->save(toPath(file), true);
     } CATCH(e) {
         e.show(this);
         return;

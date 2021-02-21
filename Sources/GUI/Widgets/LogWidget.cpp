@@ -1,4 +1,5 @@
 #include "LogWidget.h"
+#include "GUI/Util/Conversion.h"
 #include <QScrollBar>
 
 LogWidget::LogWidget(QWidget* parent)
@@ -19,7 +20,7 @@ void LogWidget::print(const char* message)
 
 void LogWidget::print(const std::string& message)
 {
-    print(QString::fromUtf8(message.c_str(), message.length()));
+    print(fromUtf8(message));
 }
 
 void LogWidget::print(const QString& message)

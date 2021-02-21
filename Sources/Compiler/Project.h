@@ -2,7 +2,7 @@
 #define COMPILER_PROJECT_H
 
 #include "Common/Common.h"
-#include <string>
+#include <filesystem>
 
 class Project
 {
@@ -12,8 +12,8 @@ public:
     Project();
     ~Project();
 
-    void load(const std::string& file);
-    void save(const std::string& file, bool createNew = false);
+    void load(const std::filesystem::path& file);
+    void save(const std::filesystem::path& file, bool createNew = false);
 
     DISABLE_COPY(Project);
 };

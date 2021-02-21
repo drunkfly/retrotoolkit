@@ -1,5 +1,7 @@
 #include "BuildDialog.h"
+#include "Compiler/Compiler.h"
 #include "Compiler/CompilerError.h"
+#include "GUI/Util/Conversion.h"
 #include "ui_BuildDialog.h"
 #include <QThread>
 
@@ -25,6 +27,7 @@ BuildThread::~BuildThread()
 void BuildThread::compile()
 {
     try {
+        Compiler compiler;
         /* FIXME */
         for (int i = 0; i < 20; i++) {
             QThread::msleep(100);
@@ -35,9 +38,9 @@ void BuildThread::compile()
         emit canceled();
         return;
     } catch (const CompilerError& e) {
-        QString file = (e.location() && e.location()->file() ? QString::fromUtf8(e.location()->file()) : QString());
+        QString file = (e.location() && e.location()->file() ? fromPath(e.location()->file()->path()) : QString());
         int line = (e.location() ? e.location()->line() : 0);
-        emit failure(file, line, QString::fromUtf8(e.message().c_str()));
+        emit failure(file, line, fromUtf8(e.message()));
         return;
     } catch (const std::exception& e) {
         emit failure(QString(), 0, QString::fromUtf8(e.what()));
