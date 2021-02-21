@@ -18,6 +18,9 @@ if errorlevel 1 goto error
 cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=%QT% %~dp0
 if errorlevel 1 goto error
 
+cmake --build . --config Debug --parallel 4
+if errorlevel 1 goto error
+
 exit /B 0
 
 :error

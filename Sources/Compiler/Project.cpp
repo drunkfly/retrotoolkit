@@ -2,6 +2,7 @@
 #include "Common/IO.h"
 #include <sstream>
 #include <rapidxml.hpp>
+#include <string.h>
 
 const char* Project::FileSuffix = "retro";
 

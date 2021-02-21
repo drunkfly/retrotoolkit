@@ -3,6 +3,7 @@
 #include "Compiler/CompilerError.h"
 #include "Compiler/Token.h"
 #include <sstream>
+#include <string.h>
 
 Lexer::Lexer(GCHeap* heap)
     : mHeap(heap)

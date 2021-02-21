@@ -5,8 +5,6 @@ add(RetroToolkit
         Core
         Gui
         Widgets
-        Multimedia
-        Network
     LIBS
         Common
         Compiler

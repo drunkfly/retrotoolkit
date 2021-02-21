@@ -18,7 +18,7 @@ public:
         }
 
         void operator=(const T& value) const { mSettings.setValue(mName, value); }
-        operator T() const { return mSettings.value(mName, mInitialValue).value<T>(); }
+        operator T() const { return mSettings.value(mName, mInitialValue).template value<T>(); }
 
     private:
         QSettings& mSettings;
