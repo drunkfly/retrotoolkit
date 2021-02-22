@@ -18,6 +18,10 @@ public:
 
     SourceLocation* location() const { return mLocation; }
 
+    virtual bool isNegate() const;
+
+    virtual void toString(std::stringstream& ss) const = 0;
+
     uint8_t evaluateByte() const;
     uint8_t evaluateByteOffset(int64_t nextAddress) const;
     uint16_t evaluateWord() const;
@@ -38,6 +42,24 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class ExprCurrentAddress : public Expr
+{
+public:
+    explicit ExprCurrentAddress(SourceLocation* location)
+        : Expr(location)
+    {
+    }
+
+    void toString(std::stringstream& ss) const override;
+
+private:
+    Value evaluate() const override;
+
+    DISABLE_COPY(ExprCurrentAddress);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class ExprNumber : public Expr
 {
 public:
@@ -46,6 +68,8 @@ public:
         , mValue(value)
     {
     }
+
+    void toString(std::stringstream& ss) const override;
 
 private:
     int64_t mValue;
@@ -67,6 +91,8 @@ public:
     {
         registerFinalizer();
     }
+
+    void toString(std::stringstream& ss) const override;
 
 private:
     SymbolTable* mSymbolTable;
@@ -90,6 +116,8 @@ public:
     {
     }
 
+    void toString(std::stringstream& ss) const override;
+
 private:
     Expr* mCondition;
     Expr* mThen;
@@ -102,7 +130,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define UNARY_OPERATOR(NAME) \
+#define TREE_UNARY_OPERATOR(NAME) \
     class Expr##NAME : public Expr \
     { \
     public: \
@@ -111,13 +139,15 @@ private:
             , mOperand(operand) \
         { \
         } \
+        Expr* operand() const noexcept { return mOperand; } \
+        void toString(std::stringstream& ss) const override; \
     private: \
         Expr* mOperand; \
         Value evaluate() const override; \
         DISABLE_COPY(Expr##NAME); \
     }
 
-#define BINARY_OPERATOR(NAME) \
+#define TREE_BINARY_OPERATOR(NAME) \
     class Expr##NAME : public Expr \
     { \
     public: \
@@ -127,6 +157,7 @@ private:
             , mOperand2(op2) \
         { \
         } \
+        void toString(std::stringstream& ss) const override; \
     private: \
         Expr* mOperand1; \
         Expr* mOperand2; \
@@ -134,27 +165,49 @@ private:
         DISABLE_COPY(Expr##NAME); \
     }
 
-UNARY_OPERATOR(Negate);
-UNARY_OPERATOR(BitwiseNot);
-UNARY_OPERATOR(LogicNot);
+class ExprNegate : public Expr
+{
+public:
+    ExprNegate(SourceLocation* location, Expr* operand)
+        : Expr(location)
+        , mOperand(operand)
+    {
+    }
 
-BINARY_OPERATOR(Add);
-BINARY_OPERATOR(Subtract);
-BINARY_OPERATOR(Multiply);
-BINARY_OPERATOR(Divide);
-BINARY_OPERATOR(Modulo);
-BINARY_OPERATOR(ShiftLeft);
-BINARY_OPERATOR(ShiftRight);
-BINARY_OPERATOR(Less);
-BINARY_OPERATOR(LessEqual);
-BINARY_OPERATOR(Greater);
-BINARY_OPERATOR(GreaterEqual);
-BINARY_OPERATOR(Equal);
-BINARY_OPERATOR(NotEqual);
-BINARY_OPERATOR(BitwiseAnd);
-BINARY_OPERATOR(BitwiseOr);
-BINARY_OPERATOR(BitwiseXor);
-BINARY_OPERATOR(LogicAnd);
-BINARY_OPERATOR(LogicOr);
+    bool isNegate() const override;
+
+    Expr* operand() const noexcept { return mOperand; }
+
+    void toString(std::stringstream& ss) const override;
+
+private:
+    Expr* mOperand;
+
+    Value evaluate() const override;
+
+    DISABLE_COPY(ExprNegate);
+};
+
+TREE_UNARY_OPERATOR(BitwiseNot);
+TREE_UNARY_OPERATOR(LogicNot);
+
+TREE_BINARY_OPERATOR(Add);
+TREE_BINARY_OPERATOR(Subtract);
+TREE_BINARY_OPERATOR(Multiply);
+TREE_BINARY_OPERATOR(Divide);
+TREE_BINARY_OPERATOR(Modulo);
+TREE_BINARY_OPERATOR(ShiftLeft);
+TREE_BINARY_OPERATOR(ShiftRight);
+TREE_BINARY_OPERATOR(Less);
+TREE_BINARY_OPERATOR(LessEqual);
+TREE_BINARY_OPERATOR(Greater);
+TREE_BINARY_OPERATOR(GreaterEqual);
+TREE_BINARY_OPERATOR(Equal);
+TREE_BINARY_OPERATOR(NotEqual);
+TREE_BINARY_OPERATOR(BitwiseAnd);
+TREE_BINARY_OPERATOR(BitwiseOr);
+TREE_BINARY_OPERATOR(BitwiseXor);
+TREE_BINARY_OPERATOR(LogicAnd);
+TREE_BINARY_OPERATOR(LogicOr);
 
 #endif

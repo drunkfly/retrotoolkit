@@ -1,5 +1,6 @@
 #include "Compiler.h"
 #include "Compiler/Tree/SourceLocation.h"
+#include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Assembler/AssemblerParser.h"
 #include "Compiler/Lexer.h"
 #include "Compiler/Project.h"
@@ -91,7 +92,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile)
             case FileType::Asm: {
                 Lexer lexer(&mHeap);
                 lexer.scan(file.fileID, loadFile(file.fileID->path()).c_str());
-                AssemblerParser parser(&mHeap);
+                SymbolTable* globals = new (&mHeap) SymbolTable(nullptr);
+                AssemblerParser parser(&mHeap, globals);
                 parser.parse(lexer.firstToken());
                 break;
             }

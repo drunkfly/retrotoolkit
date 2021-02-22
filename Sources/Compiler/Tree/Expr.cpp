@@ -10,6 +10,11 @@ Expr::Expr(SourceLocation* location)
 {
 }
 
+bool Expr::isNegate() const
+{
+    return false;
+}
+
 uint8_t Expr::evaluateByte() const
 {
     Value value = evaluateValue();
@@ -151,10 +156,30 @@ template <bool SUB, typename T> Value Expr::smartEvaluate(T&& operatr, Value a, 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+Value ExprCurrentAddress::evaluate() const
+{
+    // FIXME
+    return Value(0);
+}
+
+void ExprCurrentAddress::toString(std::stringstream& ss) const
+{
+    ss << '$';
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprNumber::evaluate() const
 {
     return Value(mValue);
 }
+
+void ExprNumber::toString(std::stringstream& ss) const
+{
+    ss << mValue;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Value ExprIdentifier::evaluate() const
 {
@@ -164,10 +189,33 @@ Value ExprIdentifier::evaluate() const
     throw CompilerError(location(), ss.str());
 }
 
+void ExprIdentifier::toString(std::stringstream& ss) const
+{
+    ss << mName;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprConditional::evaluate() const
 {
     Value a = mCondition->evaluateValue();
     return (a.number != 0 ? mThen->evaluateValue() : mElse->evaluateValue());
+}
+
+void ExprConditional::toString(std::stringstream& ss) const
+{
+    mCondition->toString(ss);
+    ss << " ? ";
+    mThen->toString(ss);
+    ss << " : ";
+    mElse->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprNegate::isNegate() const
+{
+    return true;
 }
 
 Value ExprNegate::evaluate() const
@@ -205,6 +253,14 @@ Value ExprNegate::evaluate() const
     return Value(-value.number, Sign::Signed);
 }
 
+void ExprNegate::toString(std::stringstream& ss) const
+{
+    ss << '-';
+    mOperand->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprBitwiseNot::evaluate() const
 {
     Value operand = mOperand->evaluateValue();
@@ -213,11 +269,27 @@ Value ExprBitwiseNot::evaluate() const
     return Value(~operand.number, operand.sign, operand.bits);
 }
 
+void ExprBitwiseNot::toString(std::stringstream& ss) const
+{
+    ss << '~';
+    mOperand->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprLogicNot::evaluate() const
 {
     Value operand = mOperand->evaluateValue();
     return Value(!operand.number, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
+
+void ExprLogicNot::toString(std::stringstream& ss) const
+{
+    ss << '!';
+    mOperand->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Value ExprAdd::evaluate() const
 {
@@ -226,12 +298,30 @@ Value ExprAdd::evaluate() const
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a + b; }, a, b);
 }
 
+void ExprAdd::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " + ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprSubtract::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
     Value b = mOperand2->evaluateValue();
     return smartEvaluate<true>([](int64_t a, int64_t b){ return a - b; }, a, b);
 }
+
+void ExprSubtract::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " - ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Value ExprMultiply::evaluate() const
 {
@@ -240,6 +330,15 @@ Value ExprMultiply::evaluate() const
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a * b; }, a, b);
 }
 
+void ExprMultiply::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " * ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprDivide::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
@@ -247,12 +346,30 @@ Value ExprDivide::evaluate() const
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a / b; }, a, b);
 }
 
+void ExprDivide::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " / ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprModulo::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
     Value b = mOperand2->evaluateValue();
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a % b; }, a, b);
 }
+
+void ExprModulo::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " % ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Value ExprShiftLeft::evaluate() const
 {
@@ -274,6 +391,15 @@ Value ExprShiftLeft::evaluate() const
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a << b; }, a, b);
 }
 
+void ExprShiftLeft::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " << ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprShiftRight::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
@@ -294,12 +420,30 @@ Value ExprShiftRight::evaluate() const
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a >> b; }, a, b);
 }
 
+void ExprShiftRight::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " >> ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprLess::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
     Value b = mOperand2->evaluateValue();
     return Value(a.number < b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
+
+void ExprLess::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " < ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Value ExprLessEqual::evaluate() const
 {
@@ -308,12 +452,30 @@ Value ExprLessEqual::evaluate() const
     return Value(a.number <= b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
+void ExprLessEqual::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " <= ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprGreater::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
     Value b = mOperand2->evaluateValue();
     return Value(a.number > b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
+
+void ExprGreater::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " > ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Value ExprGreaterEqual::evaluate() const
 {
@@ -322,6 +484,15 @@ Value ExprGreaterEqual::evaluate() const
     return Value(a.number >= b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
+void ExprGreaterEqual::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " >= ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprEqual::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
@@ -329,12 +500,30 @@ Value ExprEqual::evaluate() const
     return Value(a.number == b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
+void ExprEqual::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " == ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprNotEqual::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
     Value b = mOperand2->evaluateValue();
     return Value(a.number != b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
+
+void ExprNotEqual::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " != ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Value ExprBitwiseAnd::evaluate() const
 {
@@ -345,6 +534,15 @@ Value ExprBitwiseAnd::evaluate() const
     return Value(a.number & b.number, sign, bits);
 }
 
+void ExprBitwiseAnd::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " & ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprBitwiseOr::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
@@ -353,6 +551,15 @@ Value ExprBitwiseOr::evaluate() const
     auto sign = (a.sign == Sign::Signed || b.sign == Sign::Signed ? Sign::Signed : Sign::Unsigned);
     return Value(a.number | b.number, sign, bits);
 }
+
+void ExprBitwiseOr::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " | ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Value ExprBitwiseXor::evaluate() const
 {
@@ -363,6 +570,15 @@ Value ExprBitwiseXor::evaluate() const
     return Value(a.number ^ b.number, sign, bits);
 }
 
+void ExprBitwiseXor::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " ^ ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprLogicAnd::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
@@ -370,9 +586,25 @@ Value ExprLogicAnd::evaluate() const
     return Value(a.number && b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
+void ExprLogicAnd::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " && ";
+    mOperand2->toString(ss);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Value ExprLogicOr::evaluate() const
 {
     Value a = mOperand1->evaluateValue();
     Value b = mOperand2->evaluateValue();
     return Value(a.number || b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
+void ExprLogicOr::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " || ";
+    mOperand2->toString(ss);
 }

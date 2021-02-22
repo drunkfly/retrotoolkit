@@ -12,8 +12,6 @@ add(Compiler
         Assembler/Instructions.Z80.cpp
         Assembler/Instructions.Z80.h
         Assembler/Instructions.Z80.hh
-        Assembler/OpcodeParseContext.cpp
-        Assembler/OpcodeParseContext.h
         Tree/Expr.cpp
         Tree/Expr.h
         Tree/SourceLocation.h
@@ -25,10 +23,14 @@ add(Compiler
         Compiler.h
         CompilerError.cpp
         CompilerError.h
+        ExpressionParser.cpp
+        ExpressionParser.h
         Lexer.cpp
         Lexer.h
         LexerUtils.cpp
         LexerUtils.h
+        ParsingContext.cpp
+        ParsingContext.h
         Project.cpp
         Project.h
         Token.cpp

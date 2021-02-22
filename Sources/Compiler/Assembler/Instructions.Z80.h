@@ -1,13 +1,18 @@
 #ifndef COMPILER_ASSEMBLER_INSTRUCTIONS_Z80_H
 #define COMPILER_ASSEMBLER_INSTRUCTIONS_Z80_H
 
+#include "Compiler/ParsingContext.h"
+#include "Compiler/Tree/Expr.h"
 #include "Compiler/Assembler/Instruction.h"
-#include "Compiler/Assembler/OpcodeParseContext.h"
+#include "Common/StringSet.h"
 #include <sstream>
 #include <stdint.h>
 
 namespace Z80
 {
+    extern StringSet RegisterNames;
+    extern StringSet ConditionNames;
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     namespace Mnemonic
@@ -15,7 +20,7 @@ namespace Z80
         #define Z80_MNEMONIC(NAME) \
             struct NAME { \
                 static void toString(std::stringstream& ss) { ss << #NAME; } \
-                static bool tryParse(OpcodeParseContext* context) { return context->consumeIdentifier(#NAME); } \
+                static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
             }
 
         Z80_MNEMONIC(ADC);
@@ -93,126 +98,146 @@ namespace Z80
     class bit
     {
     public:
-        void toString(std::stringstream& ss) const { /*FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     class byte
     {
     public:
-        void toString(std::stringstream& ss) const { /*FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     class word
     {
     public:
-        void toString(std::stringstream& ss) const { /*FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     struct memBC
     {
-        void toString(std::stringstream& ss) const { ss << "(bc)"; }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
     };
 
     struct memDE
     {
-        void toString(std::stringstream& ss) const { ss << "(de)"; }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
     };
 
     struct memHL
     {
-        void toString(std::stringstream& ss) const { ss << "(hl)"; }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
     };
 
     struct memIX
     {
-        void toString(std::stringstream& ss) const { ss << "(ix)"; }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
     };
 
     struct memIY
     {
-        void toString(std::stringstream& ss) const { ss << "(iy)"; }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
     };
 
     struct memSP
     {
-        void toString(std::stringstream& ss) const { ss << "(sp)"; }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
     };
 
     class memAddr
     {
     public:
-        void toString(std::stringstream& ss) const { /* FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     class IX_byte
     {
     public:
-        void toString(std::stringstream& ss) const { /* FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     class IY_byte
     {
     public:
-        void toString(std::stringstream& ss) const { /* FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     class relOffset
     {
     public:
-        void toString(std::stringstream& ss) const { /* FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     class portC
     {
     public:
-        void toString(std::stringstream& ss) const { ss << "(c)"; }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
     };
 
     class portAddr
     {
     public:
-        void toString(std::stringstream& ss) const { /* FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     class intMode
     {
     public:
-        void toString(std::stringstream& ss) const { /* FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     class rstIndex
     {
     public:
-        void toString(std::stringstream& ss) const { /* FIXME */ }
-        bool tryParse(OpcodeParseContext* context) { return false; /* FIXME */ }
+        void toString(std::stringstream& ss) const;
+        bool tryParse(ParsingContext* c);
+    private:
+        Expr* mValue;
     };
 
     #define Z80_REGOP(NAME) \
         struct NAME { \
             static void toString(std::stringstream& ss) { ss << #NAME; } \
-            static bool tryParse(OpcodeParseContext* context) { return context->consumeIdentifier(#NAME); } \
+            static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
         }
 
     struct AF_
     {
-        static void toString(std::stringstream& ss) { ss << "AF'"; }
-        static bool tryParse(OpcodeParseContext* context) { return context->consumeIdentifier("AF'"); }
+        static void toString(std::stringstream& ss);
+        static bool tryParse(ParsingContext* context);
     };
 
     Z80_REGOP(A);
@@ -241,7 +266,7 @@ namespace Z80
     #define Z80_FLAGOP(NAME) \
         struct flag##NAME { \
             static void toString(std::stringstream& ss) { ss << #NAME; } \
-            static bool tryParse(OpcodeParseContext* context) { return context->consumeIdentifier(#NAME); } \
+            static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
         }
 
     Z80_FLAGOP(C);
@@ -289,7 +314,7 @@ namespace Z80
         }
 
         void toString(std::stringstream& ss) const override { OP::toString(ss); }
-        static bool tryParse(OpcodeParseContext* context) { return context->checkEnd(); }
+        static bool tryParse(ParsingContext* context) { return context->checkEnd(); }
 
         DISABLE_COPY(Opcode0);
     };
@@ -310,7 +335,7 @@ namespace Z80
             mOp1.toString(ss);
         }
 
-        static bool tryParse(OpcodeParseContext* context, OP1& op1)
+        static bool tryParse(ParsingContext* context, OP1& op1)
         {
             if (!op1.tryParse(context)) return false;
             return context->checkEnd();
@@ -341,7 +366,7 @@ namespace Z80
             mOp2.toString(ss);
         }
 
-        static bool tryParse(OpcodeParseContext* context, OP1& op1, OP2& op2)
+        static bool tryParse(ParsingContext* context, OP1& op1, OP2& op2)
         {
             if (!op1.tryParse(context)) return false;
             if (!context->consumeComma()) return false;

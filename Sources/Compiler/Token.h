@@ -26,6 +26,7 @@ enum TokenID
     TOK_PERCENT,
     TOK_ASSIGN,
     TOK_AT,
+    TOK_DOLLAR,
     TOK_SLASH,
     TOK_LPAREN,
     TOK_RPAREN,

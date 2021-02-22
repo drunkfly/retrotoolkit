@@ -1,8 +1,9 @@
 #include "AssemblerParser.h"
 #include "Compiler/Token.h"
+#include "Compiler/ParsingContext.h"
 #include "Compiler/CompilerError.h"
-#include "Compiler/Assembler/OpcodeParseContext.h"
 #include "Compiler/Assembler/Instructions.Z80.h"
+#include "Compiler/Tree/SymbolTable.h"
 #include "Common/GC.h"
 #include "Common/Strings.h"
 #include <string>
@@ -36,15 +37,10 @@ std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDi
     };
 */
 
-AssemblerParser::AssemblerParser(GCHeap* heap)
+AssemblerParser::AssemblerParser(GCHeap* heap, SymbolTable* globals)
     : mHeap(heap)
-/*
-    : mCompiler(compiler)
-    , mLexer(lexer)
-    , mProgram(program)
-    , mReporter(reporter)
-    , mContext(new AssemblerDefaultContext(mProgram))
-*/
+    , mGlobals(globals)
+    , mSymbolTable(globals)
 {
 }
 
@@ -517,7 +513,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_0(OP, BYTES, TSTATES) \
         { \
-            OpcodeParseContext context(mToken); \
+            ParsingContext context(mHeap, mToken, mSymbolTable); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 if (Z80::OP::tryParse(&context)) \
                     return new (mHeap) Z80::OP(location); \
@@ -527,7 +523,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
         { \
-            OpcodeParseContext context(mToken); \
+            ParsingContext context(mHeap, mToken, mSymbolTable); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 Z80::OP1 op1; \
                 if (Z80::OP##_##OP1::tryParse(&context, op1)) \
@@ -538,7 +534,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
         { \
-            OpcodeParseContext context(mToken); \
+            ParsingContext context(mHeap, mToken, mSymbolTable); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 Z80::OP1 op1; \
                 Z80::OP2 op2; \
@@ -660,42 +656,5 @@ bool AssemblerParser::matchByte(quint8* out)
     *out = context.evaluateByte(expr);
 
     return true;
-}
-
-int AssemblerParser::nextToken() const
-{
-    return mLexer->nextToken().id;
-}
-
-const Token& AssemblerParser::lastToken() const
-{
-    return mLexer->lastToken();
-}
-
-int AssemblerParser::lastTokenId() const
-{
-    return lastToken().id;
-}
-
-const std::string& AssemblerParser::lastTokenText() const
-{
-    return mLexer->lastToken().text;
-}
-
-const char* AssemblerParser::lastTokenCStr() const
-{
-    return mLexer->lastToken().text.c_str();
-}
-
-void AssemblerParser::error(const QString& message)
-{
-    error(mLexer->lastToken(), message);
-}
-
-void AssemblerParser::error(const Token& token, const QString& message)
-{
-    QString fileName = (token.file ? token.file->name : QString());
-    mReporter->error(fileName, token.line, message);
-    throw ParserError();
 }
 */

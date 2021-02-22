@@ -9,4 +9,5 @@ add(Common
         IO.h
         Strings.cpp
         Strings.h
+        StringSet.h
     )
