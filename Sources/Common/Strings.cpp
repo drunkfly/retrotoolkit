@@ -26,7 +26,7 @@ bool equalCaseInsensitive(const char* str1, const char* str2)
     }
 }
 
-std::wstring fromUtf8(const std::string& str)
+std::wstring wstringFromUtf8(const std::string& str)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.from_bytes(str.c_str());
