@@ -1,11 +1,12 @@
 #include "Compiler.h"
 #include "Compiler/Tree/SourceLocation.h"
+#include "Compiler/Assembler/AssemblerParser.h"
+#include "Compiler/Lexer.h"
 #include "Compiler/Project.h"
+#include "Common/IO.h"
 #include <vector>
+#include <algorithm>
 #include <sstream>
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
 namespace
 {
@@ -18,6 +19,16 @@ namespace
     {
         FileType fileType;
         FileID* fileID;
+
+        bool operator<(const SourceFile& other) const
+        {
+            if (fileType < other.fileType)
+                return true;
+            else if (fileType > other.fileType)
+                return false;
+
+            return (fileID->path() < other.fileID->path());
+        }
     };
 }
 
@@ -34,8 +45,6 @@ Compiler::~Compiler()
 
 void Compiler::buildProject(const std::filesystem::path& projectFile)
 {
-    GCHeap heap;
-
     if (mListener)
         mListener->compilerProgress(0, 0, "Reading project file...");
 
@@ -60,9 +69,14 @@ void Compiler::buildProject(const std::filesystem::path& projectFile)
         else
             continue;
 
-        auto path = it.path().lexically_relative(dir);
-        files.emplace_back(SourceFile{ fileType, new (&heap) FileID(path) });
+        auto name = it.path().lexically_relative(dir);
+        files.emplace_back(SourceFile{ fileType, new (&mHeap) FileID(name, it.path()) });
     }
+
+    std::sort(files.begin(), files.end());
+
+    if (mListener)
+        mListener->compilerProgress(0, 0, "Compiling...");
 
     int n = int(files.size());
     int count = 0;
@@ -70,12 +84,25 @@ void Compiler::buildProject(const std::filesystem::path& projectFile)
 
     for (int i = 0; i < n; i++) {
         const auto& file = files[i];
-        mListener->compilerProgress(count++, total, file.fileID->path().string());
-        Sleep(1000);
+        if (mListener)
+            mListener->compilerProgress(count++, total, file.fileID->name().string());
+
+        switch (file.fileType) {
+            case FileType::Asm: {
+                Lexer lexer(&mHeap);
+                lexer.scan(file.fileID, loadFile(file.fileID->path()).c_str());
+                AssemblerParser parser(&mHeap);
+                parser.parse(lexer.firstToken());
+                break;
+            }
+        }
     }
 
-    mListener->compilerProgress(count++, total, "Linking...");
-    Sleep(1000);
+    if (mListener)
+        mListener->compilerProgress(count++, total, "Linking...");
 
-    mListener->compilerProgress(count, total, "Done");
+    /* FIXME */
+
+    if (mListener)
+        mListener->compilerProgress(count, total, "Done");
 }

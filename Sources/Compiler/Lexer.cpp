@@ -20,6 +20,7 @@ void Lexer::scan(const FileID* file, const char* p)
 {
     mFile = file;
     mLine = 1;
+    mLineStart = true;
 
     for (;;) {
         const char* start = p;
@@ -28,6 +29,7 @@ void Lexer::scan(const FileID* file, const char* p)
         switch (*p) {
             case 0: {
                 token(TOK_EOF, "end of file");
+                mLastToken->setNextToItself();
                 return;
             }
 
@@ -42,6 +44,7 @@ void Lexer::scan(const FileID* file, const char* p)
             case '\n':
                 ++p;
                 ++mLine;
+                mLineStart = true;
                 continue;
 
             case ',':
@@ -328,48 +331,48 @@ void Lexer::scan(const FileID* file, const char* p)
                 }
                 #define KEYWORD(NAME, KW) \
                     if (len == sizeof(NAME)-1 && !memcmp(start, NAME, len)) { \
-                        token(KW, "'" NAME "'"); \
+                        keyword(KW, "'" NAME "'", #NAME); \
                         continue; \
                     }
                 switch (*start) {
-                case 'b':
-                    KEYWORD("bool", KW_BOOL)
+                    case 'b':
+                        KEYWORD("bool", KW_BOOL)
                         KEYWORD("byte", KW_BYTE)
                         break;
-                case 'c':
-                    KEYWORD("const", KW_CONST)
+                    case 'c':
+                        KEYWORD("const", KW_CONST)
                         break;
-                case 'd':
-                    KEYWORD("dword", KW_DWORD)
+                    case 'd':
+                        KEYWORD("dword", KW_DWORD)
                         break;
-                case 'e':
-                    KEYWORD("else", KW_ELSE)
+                    case 'e':
+                        KEYWORD("else", KW_ELSE)
                         break;
-                case 'f':
-                    KEYWORD("false", KW_FALSE)
+                    case 'f':
+                        KEYWORD("false", KW_FALSE)
                         break;
-                case 'i':
-                    KEYWORD("if", KW_IF)
+                    case 'i':
+                        KEYWORD("if", KW_IF)
                         KEYWORD("int", KW_INT)
                         break;
-                case 'l':
-                    KEYWORD("long", KW_LONG)
+                    case 'l':
+                        KEYWORD("long", KW_LONG)
                         break;
-                case 'n':
-                    KEYWORD("null", KW_NULL)
+                    case 'n':
+                        KEYWORD("null", KW_NULL)
                         break;
-                case 's':
-                    KEYWORD("sbyte", KW_SBYTE)
+                    case 's':
+                        KEYWORD("sbyte", KW_SBYTE)
                         KEYWORD("string", KW_STRING)
                         break;
-                case 't':
-                    KEYWORD("true", KW_TRUE)
+                    case 't':
+                        KEYWORD("true", KW_TRUE)
                         break;
-                case 'v':
-                    KEYWORD("void", KW_VOID)
+                    case 'v':
+                        KEYWORD("void", KW_VOID)
                         break;
-                case 'w':
-                    KEYWORD("word", KW_WORD)
+                    case 'w':
+                        KEYWORD("word", KW_WORD)
                         break;
                 }
                 token(TOK_IDENTIFIER, "identifier", start, len);
@@ -464,8 +467,18 @@ void Lexer::token(TokenID id, const char* name, uint64_t number)
     appendToken(new (mHeap) Token(location(), id, name, number));
 }
 
+void Lexer::keyword(TokenID id, const char* name, const char* text)
+{
+    appendToken(new (mHeap) Token(location(), id, name, text));
+}
+
 void Lexer::appendToken(Token* token)
 {
+    if (mLineStart) {
+        token->setFirstOnLine();
+        mLineStart = false;
+    }
+
     if (mLastToken)
         mLastToken = mLastToken->append(token);
     else {

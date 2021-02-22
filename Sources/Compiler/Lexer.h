@@ -25,12 +25,14 @@ private:
     const char* mStart;
     int mStartLine;
     int mLine;
+    bool mLineStart;
 
     SourceLocation* location();
 
     void token(TokenID id, const char* name);
     void token(TokenID id, const char* name, const char* text, size_t length);
     void token(TokenID id, const char* name, uint64_t number);
+    void keyword(TokenID id, const char* name, const char* text);
     void appendToken(Token* token);
 
     DISABLE_COPY(Lexer);

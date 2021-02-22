@@ -28,15 +28,17 @@ void BuildThread::compile()
 {
     try {
         Compiler compiler(this);
-        compiler.buildProject(toPath(mProjectFile));
-    } catch (const Canceled&) {
-        emit canceled();
-        return;
-    } catch (const CompilerError& e) {
-        QString file = (e.location() && e.location()->file() ? fromPath(e.location()->file()->path()) : QString());
-        int line = (e.location() ? e.location()->line() : 0);
-        emit failure(file, line, fromUtf8(e.message()));
-        return;
+        try {
+            compiler.buildProject(toPath(mProjectFile));
+        } catch (const Canceled&) {
+            emit canceled();
+            return;
+        } catch (const CompilerError& e) {
+            QString file = (e.location() && e.location()->file() ? fromPath(e.location()->file()->path()) : QString());
+            int line = (e.location() ? e.location()->line() : 0);
+            emit failure(file, line, fromUtf8(e.message()));
+            return;
+        }
     } catch (const std::exception& e) {
         emit failure(QString(), 0, QString::fromUtf8(e.what()));
         return;

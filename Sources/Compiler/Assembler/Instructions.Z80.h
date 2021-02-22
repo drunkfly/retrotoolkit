@@ -269,7 +269,10 @@ namespace Z80
     class Opcode : public Instruction
     {
     public:
-        Opcode() = default;
+        explicit Opcode(SourceLocation* location)
+            : Instruction(location)
+        {
+        }
 
         bool isZ80Opcode() const override;
         virtual void toString(std::stringstream& ss) const = 0;
@@ -280,10 +283,13 @@ namespace Z80
     template <typename OP> class Opcode0 : public Opcode
     {
     public:
-        Opcode0() = default;
+        explicit Opcode0(SourceLocation* location)
+            : Opcode(location)
+        {
+        }
 
         void toString(std::stringstream& ss) const override { OP::toString(ss); }
-        static bool tryParse(OpcodeParseContext* context) { return OP::tryParse(context) && context->checkEnd(); }
+        static bool tryParse(OpcodeParseContext* context) { return context->checkEnd(); }
 
         DISABLE_COPY(Opcode0);
     };
@@ -291,7 +297,11 @@ namespace Z80
     template <typename OP, typename OP1> class Opcode1 : public Opcode
     {
     public:
-        explicit Opcode1(OP1 op1) : mOp1(op1) {}
+        Opcode1(SourceLocation* location, OP1 op1)
+            : Opcode(location)
+            , mOp1(op1)
+        {
+        }
 
         void toString(std::stringstream& ss) const override
         {
@@ -302,7 +312,6 @@ namespace Z80
 
         static bool tryParse(OpcodeParseContext* context, OP1& op1)
         {
-            if (!OP::tryParse(context)) return false;
             if (!op1.tryParse(context)) return false;
             return context->checkEnd();
         }
@@ -316,7 +325,12 @@ namespace Z80
     template <typename OP, typename OP1, typename OP2> class Opcode2 : public Opcode
     {
     public:
-        Opcode2(OP1 op1, OP2 op2) : mOp1(op1), mOp2(op2) {}
+        Opcode2(SourceLocation* location, OP1 op1, OP2 op2)
+            : Opcode(location)
+            , mOp1(op1)
+            , mOp2(op2)
+        {
+        }
 
         void toString(std::stringstream& ss) const override
         {
@@ -329,7 +343,6 @@ namespace Z80
 
         static bool tryParse(OpcodeParseContext* context, OP1& op1, OP2& op2)
         {
-            if (!OP::tryParse(context)) return false;
             if (!op1.tryParse(context)) return false;
             if (!context->consumeComma()) return false;
             if (!op2.tryParse(context)) return false;
@@ -349,21 +362,21 @@ namespace Z80
         class OP : public Opcode0<Mnemonic::OP> \
         { \
         public: \
-            OP() = default; \
+            explicit OP(SourceLocation* location) : Opcode0(location) {} \
         }
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
         class OP##_##OP1 : public Opcode1<Mnemonic::OP, OP1> \
         { \
         public: \
-            explicit OP##_##OP1(OP1 op1) : Opcode1(op1) {} \
+            OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
         }
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
         class OP##_##OP1##_##OP2 : public Opcode2<Mnemonic::OP, OP1, OP2> \
         { \
         public: \
-            OP##_##OP1##_##OP2(OP1 op1, OP2 op2) : Opcode2(op1, op2) {} \
+            OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
         }
 
     #include "Instructions.Z80.hh"

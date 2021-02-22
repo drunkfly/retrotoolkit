@@ -23,7 +23,8 @@ namespace
 
         ~FileHandle() noexcept
         {
-            fclose(mHandle);
+            if (mHandle)
+                fclose(mHandle);
             if (mDeleteOnClose) {
                 std::error_code error;
                 std::filesystem::remove(mFileName, error);

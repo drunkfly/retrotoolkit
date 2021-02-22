@@ -5,6 +5,8 @@ add(Compiler
         Common
         RapidXML
     SOURCES
+        Assembler/AssemblerParser.cpp
+        Assembler/AssemblerParser.h
         Assembler/Instruction.cpp
         Assembler/Instruction.h
         Assembler/Instructions.Z80.cpp

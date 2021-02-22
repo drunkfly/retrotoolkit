@@ -8,7 +8,6 @@ enum TokenID
 {
     TOK_EOF,
     TOK_NUMBER,
-    TOK_IDENTIFIER,
     TOK_LABEL_FULL,
     TOK_LABEL_GLOBAL,
     TOK_LABEL_LOCAL,
@@ -53,6 +52,7 @@ enum TokenID
     TOK_MODEQ,
     TOK_SHLEQ,
     TOK_SHREQ,
+    TOK_IDENTIFIER,
     KW_BOOL,
     KW_BYTE,
     KW_CONST,
@@ -80,6 +80,7 @@ public:
         , mNext(nullptr)
         , mLocation(location)
         , mName(name)
+        , mFirstOnLine(false)
     {
     }
 
@@ -102,6 +103,11 @@ public:
     const char* text() const { return mValue.text; }
     uint64_t number() const { return mValue.number; }
 
+    bool isFirstOnLine() const { return mFirstOnLine; }
+    void setFirstOnLine() { mFirstOnLine = true; }
+
+    void setNextToItself() { mNext = this; }
+
     Token* append(Token* token);
 
 private:
@@ -113,6 +119,7 @@ private:
         const char* text;
         uint64_t number;
     } mValue;
+    bool mFirstOnLine;
 
     DISABLE_COPY(Token);
 };

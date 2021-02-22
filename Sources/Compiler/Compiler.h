@@ -23,6 +23,7 @@ public:
 
 private:
     ICompilerListener* mListener;
+    GCHeap mHeap;
 
     DISABLE_COPY(Compiler);
 };

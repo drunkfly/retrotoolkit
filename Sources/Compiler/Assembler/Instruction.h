@@ -8,8 +8,10 @@
 class Instruction : public GCObject
 {
 public:
-    Instruction() = default;
-    ~Instruction() override;
+    explicit Instruction(SourceLocation* location)
+        : mLocation(location)
+    {
+    }
 
     virtual bool isZ80Opcode() const;
 

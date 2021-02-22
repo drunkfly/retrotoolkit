@@ -7,15 +7,18 @@
 class FileID : public GCObject
 {
 public:
-    explicit FileID(std::filesystem::path path)
-        : mPath(std::move(path))
+    FileID(std::filesystem::path name, std::filesystem::path path)
+        : mName(std::move(name))
+        , mPath(std::move(path))
     {
         registerFinalizer();
     }
 
+    const std::filesystem::path& name() const { return mName; }
     const std::filesystem::path& path() const { return mPath; }
 
 private:
+    std::filesystem::path mName;
     std::filesystem::path mPath;
 
     DISABLE_COPY(FileID);
