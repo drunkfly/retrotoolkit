@@ -16,10 +16,10 @@ Lexer::~Lexer()
 {
 }
 
-void Lexer::scan(const FileID* file, const char* p)
+void Lexer::scan(const FileID* file, const char* p, int startLine)
 {
     mFile = file;
-    mLine = 1;
+    mLine = startLine;
     mLineStart = true;
 
     for (;;) {

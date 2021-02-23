@@ -19,10 +19,10 @@ ExpressionParser::~ExpressionParser()
 {
 }
 
-Expr* ExpressionParser::tryParseExpression(const char* str, SymbolTable* variables)
+Expr* ExpressionParser::tryParseExpression(SourceLocation* location, const char* str, SymbolTable* variables)
 {
     Lexer lexer(mHeap);
-    lexer.scan(nullptr, str);
+    lexer.scan(location->file(), str, location->line());
 
     if (!variables)
         variables = new (mHeap) SymbolTable(nullptr);

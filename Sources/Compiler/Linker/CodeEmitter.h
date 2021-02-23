@@ -2,12 +2,15 @@
 #define COMPILER_LINKER_CODEEMITTER_H
 
 #include "Common/Common.h"
+#include <stdint.h>
+
+class SourceLocation;
 
 class CodeEmitter
 {
 public:
     virtual ~CodeEmitter() = default;
-    virtual void write(const void* data, size_t size) = 0;
+    virtual void emitByte(SourceLocation* location, uint8_t byte) = 0;
 };
 
 #endif

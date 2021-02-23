@@ -2,6 +2,7 @@
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Linker/Program.h"
+#include "Compiler/Linker/Linker.h"
 #include "Compiler/Assembler/AssemblerParser.h"
 #include "Compiler/Lexer.h"
 #include "Compiler/Project.h"
@@ -45,7 +46,7 @@ Compiler::~Compiler()
 {
 }
 
-void Compiler::buildProject(const std::filesystem::path& projectFile)
+void Compiler::buildProject(const std::filesystem::path& projectFile, const std::string& projectConfiguration)
 {
     if (mListener)
         mListener->compilerProgress(0, 0, "Reading project file...");
@@ -96,6 +97,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile)
                 auto program = new (&mHeap) Program();
                 AssemblerParser parser(&mHeap, program);
                 parser.parse(lexer.firstToken());
+                Linker linker(&mHeap, &project, projectConfiguration);
+                auto linkerOutput = linker.link(program);
                 break;
             }
         }

@@ -13,9 +13,10 @@ namespace
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BuildThread::BuildThread(const QString& projectFile, QObject* parent)
+BuildThread::BuildThread(const QString& projectFile, std::string projectConfiguration, QObject* parent)
     : QObject(parent)
     , mProjectFile(projectFile)
+    , mProjectConfiguration(std::move(projectConfiguration))
     , mCancelRequested(0)
 {
 }
@@ -29,7 +30,7 @@ void BuildThread::compile()
     try {
         Compiler compiler(this);
         try {
-            compiler.buildProject(toPath(mProjectFile));
+            compiler.buildProject(toPath(mProjectFile), mProjectConfiguration);
         } catch (const Canceled&) {
             emit canceled();
             return;
@@ -66,7 +67,7 @@ void BuildThread::compilerProgress(int current, int total, const std::string& me
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BuildDialog::BuildDialog(const QString& projectFile, QWidget* parent)
+BuildDialog::BuildDialog(const QString& projectFile, std::string projectConfiguration, QWidget* parent)
     : QDialog(parent)
     , mUi(new Ui_BuildDialog)
 {
@@ -74,8 +75,8 @@ BuildDialog::BuildDialog(const QString& projectFile, QWidget* parent)
     mUi->progressBar->setRange(0, 0);
     setWindowModality(Qt::ApplicationModal);
 
-    mThread = QThread::create([this, projectFile]() {
-            BuildThread thread(projectFile);
+    mThread = QThread::create([this, projectFile, configuration = std::move(projectConfiguration)]() mutable {
+            BuildThread thread(projectFile, std::move(configuration));
 
             connect(this, &BuildDialog::cancelRequested, &thread, &BuildThread::requestCancel, Qt::DirectConnection);
 

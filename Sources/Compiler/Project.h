@@ -10,6 +10,8 @@
 #include <filesystem>
 
 class Expr;
+class SymbolTable;
+class GCHeap;
 
 class Project
 {
@@ -17,6 +19,18 @@ public:
     static const char* FileSuffix;
 
     struct File;
+
+    struct Constant
+    {
+        std::string name;
+        std::string value;
+    };
+
+    struct Configuration
+    {
+        std::string name;
+        std::vector<Constant> constants;
+    };
 
     struct Section
     {
@@ -47,22 +61,31 @@ public:
 
         struct File
         {
-            Project::File* ref;
+            std::optional<std::string> ref;
         };
 
         Type type;
-        std::optional<bool> enabled;
+        std::optional<std::string> enabled;
         std::vector<File> files;
     };
 
+    std::vector<Constant> constants;
+    std::vector<std::unique_ptr<Configuration>> configurations;
     std::vector<std::unique_ptr<File>> files;
     std::vector<std::unique_ptr<Output>> outputs;
 
     Project();
     ~Project();
 
-    void load(const std::filesystem::path& path);
-    void save(const std::filesystem::path& path, bool createNew = false);
+    const std::filesystem::path& path() const { return mPath; }
+
+    void setVariables(SymbolTable* symbolTable, const std::string& configuration) const;
+
+    void load(std::filesystem::path path);
+    void save(std::filesystem::path path, bool createNew = false);
+
+private:
+    std::filesystem::path mPath;
 
     DISABLE_COPY(Project);
 };

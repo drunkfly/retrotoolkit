@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RetroProject>
 
+    <Constant name="TRDOS" value="0" />
+
+    <Configuration name="Release">
+        <Constant name="DEBUG" value="0" />
+    </Configuration>
+
+    <Configuration name="Debug">
+        <Constant name="DEBUG" value="1" />
+    </Configuration>
+
     <Files>
         <File name="LOADER" start="0x6000" until="0x8000">
             <SectionUpper name="loader" />
@@ -10,11 +20,11 @@
         </File>
     </Files>
 
-    <OutputTAP enabled="1">
+    <OutputTAP enabled="!TRDOS">
         <File ref="LOADER" />
     </OutputTAP>
 
-    <OutputTRD enabled="1">
+    <OutputTRD enabled="TRDOS">
         <File ref="LOADER" />
     </OutputTRD>
 

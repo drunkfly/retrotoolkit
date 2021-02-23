@@ -74,7 +74,7 @@ bool MainWindow::buildProject()
     mUi->outputWidget->clear();
     mStatusLabel->setBuildStatus(tr("Building..."));
 
-    BuildDialog dlg(*mProjectFile, this);
+    BuildDialog dlg(*mProjectFile, "Release", this); // FIXME
     connect(&dlg, &BuildDialog::success, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::canceled, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::failure, mStatusLabel, &BuildStatusLabel::setBuildError);

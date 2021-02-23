@@ -20,7 +20,7 @@ public:
     const std::string& error() const { return mError; }
     SourceLocation* errorLocation() const { return mErrorLocation; }
 
-    Expr* tryParseExpression(const char* str, SymbolTable* variables = nullptr);
+    Expr* tryParseExpression(SourceLocation* location, const char* str, SymbolTable* variables = nullptr);
     Expr* tryParseExpression(ParsingContext* context, bool unambiguous);
 
 private:

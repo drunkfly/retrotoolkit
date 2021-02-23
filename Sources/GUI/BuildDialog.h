@@ -15,7 +15,7 @@ class BuildThread : public QObject, public ICompilerListener
     Q_OBJECT
 
 public:
-    explicit BuildThread(const QString& projectFile, QObject* parent = nullptr);
+    explicit BuildThread(const QString& projectFile, std::string projectConfiguration, QObject* parent = nullptr);
     ~BuildThread() override;
 
     void compile();
@@ -35,6 +35,7 @@ protected:
 private:
     QAtomicInt mCancelRequested;
     QString mProjectFile;
+    std::string mProjectConfiguration;
 
     void compilerProgress(int current, int total, const std::string& message) override;
 
@@ -46,7 +47,7 @@ class BuildDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit BuildDialog(const QString& projectFile, QWidget* parent = nullptr);
+    explicit BuildDialog(const QString& projectFile, std::string projectConfiguration, QWidget* parent = nullptr);
     ~BuildDialog() override;
 
 signals:

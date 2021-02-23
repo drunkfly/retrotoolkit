@@ -2,6 +2,7 @@
 #define COMPILER_TREE_SYMBOLTABLE_H
 
 #include "Common/GC.h"
+#include <string>
 #include <unordered_map>
 
 class Symbol;
@@ -13,6 +14,8 @@ public:
     ~SymbolTable() override;
 
     SymbolTable* parent() const { return mParent; }
+
+    bool addSymbol(Symbol* symbol);
 
 private:
     SymbolTable* mParent;

@@ -15,7 +15,7 @@ public:
 
     Token* firstToken() const { return mFirstToken; }
 
-    void scan(const FileID* file, const char* p);
+    void scan(const FileID* file, const char* p, int startLine = 1);
 
 private:
     GCHeap* mHeap;

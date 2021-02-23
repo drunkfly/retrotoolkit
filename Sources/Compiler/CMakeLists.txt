@@ -14,6 +14,10 @@ add(Compiler
         Assembler/Instructions.Z80.hh
         Compression/Compression.h
         Linker/CodeEmitter.h
+        Linker/CompiledOutput.cpp
+        Linker/CompiledOutput.h
+        Linker/Linker.cpp
+        Linker/Linker.h
         Linker/Program.cpp
         Linker/Program.h
         Linker/ProgramSection.cpp
@@ -21,6 +25,8 @@ add(Compiler
         Tree/Expr.cpp
         Tree/Expr.h
         Tree/SourceLocation.h
+        Tree/Symbol.cpp
+        Tree/Symbol.h
         Tree/SymbolTable.cpp
         Tree/SymbolTable.h
         Tree/Value.cpp

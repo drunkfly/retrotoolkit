@@ -19,7 +19,7 @@ public:
     explicit Compiler(ICompilerListener* listener = nullptr);
     ~Compiler();
 
-    void buildProject(const std::filesystem::path& projectFile);
+    void buildProject(const std::filesystem::path& projectFile, const std::string& projectConfiguration);
 
 private:
     ICompilerListener* mListener;

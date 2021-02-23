@@ -1,4 +1,9 @@
 #include "Project.h"
+#include "Compiler/Tree/SourceLocation.h"
+#include "Compiler/Tree/Symbol.h"
+#include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/CompilerError.h"
+#include "Compiler/ExpressionParser.h"
 #include "Common/Xml.h"
 #include "Common/IO.h"
 #include <unordered_map>
@@ -11,6 +16,42 @@ Project::Project()
 
 Project::~Project()
 {
+}
+
+static void addConstant(SymbolTable* symbolTable, const Project::Constant& constant, SourceLocation* location)
+{
+    auto heap = symbolTable->heap();
+    ExpressionParser parser(heap, nullptr, nullptr);
+    Expr* value = parser.tryParseExpression(location, constant.value.c_str(), symbolTable);
+    if (!value) {
+        std::stringstream ss;
+        ss << "unable to parse value for constant \"" << constant.name << "\": " << parser.error();
+        throw CompilerError(parser.errorLocation(), ss.str());
+    }
+
+    auto symbol = new (heap) ConstantSymbol(location, constant.name.c_str(), value);
+    if (!symbolTable->addSymbol(symbol)) {
+        std::stringstream ss;
+        ss << "duplicate constant \"" << constant.name << "\".";
+        throw CompilerError(location, ss.str());
+    }
+}
+
+void Project::setVariables(SymbolTable* symbolTable, const std::string& configuration) const
+{
+    auto heap = symbolTable->heap();
+    auto fileID = new (heap) FileID(mPath.filename(), mPath);
+    auto location = new (heap) SourceLocation(fileID, 1);
+
+    for (const auto& constant : constants)
+        addConstant(symbolTable, constant, location);
+
+    for (const auto& it : configurations) {
+        if (it->name == configuration) {
+            for (const auto& constant : it->constants)
+                addConstant(symbolTable, constant, location);
+        }
+    }
 }
 
 static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, XmlNode xmlSection, Project::File* file)
@@ -36,12 +77,38 @@ static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, Xm
     return section;
 }
 
-void Project::load(const std::filesystem::path& path)
+void Project::load(std::filesystem::path path)
 {
-    auto xml = xmlLoad(path);
+    mPath = std::move(path);
+
+    constants.clear();
+    configurations.clear();
+    files.clear();
+    outputs.clear();
+
+    auto xml = xmlLoad(mPath);
     ROOT(RetroProject);
 
-    std::unordered_map<std::string, File*> fileMap;
+    FOR_EACH(Constant, RetroProject) {
+        Constant constant;
+        constant.name = REQ_STRING(name, Constant);
+        constant.value = REQ_STRING(value, Constant);
+        constants.emplace_back(std::move(constant));
+    }
+
+    IF_HAS(Configuration, RetroProject) {
+        auto config = std::make_unique<Configuration>();
+        config->name = REQ_STRING(name, Configuration);
+
+        FOR_EACH(Constant, Configuration) {
+            Constant constant;
+            constant.name = REQ_STRING(name, Constant);
+            constant.value = REQ_STRING(value, Constant);
+            config->constants.emplace_back(std::move(constant));
+        }
+
+        configurations.emplace_back(std::move(config));
+    }
 
     IF_HAS(Files, RetroProject) {
         FOR_EACH(File, Files) {
@@ -56,13 +123,6 @@ void Project::load(const std::filesystem::path& path)
             FOR_EACH(UpperSection, Files)
                 file->upperSections.emplace_back(parseSection(xml, xmlUpperSection, file.get()));
 
-            if (!fileMap.emplace(file->name, file.get()).second) {
-                std::stringstream ss;
-                ss << "Duplicate entry \"" << file->name
-                    << "\" in <" << "Files" << "> section of file \"" << path.string() << "\".";
-                throw std::runtime_error(ss.str());
-            }
-
             files.emplace_back(std::move(file));
         }
     }
@@ -70,25 +130,18 @@ void Project::load(const std::filesystem::path& path)
     IF_HAS(OutputTAP, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTAP;
-        output->enabled = OPT_BOOL(enabled, OutputTAP);
+        output->enabled = OPT_STRING(enabled, OutputTAP);
 
         FOR_EACH(File, OutputTAP) {
             Output::File outputFile = {};
 
             auto ref = OPT_STRING(ref, File);
-            if (ref) {
-                auto it = fileMap.find(*ref);
-                if (it == fileMap.end()) {
-                    std::stringstream ss;
-                    ss << "Missing entry \"" << *ref
-                        << "\" in <" << "Files" << "> section of file \"" << path.string() << "\".";
-                    throw std::runtime_error(ss.str());
-                }
-                outputFile.ref = it->second;
-            } else {
+            if (ref)
+                outputFile.ref = std::move(ref);
+            else {
                 std::stringstream ss;
                 ss << "Invalid <" << "File" << "> element in <"
-                    << "OutputTAP" << "> section of file \"" << path.string() << "\".";
+                    << "OutputTAP" << "> section of file \"" << mPath.string() << "\".";
                 throw std::runtime_error(ss.str());
             }
 
@@ -101,25 +154,18 @@ void Project::load(const std::filesystem::path& path)
     IF_HAS(OutputTRD, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTRD;
-        output->enabled = OPT_BOOL(enabled, OutputTRD);
+        output->enabled = OPT_STRING(enabled, OutputTRD);
 
         FOR_EACH(File, OutputTRD) {
             Output::File outputFile = {};
 
             auto ref = OPT_STRING(ref, File);
-            if (ref) {
-                auto it = fileMap.find(*ref);
-                if (it == fileMap.end()) {
-                    std::stringstream ss;
-                    ss << "Missing entry \"" << *ref
-                        << "\" in <" << "Files" << "> section of file \"" << path.string() << "\".";
-                    throw std::runtime_error(ss.str());
-                }
-                outputFile.ref = it->second;
-            } else {
+            if (ref)
+                outputFile.ref = std::move(ref);
+            else {
                 std::stringstream ss;
                 ss << "Invalid <" << "File" << "> element in <"
-                    << "OutputTRD" << "> section of file \"" << path.string() << "\".";
+                    << "OutputTRD" << "> section of file \"" << mPath.string() << "\".";
                 throw std::runtime_error(ss.str());
             }
 
@@ -163,24 +209,55 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
     }
 
     ss << "    <" << element;
-    if (output.enabled)
-        ss << " enabled=\"" << (*output.enabled ? '1' : '0') << '"';
+    if (output.enabled) {
+        ss << " enabled=";
+        xmlEncodeInQuotes(ss, *output.enabled);
+    }
     ss << ">\n";
 
     for (const auto& file : output.files) {
-        ss << "        <File ref=";
-        xmlEncodeInQuotes(ss, file.ref->name);
-        ss << ">\n";
+        ss << "        <File";
+        if (file.ref) {
+            ss << " ref=";
+            xmlEncodeInQuotes(ss, *file.ref);
+        }
+        ss << " />\n";
     }
 
     ss << "    </" << element << ">\n";
 }
 
-void Project::save(const std::filesystem::path& path, bool createNew)
+void Project::save(std::filesystem::path path, bool createNew)
 {
     std::stringstream ss;
     ss << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
     ss << "<RetroProject>\n";
+    if (!constants.empty()) {
+        ss << '\n';
+        for (const auto& it : constants) {
+            ss << "    <Constant name=";
+            xmlEncodeInQuotes(ss, it.name);
+            ss << " value=";
+            xmlEncodeInQuotes(ss, it.value);
+            ss << " />\n";
+        }
+    }
+    if (!configurations.empty()) {
+        ss << '\n';
+        for (const auto& config : configurations) {
+            ss << "    <Configuration name=";
+            xmlEncodeInQuotes(ss, config->name);
+            ss << ">\n";
+            for (const auto& it : config->constants) {
+                ss << "        <Constant name=";
+                xmlEncodeInQuotes(ss, it.name);
+                ss << " value=";
+                xmlEncodeInQuotes(ss, it.value);
+                ss << " />\n";
+            }
+            ss << "    </Configuration>\n";
+        }
+    }
     if (!files.empty()) {
         ss << '\n';
         ss << "    <Files>\n";
@@ -212,7 +289,9 @@ void Project::save(const std::filesystem::path& path, bool createNew)
     }
     ss << '\n';
     ss << "</RetroProject>\n";
+
     writeFile(path, ss.str());
+    mPath = std::move(path);
 
     if (createNew) {
         /* FIXME */
