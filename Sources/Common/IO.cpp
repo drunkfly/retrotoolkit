@@ -45,7 +45,7 @@ namespace
     };
 }
 
-static void error(const char* message, const std::filesystem::path& fileName)
+[[noreturn]] static void error(const char* message, const std::filesystem::path& fileName)
 {
     const char* error = strerror(errno);
     std::stringstream ss;

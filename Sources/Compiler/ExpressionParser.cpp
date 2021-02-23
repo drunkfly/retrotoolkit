@@ -1,8 +1,10 @@
 #include "ExpressionParser.h"
 #include "Common/Strings.h"
-#include "Compiler/ParsingContext.h"
-#include "Compiler/Token.h"
 #include "Compiler/Tree/Expr.h"
+#include "Compiler/ParsingContext.h"
+#include "Compiler/ExpressionParser.h"
+#include "Compiler/Token.h"
+#include "Compiler/Lexer.h"
 #include <sstream>
 
 ExpressionParser::ExpressionParser(GCHeap* heap, const StringSet* registerNames, const StringSet* conditionNames)
@@ -15,6 +17,19 @@ ExpressionParser::ExpressionParser(GCHeap* heap, const StringSet* registerNames,
 
 ExpressionParser::~ExpressionParser()
 {
+}
+
+Expr* ExpressionParser::tryParseExpression(const char* str, SymbolTable* variables)
+{
+    Lexer lexer(mHeap);
+    lexer.scan(nullptr, str);
+
+    if (!variables)
+        variables = new (mHeap) SymbolTable(nullptr);
+
+    const Token* token = lexer.firstToken();
+    ParsingContext context(mHeap, token, variables);
+    return tryParseExpression(&context, true);
 }
 
 Expr* ExpressionParser::tryParseExpression(ParsingContext* context, bool unambiguous)

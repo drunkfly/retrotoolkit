@@ -1,6 +1,8 @@
 
 add(Common
     STATIC_LIBRARY
+    LIBS
+        RapidXML
     SOURCES
         Common.h
         GC.cpp
@@ -10,4 +12,6 @@ add(Common
         Strings.cpp
         Strings.h
         StringSet.h
+        Xml.cpp
+        Xml.h
     )

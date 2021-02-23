@@ -7,6 +7,7 @@
 
 class GCHeap;
 class ParsingContext;
+class SymbolTable;
 class SourceLocation;
 class Expr;
 
@@ -19,6 +20,7 @@ public:
     const std::string& error() const { return mError; }
     SourceLocation* errorLocation() const { return mErrorLocation; }
 
+    Expr* tryParseExpression(const char* str, SymbolTable* variables = nullptr);
     Expr* tryParseExpression(ParsingContext* context, bool unambiguous);
 
 private:

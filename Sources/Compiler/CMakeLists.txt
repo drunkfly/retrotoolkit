@@ -12,6 +12,7 @@ add(Compiler
         Assembler/Instructions.Z80.cpp
         Assembler/Instructions.Z80.h
         Assembler/Instructions.Z80.hh
+        Compression/Compression.h
         Tree/Expr.cpp
         Tree/Expr.h
         Tree/SourceLocation.h

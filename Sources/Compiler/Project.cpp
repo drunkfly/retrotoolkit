@@ -1,12 +1,9 @@
 #include "Project.h"
+#include "Common/Xml.h"
 #include "Common/IO.h"
-#include <sstream>
-#include <rapidxml.hpp>
-#include <string.h>
+#include <unordered_map>
 
 const char* Project::FileSuffix = "retro";
-
-static const char XmlRootElement[] = "RetroProject";
 
 Project::Project()
 {
@@ -16,28 +13,206 @@ Project::~Project()
 {
 }
 
-void Project::load(const std::filesystem::path& file)
+static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, XmlNode xmlSection, Project::File* file)
 {
-    std::string text = loadFile(file);
+    auto section = std::make_unique<Project::Section>();
+    section->file = file;
+    section->name = REQ_STRING(name, Section);
+    section->base = OPT_STRING(base, Section);
+    section->fileOffset = OPT_STRING(fileOffset, Section);
+    section->alignment = OPT_STRING(alignment, Section);
+    section->compression = Compression::None;
 
-    rapidxml::xml_document<> xml;
-    xml.parse<0>(&text[0]);
+    auto comp = OPT_STRING(compression, Section);
+    if (comp) {
+        if (*comp == "zx7")
+            section->compression = Compression::Zx7;
+        else if (*comp == "lzsa2")
+            section->compression = Compression::Lzsa2;
+        else
+            INVALID(compression, Section);
+    }
 
-    auto node = xml.first_node();
-    if (strcmp(node->name(), XmlRootElement) != 0) {
-        std::stringstream ss;
-        ss << "File \"" << file << "\" has invalid root element.";
-        throw std::runtime_error(ss.str());
+    return section;
+}
+
+void Project::load(const std::filesystem::path& path)
+{
+    auto xml = xmlLoad(path);
+    ROOT(RetroProject);
+
+    std::unordered_map<std::string, File*> fileMap;
+
+    IF_HAS(Files, RetroProject) {
+        FOR_EACH(File, Files) {
+            auto file = std::make_unique<File>();
+            file->name = REQ_STRING(name, File);
+            file->start = OPT_STRING(start, File);
+            file->until = OPT_STRING(until, File);
+
+            FOR_EACH(Section, Files)
+                file->lowerSections.emplace_back(parseSection(xml, xmlSection, file.get()));
+
+            FOR_EACH(UpperSection, Files)
+                file->upperSections.emplace_back(parseSection(xml, xmlUpperSection, file.get()));
+
+            if (!fileMap.emplace(file->name, file.get()).second) {
+                std::stringstream ss;
+                ss << "Duplicate entry \"" << file->name
+                    << "\" in <" << "Files" << "> section of file \"" << path.string() << "\".";
+                throw std::runtime_error(ss.str());
+            }
+
+            files.emplace_back(std::move(file));
+        }
+    }
+
+    IF_HAS(OutputTAP, RetroProject) {
+        auto output = std::make_unique<Output>();
+        output->type = Output::ZXSpectrumTAP;
+        output->enabled = OPT_BOOL(enabled, OutputTAP);
+
+        FOR_EACH(File, OutputTAP) {
+            Output::File outputFile = {};
+
+            auto ref = OPT_STRING(ref, File);
+            if (ref) {
+                auto it = fileMap.find(*ref);
+                if (it == fileMap.end()) {
+                    std::stringstream ss;
+                    ss << "Missing entry \"" << *ref
+                        << "\" in <" << "Files" << "> section of file \"" << path.string() << "\".";
+                    throw std::runtime_error(ss.str());
+                }
+                outputFile.ref = it->second;
+            } else {
+                std::stringstream ss;
+                ss << "Invalid <" << "File" << "> element in <"
+                    << "OutputTAP" << "> section of file \"" << path.string() << "\".";
+                throw std::runtime_error(ss.str());
+            }
+
+            output->files.emplace_back(std::move(outputFile));
+        }
+
+        outputs.emplace_back(std::move(output));
+    }
+
+    IF_HAS(OutputTRD, RetroProject) {
+        auto output = std::make_unique<Output>();
+        output->type = Output::ZXSpectrumTRD;
+        output->enabled = OPT_BOOL(enabled, OutputTRD);
+
+        FOR_EACH(File, OutputTRD) {
+            Output::File outputFile = {};
+
+            auto ref = OPT_STRING(ref, File);
+            if (ref) {
+                auto it = fileMap.find(*ref);
+                if (it == fileMap.end()) {
+                    std::stringstream ss;
+                    ss << "Missing entry \"" << *ref
+                        << "\" in <" << "Files" << "> section of file \"" << path.string() << "\".";
+                    throw std::runtime_error(ss.str());
+                }
+                outputFile.ref = it->second;
+            } else {
+                std::stringstream ss;
+                ss << "Invalid <" << "File" << "> element in <"
+                    << "OutputTRD" << "> section of file \"" << path.string() << "\".";
+                throw std::runtime_error(ss.str());
+            }
+
+            output->files.emplace_back(std::move(outputFile));
+        }
+
+        outputs.emplace_back(std::move(output));
     }
 }
 
-void Project::save(const std::filesystem::path& file, bool createNew)
+static void writeSection(std::stringstream& ss, const char* element, const Project::Section& section)
+{
+    ss << "            <Section name=";
+    xmlEncodeInQuotes(ss, section.name);
+    if (section.base) {
+        ss << ' ';
+        xmlEncodeInQuotes(ss, *section.base);
+    }
+    if (section.alignment) {
+        ss << ' ';
+        xmlEncodeInQuotes(ss, *section.alignment);
+    }
+    if (section.fileOffset) {
+        ss << ' ';
+        xmlEncodeInQuotes(ss, *section.fileOffset);
+    }
+    switch (section.compression) {
+        case Compression::None: break;
+        case Compression::Zx7: ss << "compression=\"" << "zx7" << '"'; break;
+        case Compression::Lzsa2: ss << "compression=\"" << "lzsa2" << '"'; break;
+    }
+    ss << " />\n";
+}
+
+static void writeOutput(std::stringstream& ss, const Project::Output& output)
+{
+    const char* element = nullptr;
+    switch (output.type) {
+        case Project::Output::ZXSpectrumTAP: element = "OutputTAP"; break;
+        case Project::Output::ZXSpectrumTRD: element = "OutputTRD"; break;
+    }
+
+    ss << "    <" << element;
+    if (output.enabled)
+        ss << " enabled=\"" << (*output.enabled ? '1' : '0') << '"';
+    ss << ">\n";
+
+    for (const auto& file : output.files) {
+        ss << "        <File ref=";
+        xmlEncodeInQuotes(ss, file.ref->name);
+        ss << ">\n";
+    }
+
+    ss << "    </" << element << ">\n";
+}
+
+void Project::save(const std::filesystem::path& path, bool createNew)
 {
     std::stringstream ss;
     ss << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
-    ss << "<" << XmlRootElement << ">\n";
-    ss << "</" << XmlRootElement << ">\n";
-    writeFile(file, ss.str());
+    ss << "<RetroProject>\n";
+    if (!files.empty()) {
+        ss << '\n';
+        ss << "    <Files>\n";
+        for (const auto& file : files) {
+            ss << "        <File name=";
+            xmlEncodeInQuotes(ss, file->name);
+            if (file->start) {
+                ss << ' ';
+                xmlEncodeInQuotes(ss, *file->start);
+            }
+            if (file->until) {
+                ss << ' ';
+                xmlEncodeInQuotes(ss, *file->until);
+            }
+            ss << ">\n";
+            for (const auto& section : file->lowerSections)
+                writeSection(ss, "Section", *section);
+            for (const auto& section : file->upperSections)
+                writeSection(ss, "SectionUpper", *section);
+            ss << "        </File>\n";
+        }
+        ss << "    </Files>\n";
+    }
+    if (!outputs.empty()) {
+        for (const auto& output : outputs) {
+            ss << '\n';
+            writeOutput(ss, *output);
+        }
+    }
+    ss << '\n';
+    ss << "</RetroProject>\n";
+    writeFile(path, ss.str());
 
     if (createNew) {
         /* FIXME */
