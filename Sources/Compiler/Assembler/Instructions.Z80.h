@@ -300,6 +300,7 @@ namespace Z80
         }
 
         bool isZ80Opcode() const override;
+
         virtual void toString(std::stringstream& ss) const = 0;
 
         DISABLE_COPY(Opcode);

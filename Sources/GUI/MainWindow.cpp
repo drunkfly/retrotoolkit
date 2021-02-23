@@ -18,6 +18,7 @@ MainWindow::MainWindow()
 {
     mUi->setupUi(this);
     mUi->menuView->addAction(mUi->outputDockWidget->toggleViewAction());
+    mUi->outputDockWidget->hide();
 
     mStatusLabel = new BuildStatusLabel(mUi->statusBar);
     mUi->statusBar->addWidget(mStatusLabel);

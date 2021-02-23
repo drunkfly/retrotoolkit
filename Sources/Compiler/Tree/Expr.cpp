@@ -23,7 +23,7 @@ uint8_t Expr::evaluateByte() const
         value.truncateTo8Bit();
     else if (value.number < -128 || value.number > 255) {
         std::stringstream ss;
-        ss << "value " << value.number << " (0x" << std::hex << value.number << ") does not fit into a byte";
+        ss << "value " << value.number << " (0x" << std::hex << value.number << ") does not fit into a byte.";
         throw CompilerError(location(), ss.str());
     }
 
@@ -42,7 +42,7 @@ uint8_t Expr::evaluateByteOffset(int64_t nextAddress) const
     int64_t offset = value.number - nextAddress;
     if (offset < -128 || offset > 127) {
         std::stringstream ss;
-        ss << "value " << offset << " (0x" << std::hex << offset << ") does not fit into a byte";
+        ss << "value " << offset << " (0x" << std::hex << offset << ") does not fit into a byte.";
         throw CompilerError(location(), ss.str());
     }
 
@@ -60,7 +60,7 @@ uint16_t Expr::evaluateWord() const
         value.truncateTo16Bit();
     else if (value.number < -32768 || value.number > 65535) {
         std::stringstream ss;
-        ss << "value " << value.number << " (0x" << std::hex << value.number << ") does not fit into a word";
+        ss << "value " << value.number << " (0x" << std::hex << value.number << ") does not fit into a word.";
         throw CompilerError(location(), ss.str());
     }
 
@@ -78,7 +78,7 @@ uint32_t Expr::evaluateDWord() const
         value.truncateTo32Bit();
     else if (value.number < -int64_t(0x80000000) || value.number > 0xffffffff) {
         std::stringstream ss;
-        ss << "value " << value.number << " (0x" << std::hex << value.number << ") does not fit into a dword";
+        ss << "value " << value.number << " (0x" << std::hex << value.number << ") does not fit into a dword.";
         throw CompilerError(location(), ss.str());
     }
 
@@ -97,7 +97,7 @@ Value Expr::evaluateValue() const
             : mExpr(expr)
         {
             if (mExpr->mEvaluating)
-                throw CompilerError(mExpr->location(), "hit circular dependency while evaluating expression");
+                throw CompilerError(mExpr->location(), "hit circular dependency while evaluating expression.");
             mExpr->mEvaluating = true;
         }
 
@@ -185,7 +185,7 @@ Value ExprIdentifier::evaluate() const
 {
     // FIXME
     std::stringstream ss;
-    ss << "Use of undeclared identifier '" << mName << "'";
+    ss << "Use of undeclared identifier '" << mName << "'.";
     throw CompilerError(location(), ss.str());
 }
 
@@ -379,13 +379,13 @@ Value ExprShiftLeft::evaluate() const
     if (b.number < 0) {
         b.truncateToSignificantBits();
         if (b.number < 0)
-            throw CompilerError(location(), "negative shift count for operator '<<'");
+            throw CompilerError(location(), "negative shift count for operator '<<'.");
     }
 
     if (b.number > 64) {
         b.truncateToSignificantBits();
         if (b.number > 64)
-            throw CompilerError(location(), "shift count is too large for operator '<<'");
+            throw CompilerError(location(), "shift count is too large for operator '<<'.");
     }
 
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a << b; }, a, b);
@@ -408,13 +408,13 @@ Value ExprShiftRight::evaluate() const
     if (b.number < 0) {
         b.truncateToSignificantBits();
         if (b.number < 0)
-            throw CompilerError(location(), "negative shift count for operator '>>'");
+            throw CompilerError(location(), "negative shift count for operator '>>'.");
     }
 
     if (b.number > 64) {
         b.truncateToSignificantBits();
         if (b.number > 64)
-            throw CompilerError(location(), "shift count is too large for operator '>>'");
+            throw CompilerError(location(), "shift count is too large for operator '>>'.");
     }
 
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a >> b; }, a, b);

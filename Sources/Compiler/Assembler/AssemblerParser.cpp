@@ -172,7 +172,7 @@ void AssemblerParser::parseLine()
             error(nameToken, tr("duplicate identifier '%1'").arg(name.c_str()));
     } else */ {
         std::stringstream ss;
-        ss << "unexpected " << nameToken->name();
+        ss << "unexpected " << nameToken->name() << '.';
         throw CompilerError(nameToken->location(), ss.str());
     }
 }

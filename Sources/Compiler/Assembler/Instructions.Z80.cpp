@@ -165,7 +165,7 @@ bool Z80::memAddr::tryParse(ParsingContext* c)
 
 void Z80::IX_byte::toString(std::stringstream& ss) const
 {
-    ss << "(ix";
+    ss << "(IX";
     if (!mValue->isNegate()) {
         ss << '+';
         mValue->toString(ss);
@@ -200,7 +200,7 @@ bool Z80::IX_byte::tryParse(ParsingContext* c)
 
 void Z80::IY_byte::toString(std::stringstream& ss) const
 {
-    ss << "(iy";
+    ss << "(IY";
     if (!mValue->isNegate()) {
         ss << '+';
         mValue->toString(ss);
