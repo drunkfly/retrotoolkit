@@ -5,7 +5,6 @@
 #include <QMainWindow>
 #include <memory>
 
-class Project;
 class BuildStatusLabel;
 class Ui_MainWindow;
 
@@ -22,11 +21,10 @@ public:
 
 private:
     std::unique_ptr<Ui_MainWindow> mUi;
-    std::unique_ptr<Project> mProject;
-    QString mProjectFile;
+    std::unique_ptr<QString> mProjectFile;
     BuildStatusLabel* mStatusLabel;
 
-    void setProject(const QString& file, std::unique_ptr<Project> project);
+    void setProject(const QString& file);
     bool buildProject();
 
     void updateUi();

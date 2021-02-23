@@ -45,25 +45,24 @@ void MainWindow::openProject(const QString& file, bool mayLaunchNewInstance)
     Settings settings;
     settings.lastProjectFile = file;
 
-    auto project = std::make_unique<Project>();
+    Project project;
     TRY {
-        project->load(toPath(file));
+        project.load(toPath(file));
     } CATCH(e) {
         e.show(this);
         return;
     }
 
-    setProject(file, std::move(project));
+    setProject(file);
 }
 
-void MainWindow::setProject(const QString& file, std::unique_ptr<Project> project)
+void MainWindow::setProject(const QString& file)
 {
-    if (mProject) {
+    if (mProjectFile) {
         if (!QProcess::startDetached(QApplication::applicationFilePath(), QStringList() << file))
             QMessageBox::critical(this, tr("Error"), tr("Unable to launch new instance of the application."));
     } else {
-        mProject = std::move(project);
-        mProjectFile = file;
+        mProjectFile = std::make_unique<QString>(file);
         setWindowTitle(QStringLiteral("%1[*] - %2").arg(QFileInfo(file).completeBaseName()).arg(windowTitle()));
         updateUi();
     }
@@ -72,17 +71,9 @@ void MainWindow::setProject(const QString& file, std::unique_ptr<Project> projec
 bool MainWindow::buildProject()
 {
     mUi->outputWidget->clear();
-
-    TRY {
-        mProject->load(toPath(mProjectFile));
-    } CATCH(e) {
-        e.show(this);
-        return false;
-    }
-
     mStatusLabel->setBuildStatus(tr("Building..."));
 
-    BuildDialog dlg(mProjectFile, this);
+    BuildDialog dlg(*mProjectFile, this);
     connect(&dlg, &BuildDialog::success, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::canceled, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::failure, mStatusLabel, &BuildStatusLabel::setBuildError);
@@ -97,7 +88,7 @@ bool MainWindow::buildProject()
 
 void MainWindow::updateUi()
 {
-    mUi->actionBuild->setEnabled(mProject != nullptr);
+    mUi->actionBuild->setEnabled(mProjectFile != nullptr);
 }
 
 void MainWindow::on_actionNewProject_triggered()
@@ -110,15 +101,15 @@ void MainWindow::on_actionNewProject_triggered()
 
     settings.lastProjectFile = file;
 
-    auto project = std::make_unique<Project>();
+    Project project;
     TRY {
-        project->save(toPath(file), true);
+        project.save(toPath(file), true);
     } CATCH(e) {
         e.show(this);
         return;
     }
 
-    setProject(file, std::move(project));
+    setProject(file);
 }
 
 void MainWindow::on_actionOpenProject_triggered()
