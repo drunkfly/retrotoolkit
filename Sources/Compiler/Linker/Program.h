@@ -15,6 +15,7 @@ public:
 
     SymbolTable* globals() const { return mGlobals; }
 
+    ProgramSection* getSection(const std::string& name) const;
     ProgramSection* getOrAddSection(const std::string& name);
 
 private:

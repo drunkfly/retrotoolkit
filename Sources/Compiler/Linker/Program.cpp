@@ -12,6 +12,12 @@ Program::~Program()
 {
 }
 
+ProgramSection* Program::getSection(const std::string& name) const
+{
+    auto it = mSections.find(name);
+    return (it != mSections.end() ? it->second : nullptr);
+}
+
 ProgramSection* Program::getOrAddSection(const std::string& name)
 {
     auto it = mSections.find(name);
