@@ -1,6 +1,7 @@
 #include "Compiler.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/Linker/Program.h"
 #include "Compiler/Assembler/AssemblerParser.h"
 #include "Compiler/Lexer.h"
 #include "Compiler/Project.h"
@@ -28,7 +29,7 @@ namespace
             else if (fileType > other.fileType)
                 return false;
 
-            return (fileID->path() < other.fileID->path());
+            return (fileID->name() < other.fileID->name());
         }
     };
 }
@@ -92,8 +93,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile)
             case FileType::Asm: {
                 Lexer lexer(&mHeap);
                 lexer.scan(file.fileID, loadFile(file.fileID->path()).c_str());
-                SymbolTable* globals = new (&mHeap) SymbolTable(nullptr);
-                AssemblerParser parser(&mHeap, globals);
+                auto program = new (&mHeap) Program();
+                AssemblerParser parser(&mHeap, program);
                 parser.parse(lexer.firstToken());
                 break;
             }

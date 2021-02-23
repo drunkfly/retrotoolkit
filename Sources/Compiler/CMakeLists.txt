@@ -13,6 +13,11 @@ add(Compiler
         Assembler/Instructions.Z80.h
         Assembler/Instructions.Z80.hh
         Compression/Compression.h
+        Linker/CodeEmitter.h
+        Linker/Program.cpp
+        Linker/Program.h
+        Linker/ProgramSection.cpp
+        Linker/ProgramSection.h
         Tree/Expr.cpp
         Tree/Expr.h
         Tree/SourceLocation.h

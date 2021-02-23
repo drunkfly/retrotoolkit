@@ -12,6 +12,7 @@ add(Common
         Strings.cpp
         Strings.h
         StringSet.h
+        TemplateMagic.h
         Xml.cpp
         Xml.h
     )

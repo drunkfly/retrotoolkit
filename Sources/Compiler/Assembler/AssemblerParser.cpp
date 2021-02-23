@@ -4,6 +4,8 @@
 #include "Compiler/CompilerError.h"
 #include "Compiler/Assembler/Instructions.Z80.h"
 #include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/Linker/Program.h"
+#include "Compiler/Linker/ProgramSection.h"
 #include "Common/GC.h"
 #include "Common/Strings.h"
 #include <string>
@@ -19,9 +21,11 @@ std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDa
         { "defw", &AssemblerParser::parseDefWord },
         { "defs", &AssemblerParser::parseDefSpace },
     };
+*/
 
 std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDirectives = {
         { "section", &AssemblerParser::parseSectionDecl },
+        /*
         { "repeat", &AssemblerParser::parseRepeatDecl },
         { "endrepeat", &AssemblerParser::parseEndRepeatDecl },
         { "if", &AssemblerParser::parseIfDecl },
@@ -34,13 +38,14 @@ std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDi
         { "popallowwrite", &AssemblerParser::parsePopAllowWrite },
         { "popallowwriteafter", &AssemblerParser::parsePopAllowWriteAfter },
         { "assertbank", &AssemblerParser::parseAssertBank },
+        */
     };
-*/
 
-AssemblerParser::AssemblerParser(GCHeap* heap, SymbolTable* globals)
+AssemblerParser::AssemblerParser(GCHeap* heap, Program* program)
     : mHeap(heap)
-    , mGlobals(globals)
-    , mSymbolTable(globals)
+    , mProgram(program)
+    , mSection(nullptr)
+    , mSymbolTable(program->globals())
 {
 }
 
@@ -50,6 +55,9 @@ AssemblerParser::~AssemblerParser()
 
 void AssemblerParser::parse(const Token* tokens)
 {
+    mSection = nullptr;
+    mSymbolTable = mProgram->globals();
+
     mToken = tokens;
     while (mToken->id() != TOK_EOF)
         parseLine();
@@ -88,6 +96,23 @@ void AssemblerParser::popContext()
 
 void AssemblerParser::parseLine()
 {
+    if (mToken->id() == TOK_HASH) {
+        mToken = mToken->next();
+
+        if (mToken->id() >= TOK_IDENTIFIER) {
+            auto str = toLower(mToken->text());
+            auto it = mDirectives.find(str);
+            if (it != mDirectives.end()) {
+                (this->*(it->second))();
+                return;
+            }
+        }
+
+        std::stringstream ss;
+        ss << "unexpected " << mToken->name() << '.';
+        throw CompilerError(mToken->location(), ss.str());
+    }
+
     //ProgramLabel* label = nullptr;
 
     // read label, if any
@@ -113,17 +138,15 @@ void AssemblerParser::parseLine()
 
     // read directive / instruction
     if (mToken->id() >= TOK_IDENTIFIER) {
-        if (parseOpcode())
-            return;
-
-        /*
-        auto str = toLower(mToken->text());
-        auto it = mDirectives.find(str);
-        if (it != mDirectives.end()) {
-            (this->*(it->second))();
+        Instruction* instruction = parseOpcode();
+        if (instruction) {
+            if (!mSection)
+                throw CompilerError(instruction->location(), "code or data not in a section.");
+            mSection->addInstruction(instruction);
             return;
         }
 
+        /*
         auto jt = mDataDirectives.find(str);
         if (jt != mDataDirectives.end()) {
             (this->*(jt->second))();
@@ -185,81 +208,25 @@ static bool endsWith(const std::string& str, const std::string& end)
         return false;
     return memcmp(str.data() + str.length() - end.length(), end.data(), end.length()) == 0;
 }
+*/
 
 void AssemblerParser::parseSectionDecl()
 {
-    std::string sectionName = expectIdentifier(nextToken());
-    auto section = mProgram->getOrCreateSection(sectionName, lastToken());
+    mToken = mToken->next();
 
+    const char* sectionName = consumeIdentifier();
+    auto section = mProgram->getOrAddSection(sectionName);
+
+    /*
     if (!mContext->setCurrentSection(section))
         error(tr("'section' directive is not allowed in this context"));
+    */
 
-    if (nextToken() == T_LBRACKET) {
-        for (;;) {
-            auto param = toLower(expectIdentifier(nextToken()));
-            if (param == "align") {
-                auto expr = parseExpression(nextToken(), true);
-                if (!expr)
-                    error(mExpressionError);
-                if (section->hasAlignment())
-                    error(tr("multiple specification of alignment for section '%1'").arg(section->nameCStr()));
-                section->setAlignment(std::move(expr));
-            } else if (param == "base") {
-                auto expr = parseExpression(nextToken(), true);
-                if (!expr)
-                    error(mExpressionError);
-                if (section->hasBase())
-                    error(tr("multiple specification of base address for section '%1'").arg(section->nameCStr()));
-                section->setBase(std::move(expr));
-            } else if (param == "compress") {
-                if (nextToken() != T_ASSIGN)
-                    error(tr("expected '='"));
-                Compression comp;
-                std::string str = expectIdentifier(nextToken());
-                if (str == "none")
-                    comp = Compression::None;
-                else if (str == "zx7")
-                    comp = Compression::Zx7;
-                else if (str == "lzsa2")
-                    comp = Compression::Lzsa2;
-                else if (str == "uncompressed")
-                    comp = Compression::Uncompressed;
-                else
-                    error(tr("invalid compression mode '%1' (expected 'none', 'zx7', 'lzsa2' or 'uncompressed')").arg(str.c_str()));
-                if (section->compression() != comp && section->compression() != Compression::Unspecified)
-                    error(tr("conflicting compression mode for section '%1'").arg(section->nameCStr()));
-                section->setCompression(comp);
-                nextToken();
-            } else if (param == "imaginary") {
-                section->setIsImaginary(true);
-                nextToken();
-            } else if (param == "file") {
-                if (nextToken() != T_STRING)
-                    error(tr("expected string"));
-                std::string fileName = lastTokenText();
-                if (fileName.length() > 10 && !endsWith(fileName, ":imaginary"))
-                    fileName = fileName.substr(0, 10);
-                if (section->hasFileName() && section->fileName() != fileName) {
-                    error(tr("conflicting file name for section '%1' ('%2' != '%3')")
-                        .arg(section->nameCStr()).arg(fileName.c_str()).arg(section->fileName().c_str()));
-                }
-                section->setFileName(std::move(fileName));
-                nextToken();
-            } else
-                error(tr("unexpected '%1'").arg(lastTokenCStr()));
-
-            if (lastTokenId() == T_RBRACKET) {
-                nextToken();
-                break;
-            }
-
-            expectComma(lastTokenId());
-        }
-    }
-
-    expectEol(lastTokenId());
+    mSection = section;
+    expectEol();
 }
 
+/*
 void AssemblerParser::parseRepeatDecl()
 {
     Token token = lastToken();
@@ -590,26 +557,38 @@ std::string AssemblerParser::readLabelName(int tokenId)
     error(tr("internal compiler error"));
     return std::string();
 }
+*/
 
-std::string AssemblerParser::expectIdentifier(int tokenId)
+const char* AssemblerParser::consumeIdentifier()
 {
-    if (tokenId < TOK_IDENTIFIER)
-        error(tr("expected identifier"));
-    return lastTokenText();
+    if (mToken->id() < TOK_IDENTIFIER) {
+        std::stringstream ss;
+        ss << "unexpected " << mToken->name() << '.';
+        throw CompilerError(mToken->location(), ss.str());
+    }
+
+    const char* text = mToken->text();
+    mToken = mToken->next();
+
+    return text;
 }
 
+/*
 void AssemblerParser::expectComma(int tokenId)
 {
     if (tokenId != T_COMMA)
         error(tr("expected ','"));
 }
-
-void AssemblerParser::expectEol(int tokenId)
-{
-    if (!matchEol())
-        error(tr("expected end of line"));
-}
 */
+
+void AssemblerParser::expectEol()
+{
+    if (!matchEol()) {
+        std::stringstream ss;
+        ss << "unexpected " << mToken->name() << '.';
+        throw CompilerError(mToken->location(), ss.str());
+    }
+}
 
 bool AssemblerParser::matchEol() const
 {

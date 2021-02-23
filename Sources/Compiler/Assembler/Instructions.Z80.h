@@ -5,6 +5,7 @@
 #include "Compiler/Tree/Expr.h"
 #include "Compiler/Assembler/Instruction.h"
 #include "Common/StringSet.h"
+#include "Common/TemplateMagic.h"
 #include <sstream>
 #include <stdint.h>
 
@@ -100,6 +101,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t value(uint8_t baseByte) const;
     private:
         Expr* mValue;
     };
@@ -109,6 +111,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t value() const;
     private:
         Expr* mValue;
     };
@@ -118,6 +121,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t low(uint8_t& high) const;
     private:
         Expr* mValue;
     };
@@ -163,6 +167,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t low(uint8_t& high) const;
     private:
         Expr* mValue;
     };
@@ -172,6 +177,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t value() const;
     private:
         Expr* mValue;
     };
@@ -181,6 +187,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t value() const;
     private:
         Expr* mValue;
     };
@@ -190,6 +197,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t value(int64_t nextAddress) const;
     private:
         Expr* mValue;
     };
@@ -206,6 +214,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t value() const;
     private:
         Expr* mValue;
     };
@@ -215,6 +224,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t value() const;
     private:
         Expr* mValue;
     };
@@ -224,6 +234,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        uint8_t value(uint8_t baseByte) const;
     private:
         Expr* mValue;
     };
@@ -342,7 +353,7 @@ namespace Z80
             return context->checkEnd();
         }
 
-    private:
+    protected:
         OP1 mOp1;
 
         DISABLE_COPY(Opcode1);
@@ -375,7 +386,7 @@ namespace Z80
             return context->checkEnd();
         }
 
-    private:
+    protected:
         OP1 mOp1;
         OP2 mOp2;
 
@@ -389,6 +400,12 @@ namespace Z80
         { \
         public: \
             explicit OP(SourceLocation* location) : Opcode0(location) {} \
+            unsigned char sizeInBytes() const override \
+            { \
+                uint8_t high; (void)high; \
+                int64_t nextAddress = 0; (void)nextAddress; \
+                return sizeofByteArray BYTES; \
+            } \
         }
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
@@ -396,6 +413,12 @@ namespace Z80
         { \
         public: \
             OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
+            unsigned char sizeInBytes() const override \
+            { \
+                uint8_t high; (void)high; \
+                int64_t nextAddress = 0; (void)nextAddress; \
+                return sizeofByteArray BYTES; \
+            } \
         }
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
@@ -403,6 +426,12 @@ namespace Z80
         { \
         public: \
             OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
+            unsigned char sizeInBytes() const override \
+            { \
+                uint8_t high; (void)high; \
+                int64_t nextAddress = 0; (void)nextAddress; \
+                return sizeofByteArray BYTES; \
+            } \
         }
 
     #include "Instructions.Z80.hh"

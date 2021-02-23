@@ -8,12 +8,14 @@
 class Instruction : public GCObject
 {
 public:
-    explicit Instruction(SourceLocation* location)
+    Instruction(SourceLocation* location)
         : mLocation(location)
     {
     }
 
     virtual bool isZ80Opcode() const;
+
+    virtual unsigned char sizeInBytes() const = 0;
 
     SourceLocation* location() const { return mLocation; }
 

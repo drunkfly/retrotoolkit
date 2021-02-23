@@ -264,6 +264,12 @@ void Lexer::scan(const FileID* file, const char* p)
                 continue;
             }
 
+            case '#': {
+                ++p;
+                token(TOK_HASH, "'#'");
+                continue;
+            }
+
             case '0':
                 if (p[1] == 'x' || p[1] == 'X') {
                     uint64_t value = 0;

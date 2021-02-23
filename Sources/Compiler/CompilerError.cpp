@@ -22,9 +22,9 @@ std::string CompilerError::makeFullMessage(SourceLocation* location, const std::
     std::stringstream ss;
     if (location && location->file()) {
         if (location->line() <= 0)
-            ss << location->file()->path().string() << ": ";
+            ss << location->file()->name().string() << ": ";
         else
-            ss << location->file()->path().string() << '(' << location->line() << "): ";
+            ss << location->file()->name().string() << '(' << location->line() << "): ";
     }
     ss << message;
     return ss.str();

@@ -27,6 +27,7 @@ enum TokenID
     TOK_ASSIGN,
     TOK_AT,
     TOK_DOLLAR,
+    TOK_HASH,
     TOK_SLASH,
     TOK_LPAREN,
     TOK_RPAREN,

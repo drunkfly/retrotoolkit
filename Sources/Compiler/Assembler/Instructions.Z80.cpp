@@ -1,5 +1,6 @@
 #include "Instructions.Z80.h"
 #include "Compiler/Token.h"
+#include "Compiler/CompilerError.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,6 +54,14 @@ bool Z80::bit::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
+uint8_t Z80::bit::value(uint8_t baseByte) const
+{
+    Value value = mValue->evaluateValue();
+    if (value.number < 0 || value.number > 7)
+        throw CompilerError(mValue->location(), "bit index is out of range.");
+    return baseByte | (uint8_t(value.number) << 3);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Z80::byte::toString(std::stringstream& ss) const
@@ -65,6 +74,11 @@ bool Z80::byte::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
+uint8_t Z80::byte::value() const
+{
+    return mValue->evaluateByte();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Z80::word::toString(std::stringstream& ss) const
@@ -75,6 +89,13 @@ void Z80::word::toString(std::stringstream& ss) const
 bool Z80::word::tryParse(ParsingContext* c)
 {
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+}
+
+uint8_t Z80::word::low(uint8_t& high) const
+{
+    auto word = mValue->evaluateWord();
+    high = uint8_t((word >> 8) & 0xff);
+    return uint8_t(word & 0xff);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,6 +182,13 @@ bool Z80::memAddr::tryParse(ParsingContext* c)
     return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames);
 }
 
+uint8_t Z80::memAddr::low(uint8_t& high) const
+{
+    auto word = mValue->evaluateWord();
+    high = uint8_t((word >> 8) & 0xff);
+    return uint8_t(word & 0xff);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Z80::IX_byte::toString(std::stringstream& ss) const
@@ -194,6 +222,11 @@ bool Z80::IX_byte::tryParse(ParsingContext* c)
     }
 
     return c->consumeRightParenthesis();
+}
+
+uint8_t Z80::IX_byte::value() const
+{
+    return mValue->evaluateByte();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -231,6 +264,11 @@ bool Z80::IY_byte::tryParse(ParsingContext* c)
     return c->consumeRightParenthesis();
 }
 
+uint8_t Z80::IY_byte::value() const
+{
+    return mValue->evaluateByte();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Z80::relOffset::toString(std::stringstream& ss) const
@@ -241,6 +279,11 @@ void Z80::relOffset::toString(std::stringstream& ss) const
 bool Z80::relOffset::tryParse(ParsingContext* c)
 {
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+}
+
+uint8_t Z80::relOffset::value(int64_t nextAddress) const
+{
+    return mValue->evaluateByteOffset(nextAddress);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -269,6 +312,11 @@ bool Z80::portAddr::tryParse(ParsingContext* c)
     return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames);
 }
 
+uint8_t Z80::portAddr::value() const
+{
+    return mValue->evaluateByte();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Z80::intMode::toString(std::stringstream& ss) const
@@ -281,6 +329,17 @@ bool Z80::intMode::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
+uint8_t Z80::intMode::value() const
+{
+    Value value = mValue->evaluateValue();
+    switch (value.number) {
+        case 0: return 0x46;
+        case 1: return 0x56;
+        case 2: return 0x5E;
+    }
+    throw CompilerError(mValue->location(), "invalid operand for IM instruction.");
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Z80::rstIndex::toString(std::stringstream& ss) const
@@ -291,6 +350,23 @@ void Z80::rstIndex::toString(std::stringstream& ss) const
 bool Z80::rstIndex::tryParse(ParsingContext* c)
 {
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+}
+
+uint8_t Z80::rstIndex::value(uint8_t baseByte) const
+{
+    Value value = mValue->evaluateValue();
+    switch (value.number) {
+        case 0x00:
+        case 0x08:
+        case 0x10:
+        case 0x18:
+        case 0x20:
+        case 0x28:
+        case 0x30:
+        case 0x38:
+            return baseByte | uint8_t(value.number);
+    }
+    throw CompilerError(mValue->location(), "invalid operand for RST instruction.");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

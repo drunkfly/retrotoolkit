@@ -1,3 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RetroProject>
+
+    <Files>
+        <File name="LOADER" start="0x6000" until="0x8000">
+            <SectionUpper name="loader" />
+            <SectionUpper name="loader_logo" compression="lzsa2" />
+            <SectionUpper name="loader_main" />
+            <SectionUpper name="bank5_engine_topmost" />
+        </File>
+    </Files>
+
+    <OutputTAP enabled="1">
+        <File ref="LOADER" />
+    </OutputTAP>
+
+    <OutputTRD enabled="1">
+        <File ref="LOADER" />
+    </OutputTRD>
+
 </RetroProject>

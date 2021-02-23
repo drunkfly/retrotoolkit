@@ -34,7 +34,7 @@ void BuildThread::compile()
             emit canceled();
             return;
         } catch (const CompilerError& e) {
-            QString file = (e.location() && e.location()->file() ? fromPath(e.location()->file()->path()) : QString());
+            QString file = (e.location() && e.location()->file() ? fromPath(e.location()->file()->name()) : QString());
             int line = (e.location() ? e.location()->line() : 0);
             emit failure(file, line, fromUtf8(e.message()));
             return;
