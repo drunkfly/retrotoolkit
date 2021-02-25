@@ -97,7 +97,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
         switch (file.fileType) {
             case FileType::Asm: {
-                Lexer lexer(&mHeap);
+                Lexer lexer(&mHeap, Lexer::Mode::Assembler);
                 lexer.scan(file.fileID, loadFile(file.fileID->path()).c_str());
                 AssemblerParser parser(&mHeap, program);
                 parser.parse(lexer.firstToken());

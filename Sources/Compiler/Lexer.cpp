@@ -5,8 +5,9 @@
 #include <sstream>
 #include <string.h>
 
-Lexer::Lexer(GCHeap* heap)
+Lexer::Lexer(GCHeap* heap, Mode mode)
     : mHeap(heap)
+    , mMode(mode)
     , mFirstToken(nullptr)
     , mLastToken(nullptr)
 {
@@ -54,7 +55,12 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
 
             case ';':
                 ++p;
-                token(TOK_SEMICOLON, "';'");
+                if (mMode != Mode::Assembler)
+                    token(TOK_SEMICOLON, "';'");
+                else {
+                    while (*p && *p != '\n')
+                        ++p;
+                }
                 continue;
 
             case ':':
@@ -247,11 +253,12 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                     while (isIdentifier(*p))
                         ss << *p++;
                     std::string str = ss.str();
-                    if (*p == ':') {
+                    if (*p != ':')
+                        token(TOK_LABEL_LOCAL_NAME, "label name", str.c_str(), str.length());
+                    else {
                         ++p;
                         token(TOK_LABEL_LOCAL, "label", str.c_str(), str.length());
                     }
-                    token(TOK_LABEL_LOCAL_NAME, "label name", str.c_str(), str.length());
                     continue;
                 }
                 token(TOK_AT, "'@'");

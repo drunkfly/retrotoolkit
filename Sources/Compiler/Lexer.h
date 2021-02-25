@@ -10,7 +10,12 @@ class FileID;
 class Lexer
 {
 public:
-    explicit Lexer(GCHeap* heap);
+    enum class Mode
+    {
+        Assembler,
+    };
+
+    Lexer(GCHeap* heap, Mode mode);
     ~Lexer();
 
     Token* firstToken() const { return mFirstToken; }
@@ -19,6 +24,7 @@ public:
 
 private:
     GCHeap* mHeap;
+    Mode mMode;
     Token* mFirstToken;
     Token* mLastToken;
     const FileID* mFile;

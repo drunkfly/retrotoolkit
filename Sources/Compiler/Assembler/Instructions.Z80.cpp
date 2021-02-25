@@ -175,7 +175,9 @@ bool Z80::memSP::tryParse(ParsingContext* c)
 
 void Z80::memAddr::toString(std::stringstream& ss) const
 {
-    ss << '('; mValue->toString(ss); ss << ')';
+    ss << '(';
+    mValue->toString(ss);
+    ss << ')';
 }
 
 bool Z80::memAddr::tryParse(ParsingContext* c)

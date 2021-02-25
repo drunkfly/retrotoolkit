@@ -18,10 +18,10 @@ public:
     virtual bool isLabel() const;
     virtual bool isZ80Opcode() const;
 
+    SourceLocation* location() const { return mLocation; }
+
     virtual size_t sizeInBytes() const = 0;
     virtual void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const = 0;
-
-    SourceLocation* location() const { return mLocation; }
 
 private:
     SourceLocation* mLocation;

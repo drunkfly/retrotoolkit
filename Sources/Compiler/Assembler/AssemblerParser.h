@@ -29,9 +29,7 @@ private:
     SymbolTable* mSymbolTable;
     const Token* mToken;
 
-    /*
     static std::unordered_map<std::string, void(AssemblerParser::*)()> mDataDirectives;
-    */
     static std::unordered_map<std::string, void(AssemblerParser::*)()> mDirectives;
 
     /*
@@ -55,12 +53,12 @@ private:
     void parsePopAllowWrite();
     void parsePopAllowWriteAfter();
     void parseAssertBank();
+    */
 
     void parseDefByte();
     void parseDefWord();
     void parseDefDWord();
     void parseDefSpace();
-    */
 
     Instruction* parseOpcode();
 

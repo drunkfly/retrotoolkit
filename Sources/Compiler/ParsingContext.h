@@ -28,6 +28,7 @@ public:
 
     bool expression(Expr*& expr, const StringSet* registerNames, const StringSet* conditionNames, bool unambiguous);
     bool expressionInParentheses(Expr*& expr, const StringSet* registerNames, const StringSet* conditionNames);
+    Expr* unambiguousExpression();
 
     bool consumeComma();
     bool consumeLeftParenthesis();

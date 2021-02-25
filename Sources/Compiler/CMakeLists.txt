@@ -10,6 +10,8 @@ add(Compiler
         Assembler/AssemblerContext.h
         Assembler/AssemblerParser.cpp
         Assembler/AssemblerParser.h
+        Assembler/DataDirectives.cpp
+        Assembler/DataDirectives.h
         Assembler/Instruction.cpp
         Assembler/Instruction.h
         Assembler/Instructions.Z80.cpp

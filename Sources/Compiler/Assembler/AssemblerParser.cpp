@@ -3,8 +3,10 @@
 #include "Compiler/ParsingContext.h"
 #include "Compiler/CompilerError.h"
 #include "Compiler/Assembler/Instructions.Z80.h"
+#include "Compiler/Assembler/DataDirectives.h"
 #include "Compiler/Assembler/AssemblerContext.h"
 #include "Compiler/Assembler/Label.h"
+#include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Linker/Program.h"
 #include "Compiler/Linker/ProgramSection.h"
@@ -13,7 +15,6 @@
 #include <string>
 #include <sstream>
 
-/*
 std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDataDirectives = {
         { "db", &AssemblerParser::parseDefByte },
         { "dw", &AssemblerParser::parseDefWord },
@@ -23,7 +24,6 @@ std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDa
         { "defw", &AssemblerParser::parseDefWord },
         { "defs", &AssemblerParser::parseDefSpace },
     };
-*/
 
 std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDirectives = {
         { "section", &AssemblerParser::parseSectionDecl },
@@ -116,8 +116,6 @@ void AssemblerParser::parseLine()
         throw CompilerError(mToken->location(), ss.str());
     }
 
-    Label* label = nullptr;
-
     // read label, if any
     if (mToken->id() == TOK_LABEL_GLOBAL || mToken->id() == TOK_LABEL_FULL || mToken->id() == TOK_LABEL_LOCAL) {
         /*
@@ -142,13 +140,12 @@ void AssemblerParser::parseLine()
             return;
         }
 
-        /*
+        std::string str = toLower(mToken->text());
         auto jt = mDataDirectives.find(str);
         if (jt != mDataDirectives.end()) {
             (this->*(jt->second))();
             return;
         }
-        */
     }
 
     // 'equ' and data directives handling (may be preceded by label without ':')
@@ -165,32 +162,34 @@ void AssemblerParser::parseLine()
 
     // read directive
     mToken = mToken->next();
-    /*
+    std::string lower;
+    if (mToken->id() >= TOK_IDENTIFIER)
+        lower = toLower(mToken->text());
     std::unordered_map<std::string, void(AssemblerParser::*)()>::iterator iter;
-    std::string lower = toLower(mToken->text());
-    if (lastTokenId() >= TOK_IDENTIFIER && (iter = mDataDirectives.find(lower)) != mDataDirectives.end()) {
-        if (nameToken.id != T_LOCAL_LABEL_NAME && !mContext->areGlobalLabelsAllowed())
+    if (mToken->id() >= TOK_IDENTIFIER && (iter = mDataDirectives.find(lower)) != mDataDirectives.end()) {
+        /*
+        if (nameToken->id() != TOK_LABEL_LOCAL_NAME && !mContext->areGlobalLabelsAllowed())
             error(tr("global labels are not allowed in this context"));
+        */
 
-        label = mProgram->addLabel(nameToken, mContext->codeEmitter(), name);
-        if (!label || mContext->hasVariable(name))
-            error(tr("duplicate identifier '%1'").arg(name.c_str()));
-
-        mContext->adjustLabel(label);
-
-        if (nameToken.id >= TOK_IDENTIFIER)
-            mContext->setLocalLabelsPrefix(name, nameToken, mReporter);
+        mContext->addLabel(mSymbolTable, nameToken->location(), std::move(name));
         (this->*(iter->second))();
-    } else if ((lastTokenId() >= TOK_IDENTIFIER && lower == "equ") || lastTokenId() == T_ASSIGN) {
-        auto expr = parseExpression(nextToken(), true);
-        if (!expr)
-            error(tr("expected expression after 'equ'"));
-        if (!mProgram->addConstant(name, std::move(expr)) || mContext->hasVariable(name))
-            error(nameToken, tr("duplicate identifier '%1'").arg(name.c_str()));
-    } else */ {
+    } else if ((mToken->id() >= TOK_IDENTIFIER && lower == "equ") || mToken->id() == TOK_ASSIGN) {
+        mToken = mToken->next();
+
+        const char* rawName = mHeap->allocString(name.c_str(), name.length());
+        Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+
+        auto symbol = new (mHeap) ConstantSymbol(nameToken->location(), rawName, expr);
+        if (!mSymbolTable->addSymbol(symbol)) {
+            std::stringstream ss;
+            ss << "duplicate identifier \"" << symbol->name() << "\".";
+            throw CompilerError(symbol->location(), ss.str());
+        }
+    } else {
         std::stringstream ss;
-        ss << "unexpected " << nameToken->name() << '.';
-        throw CompilerError(nameToken->location(), ss.str());
+        ss << "unexpected " << mToken->name() << '.';
+        throw CompilerError(mToken->location(), ss.str());
     }
 }
 
@@ -400,60 +399,52 @@ void AssemblerParser::parseAssertBank()
 
     mContext->codeEmitter()->emit<WriteDirective>(token, std::move(expr), nullptr, ProgramWriteProtection::What::AssertBank);
 }
+*/
 
 void AssemblerParser::parseDefByte()
 {
     do {
-        auto token = (nextToken(), lastToken());
-        if (token.id == T_STRING) {
-            std::string text = lastTokenText();
-            if (!text.empty())
-                mContext->codeEmitter()->emit<DEFB_STRING>(token, std::move(text));
-            nextToken();
+        mToken = mToken->next();
+        if (mToken->id() == TOK_STRING) {
+            const char* text = mToken->text();
+            if (*text)
+                mContext->addInstruction(new (mHeap) DEFB_STRING(mToken->location(), text));
+            mToken = mToken->next();
         } else {
-            auto expr = parseExpression(token.id, true);
-            if (!expr)
-                error(mExpressionError);
-            mContext->codeEmitter()->emit<DEFB>(token, std::move(expr));
+            Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+            mContext->addInstruction(new (mHeap) DEFB(expr->location(), expr));
         }
-    } while (lastTokenId() == T_COMMA);
-    expectEol(lastTokenId());
+    } while (mToken->id() == TOK_COMMA);
+    expectEol();
 }
 
 void AssemblerParser::parseDefWord()
 {
     do {
-        auto token = (nextToken(), lastToken());
-        auto expr = parseExpression(token.id, true);
-        if (!expr)
-            error(mExpressionError);
-        mContext->codeEmitter()->emit<DEFW>(token, std::move(expr));
-    } while (lastTokenId() == T_COMMA);
-    expectEol(lastTokenId());
+        mToken = mToken->next();
+        Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+        mContext->addInstruction(new (mHeap) DEFW(expr->location(), expr));
+    } while (mToken->id() == TOK_COMMA);
+    expectEol();
 }
 
 void AssemblerParser::parseDefDWord()
 {
     do {
-        auto token = (nextToken(), lastToken());
-        auto expr = parseExpression(token.id, true);
-        if (!expr)
-            error(mExpressionError);
-        mContext->codeEmitter()->emit<DEFD>(token, std::move(expr));
-    } while (lastTokenId() == T_COMMA);
-    expectEol(lastTokenId());
+        mToken = mToken->next();
+        Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+        mContext->addInstruction(new (mHeap) DEFD(expr->location(), expr));
+    } while (mToken->id() == TOK_COMMA);
+    expectEol();
 }
 
 void AssemblerParser::parseDefSpace()
 {
-    auto token = (nextToken(), lastToken());
-    auto expr = parseExpression(token.id, true);
-    if (!expr)
-        error(mExpressionError);
-    mContext->codeEmitter()->emit<DEFS>(token, std::move(expr));
-    expectEol(lastTokenId());
+    mToken = mToken->next();
+    Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+    mContext->addInstruction(new (mHeap) DEFS(expr->location(), expr));
+    expectEol();
 }
-*/
 
 Instruction* AssemblerParser::parseOpcode()
 {

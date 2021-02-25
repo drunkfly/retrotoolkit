@@ -1,5 +1,6 @@
 #include "ParsingContext.h"
 #include "Common/Strings.h"
+#include "Compiler/CompilerError.h"
 #include "Compiler/ExpressionParser.h"
 #include "Compiler/Token.h"
 #include <ctype.h>
@@ -13,7 +14,8 @@ bool ParsingContext::expression(Expr*& expr,
     const StringSet* registerNames, const StringSet* conditionNames, bool unambiguous)
 {
     ExpressionParser parser(mHeap, registerNames, conditionNames);
-    expr = parser.tryParseExpression(this, unambiguous);
+    ParsingContext subcontext(mHeap, mToken, mSymbolTable);
+    expr = parser.tryParseExpression(&subcontext, unambiguous);
     return (expr != nullptr);
 }
 
@@ -25,6 +27,17 @@ bool ParsingContext::expressionInParentheses(Expr*& expr,
     if (!expression(expr, registerNames, conditionNames, true))
         return false;
     return consumeRightParenthesis();
+}
+
+Expr* ParsingContext::unambiguousExpression()
+{
+    ExpressionParser parser(mHeap, nullptr, nullptr);
+    ParsingContext subcontext(mHeap, mToken, mSymbolTable);
+    Expr* expr = parser.tryParseExpression(&subcontext, true);
+    if (!expr)
+        throw CompilerError(parser.errorLocation(), parser.error());
+    end();
+    return expr;
 }
 
 bool ParsingContext::consumeComma()

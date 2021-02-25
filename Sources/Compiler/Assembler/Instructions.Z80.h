@@ -396,7 +396,7 @@ namespace Z80
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     #define Z80_OPCODE_0(OP, BYTES, TSTATES) \
-        class OP : public Opcode0<Mnemonic::OP> \
+        class OP final : public Opcode0<Mnemonic::OP> \
         { \
         public: \
             explicit OP(SourceLocation* location) : Opcode0(location) {} \
@@ -405,7 +405,7 @@ namespace Z80
         }
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
-        class OP##_##OP1 : public Opcode1<Mnemonic::OP, OP1> \
+        class OP##_##OP1 final : public Opcode1<Mnemonic::OP, OP1> \
         { \
         public: \
             OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
@@ -414,7 +414,7 @@ namespace Z80
         }
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
-        class OP##_##OP1##_##OP2 : public Opcode2<Mnemonic::OP, OP1, OP2> \
+        class OP##_##OP1##_##OP2 final : public Opcode2<Mnemonic::OP, OP1, OP2> \
         { \
         public: \
             OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
