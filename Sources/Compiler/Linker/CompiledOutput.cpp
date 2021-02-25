@@ -29,6 +29,7 @@ CompiledFile* CompiledOutput::getOrAddFile(const std::string& name)
 
     CompiledFile* file = new (heap()) CompiledFile(name);
     mFiles[name] = file;
+    mFileList.emplace_back(file);
 
     return file;
 }

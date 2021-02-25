@@ -1,20 +1,22 @@
-#ifndef COMMON_TEMPLATEMAGIC_H
-#define COMMON_TEMPLATEMAGIC_H
+#ifndef COMMON_UINT8ARRAY_H
+#define COMMON_UINT8ARRAY_H
 
+#include <utility>
+#include <array>
 #include <stddef.h>
 #include <stdint.h>
 
-template <size_t N> class ByteArray
-{
-public:
-    explicit ByteArray(const uint8_t* ptr) : mPtr(ptr) {}
-    size_t size() const { return N; }
-    const uint8_t* data() const { return mPtr; }
-private:
-    const uint8_t* mPtr;
-};
+template <typename T, size_t N> constexpr size_t arraySize(const T (&array)[N]) { return N; }
 
-template <size_t N> constexpr size_t sizeofByteArray(const uint8_t (&array)[N]) { return N; }
-template <size_t N> constexpr ByteArray<N> makeByteArray(const uint8_t(&array)[N]) { return ByteArray<N>(array); }
+template <typename T, size_t N, size_t... I>
+    constexpr std::array<uint8_t, N> toArrayImpl(T (&&array)[N], std::index_sequence<I...>)
+{
+    return { {uint8_t(array[I])...} };
+}
+
+template <typename T, size_t N> constexpr std::array<uint8_t, N> toArray(T (&&array)[N])
+{
+    return toArrayImpl(std::move(array), std::make_index_sequence<N>{});
+}
 
 #endif

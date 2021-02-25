@@ -11,4 +11,6 @@ bool boolFromString(bool& out, const char* p, size_t size);
 
 std::wstring wstringFromUtf8(const std::string& str);
 
+bool endsWith(const std::string& str, const std::string& end);
+
 #endif

@@ -9,6 +9,8 @@ add(Common
         GC.h
         IO.cpp
         IO.h
+        StreamUtils.cpp
+        StreamUtils.h
         Strings.cpp
         Strings.h
         StringSet.h

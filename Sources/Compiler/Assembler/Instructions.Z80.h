@@ -101,7 +101,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t value(uint8_t baseByte) const;
+        int value(uint8_t baseByte) const;
     private:
         Expr* mValue;
     };
@@ -111,7 +111,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t value() const;
+        int value() const;
     private:
         Expr* mValue;
     };
@@ -121,7 +121,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t low(uint8_t& high) const;
+        int low(int& high) const;
     private:
         Expr* mValue;
     };
@@ -167,7 +167,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t low(uint8_t& high) const;
+        int low(int& high) const;
     private:
         Expr* mValue;
     };
@@ -177,7 +177,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t value() const;
+        int value() const;
     private:
         Expr* mValue;
     };
@@ -187,7 +187,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t value() const;
+        int value() const;
     private:
         Expr* mValue;
     };
@@ -197,7 +197,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t value(int64_t nextAddress) const;
+        int value(int64_t nextAddress) const;
     private:
         Expr* mValue;
     };
@@ -214,7 +214,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t value() const;
+        int value() const;
     private:
         Expr* mValue;
     };
@@ -224,7 +224,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t value() const;
+        int value() const;
     private:
         Expr* mValue;
     };
@@ -234,7 +234,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        uint8_t value(uint8_t baseByte) const;
+        int value(uint8_t baseByte) const;
     private:
         Expr* mValue;
     };

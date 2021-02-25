@@ -12,6 +12,7 @@
 #include <sstream>
 #include <unordered_set>
 #include <vector>
+#include <algorithm>
 
 namespace
 {

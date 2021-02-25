@@ -32,6 +32,9 @@ public:
     UncompressedCodeEmitter();
     ~UncompressedCodeEmitter();
 
+    size_t size() const { return mBytes.size(); }
+    const Byte* data() const { return mBytes.data(); }
+
     void clear();
 
     void emitByte(SourceLocation* location, uint8_t byte) override;

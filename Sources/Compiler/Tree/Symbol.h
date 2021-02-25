@@ -13,7 +13,7 @@ class Label;
 class Symbol : public GCObject
 {
 public:
-    Symbol::Symbol(SourceLocation* location, const char* name)
+    Symbol(SourceLocation* location, const char* name)
         : mLocation(location)
         , mName(name)
     {

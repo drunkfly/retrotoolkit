@@ -28,10 +28,13 @@ public:
     CompiledOutput();
     ~CompiledOutput() override;
 
+    const std::vector<CompiledFile*>& files() const { return mFileList; }
+
     CompiledFile* getOrAddFile(const std::string& name);
 
 private:
     std::unordered_map<std::string, CompiledFile*> mFiles;
+    std::vector<CompiledFile*> mFileList;
 
     DISABLE_COPY(CompiledOutput);
 };

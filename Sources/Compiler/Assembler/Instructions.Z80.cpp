@@ -55,12 +55,12 @@ bool Z80::bit::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-uint8_t Z80::bit::value(uint8_t baseByte) const
+int Z80::bit::value(uint8_t baseByte) const
 {
     Value value = mValue->evaluateValue();
     if (value.number < 0 || value.number > 7)
         throw CompilerError(mValue->location(), "bit index is out of range.");
-    return baseByte | (uint8_t(value.number) << 3);
+    return uint8_t(baseByte | (uint8_t(value.number) << 3));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,7 +75,7 @@ bool Z80::byte::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-uint8_t Z80::byte::value() const
+int Z80::byte::value() const
 {
     return mValue->evaluateByte();
 }
@@ -92,7 +92,7 @@ bool Z80::word::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-uint8_t Z80::word::low(uint8_t& high) const
+int Z80::word::low(int& high) const
 {
     auto word = mValue->evaluateWord();
     high = uint8_t((word >> 8) & 0xff);
@@ -183,7 +183,7 @@ bool Z80::memAddr::tryParse(ParsingContext* c)
     return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames);
 }
 
-uint8_t Z80::memAddr::low(uint8_t& high) const
+int Z80::memAddr::low(int& high) const
 {
     auto word = mValue->evaluateWord();
     high = uint8_t((word >> 8) & 0xff);
@@ -225,7 +225,7 @@ bool Z80::IX_byte::tryParse(ParsingContext* c)
     return c->consumeRightParenthesis();
 }
 
-uint8_t Z80::IX_byte::value() const
+int Z80::IX_byte::value() const
 {
     return mValue->evaluateByte();
 }
@@ -265,7 +265,7 @@ bool Z80::IY_byte::tryParse(ParsingContext* c)
     return c->consumeRightParenthesis();
 }
 
-uint8_t Z80::IY_byte::value() const
+int Z80::IY_byte::value() const
 {
     return mValue->evaluateByte();
 }
@@ -282,7 +282,7 @@ bool Z80::relOffset::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-uint8_t Z80::relOffset::value(int64_t nextAddress) const
+int Z80::relOffset::value(int64_t nextAddress) const
 {
     return mValue->evaluateByteOffset(nextAddress);
 }
@@ -313,7 +313,7 @@ bool Z80::portAddr::tryParse(ParsingContext* c)
     return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames);
 }
 
-uint8_t Z80::portAddr::value() const
+int Z80::portAddr::value() const
 {
     return mValue->evaluateByte();
 }
@@ -330,7 +330,7 @@ bool Z80::intMode::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-uint8_t Z80::intMode::value() const
+int Z80::intMode::value() const
 {
     Value value = mValue->evaluateValue();
     switch (value.number) {
@@ -353,7 +353,7 @@ bool Z80::rstIndex::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-uint8_t Z80::rstIndex::value(uint8_t baseByte) const
+int Z80::rstIndex::value(uint8_t baseByte) const
 {
     Value value = mValue->evaluateValue();
     switch (value.number) {
@@ -365,7 +365,7 @@ uint8_t Z80::rstIndex::value(uint8_t baseByte) const
         case 0x28:
         case 0x30:
         case 0x38:
-            return baseByte | uint8_t(value.number);
+            return uint8_t(baseByte | uint8_t(value.number));
     }
     throw CompilerError(mValue->location(), "invalid operand for RST instruction.");
 }
@@ -385,33 +385,33 @@ bool Z80::AF_::tryParse(ParsingContext* context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define Z80_OPCODE_0(OP, BYTES, TSTATES) \
+    static const auto OP##_bytes = toArray BYTES; \
     size_t Z80::OP::sizeInBytes() const \
     { \
-        uint8_t high; (void)high; \
+        int high; (void)high; \
         int64_t nextAddress = 0; (void)nextAddress; \
-        return sizeofByteArray BYTES; \
+        return OP##_bytes.size(); \
     } \
     void Z80::OP::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
     { \
-        uint8_t high; (void)high;\
+        int high; (void)high;\
         (void)nextAddress; \
-        auto array = makeByteArray BYTES; \
-        emitter->emitBytes(location(), array.data(), array.size()); \
-        nextAddress += array.size(); \
+        emitter->emitBytes(location(), OP##_bytes.data(), OP##_bytes.size()); \
+        nextAddress += OP##_bytes.size(); \
     }
 
 #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
     size_t Z80::OP##_##OP1::sizeInBytes() const \
     { \
-        uint8_t high; (void)high; \
+        int high; (void)high; \
         int64_t nextAddress = 0; (void)nextAddress; \
-        return sizeofByteArray BYTES; \
+        return arraySize BYTES; \
     } \
     void Z80::OP##_##OP1::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
     { \
-        uint8_t high; (void)high;\
+        int high; (void)high;\
         (void)nextAddress; \
-        auto array = makeByteArray BYTES; \
+        auto array = toArray BYTES; \
         emitter->emitBytes(location(), array.data(), array.size()); \
         nextAddress += array.size(); \
     }
@@ -419,15 +419,15 @@ bool Z80::AF_::tryParse(ParsingContext* context)
 #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
     size_t Z80::OP##_##OP1##_##OP2::sizeInBytes() const \
     { \
-        uint8_t high; (void)high; \
+        int high; (void)high; \
         int64_t nextAddress = 0; (void)nextAddress; \
-        return sizeofByteArray BYTES; \
+        return arraySize BYTES; \
     } \
     void Z80::OP##_##OP1##_##OP2::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
     { \
-        uint8_t high; (void)high;\
+        int high; (void)high;\
         (void)nextAddress; \
-        auto array = makeByteArray BYTES; \
+        auto array = toArray BYTES; \
         emitter->emitBytes(location(), array.data(), array.size()); \
         nextAddress += array.size(); \
     }

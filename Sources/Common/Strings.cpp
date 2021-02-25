@@ -1,6 +1,7 @@
 #include "Strings.h"
-#include <locale>
 #include <codecvt>
+#include <locale>
+#include <string.h>
 #include <ctype.h>
 
 std::string toLower(std::string str)
@@ -68,4 +69,11 @@ std::wstring wstringFromUtf8(const std::string& str)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.from_bytes(str.c_str());
+}
+
+bool endsWith(const std::string& str, const std::string& end)
+{
+    if (str.length() < end.length())
+        return false;
+    return memcmp(str.data() + str.length() - end.length(), end.data(), end.length()) == 0;
 }

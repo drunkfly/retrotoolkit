@@ -180,10 +180,10 @@ Z80_OPCODE_2(JR, flagC, relOffset,  ({ 0x38, mOp2.value(nextAddress)            
 Z80_OPCODE_2(JR, flagNC, relOffset, ({ 0x30, mOp2.value(nextAddress)                }), TStates(12, 7));
 Z80_OPCODE_2(JR, flagNZ, relOffset, ({ 0x20, mOp2.value(nextAddress)                }), TStates(12, 7));
 Z80_OPCODE_2(JR, flagZ, relOffset,  ({ 0x28, mOp2.value(nextAddress)                }), TStates(12, 7));
+Z80_OPCODE_2(LD, A, memAddr,        ({ 0x3A, mOp2.low(high), high                   }), 13);
 Z80_OPCODE_2(LD, A, memBC,          ({ 0x0A                                         }),  7);
 Z80_OPCODE_2(LD, A, memDE,          ({ 0x1A                                         }),  7);
 Z80_OPCODE_2(LD, A, I,              ({ 0xED, 0x57                                   }),  9);
-Z80_OPCODE_2(LD, A, memAddr,        ({ 0x3A, '#'                                    }), 13);
 Z80_OPCODE_2(LD, A, R,              ({ 0xED, 0x5F                                   }),  9);
 Z80_OPCODE_2(LD, memBC, A,          ({ 0x02                                         }),  7);
 Z80_OPCODE_2(LD, memDE, A,          ({ 0x12                                         }),  7);
