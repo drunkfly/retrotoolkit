@@ -51,6 +51,9 @@ void BasicCompiler::addFile(SourceFile* source)
         mBasicFile = source;
         mBasicFileLine = line;
 
+        if (!*p)
+            throw CompilerError(new (mHeap) SourceLocation(source->fileID, line), "unexpected NUL byte in source file.");
+
         char lineIn[MAXLINELENGTH + 1];
         int d = 0;
         while (*p) {

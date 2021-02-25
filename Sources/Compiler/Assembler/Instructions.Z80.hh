@@ -123,9 +123,9 @@ Z80_OPCODE_1(DEC, IYL,              ({ 0xFD, 0x2D                               
 Z80_OPCODE_0(DI,                    ({ 0xF3                                         }),  4);
 Z80_OPCODE_1(DJNZ, relOffset,       ({ 0x10, mOp1.value(nextAddress)                }), TStates(8, 13));
 Z80_OPCODE_0(EI,                    ({ 0xFB                                         }),  4);
-Z80_OPCODE_2(EX, SP, HL,            ({ 0xE3                                         }), 19);
-Z80_OPCODE_2(EX, SP, IX,            ({ 0xDD, 0xE3                                   }), 23);
-Z80_OPCODE_2(EX, SP, IY,            ({ 0xFD, 0xE3                                   }), 23);
+Z80_OPCODE_2(EX, memSP, HL,         ({ 0xE3                                         }), 19);
+Z80_OPCODE_2(EX, memSP, IX,         ({ 0xDD, 0xE3                                   }), 23);
+Z80_OPCODE_2(EX, memSP, IY,         ({ 0xFD, 0xE3                                   }), 23);
 Z80_OPCODE_2(EX, AF, AF_,           ({ 0x08                                         }),  4);
 Z80_OPCODE_2(EX, DE, HL,            ({ 0xEB                                         }),  4);
 Z80_OPCODE_0(EXX,                   ({ 0xD9                                         }),  4);

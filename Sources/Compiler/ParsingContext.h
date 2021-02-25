@@ -12,10 +12,11 @@ class Expr;
 class ParsingContext
 {
 public:
-    ParsingContext(GCHeap* heap, const Token*& token, SymbolTable* symbolTable)
+    ParsingContext(GCHeap* heap, const Token*& token, SymbolTable* symbolTable, const std::string* localLabelsPrefix)
         : mHeap(heap)
         , mToken(token)
         , mTokenRef(token)
+        , mLocalLabelsPrefix(localLabelsPrefix)
         , mSymbolTable(symbolTable)
     {
     }
@@ -43,6 +44,7 @@ private:
     GCHeap* mHeap;
     const Token* mToken;
     const Token*& mTokenRef;
+    const std::string* mLocalLabelsPrefix;
     SymbolTable* mSymbolTable;
 
     DISABLE_COPY(ParsingContext);

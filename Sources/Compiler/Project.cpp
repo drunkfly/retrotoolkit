@@ -23,7 +23,7 @@ Project::~Project()
 static void addConstant(SymbolTable* symbolTable, const Project::Constant& constant, SourceLocation* location)
 {
     auto heap = symbolTable->heap();
-    ExpressionParser parser(heap, nullptr, nullptr);
+    ExpressionParser parser(heap, nullptr, nullptr, nullptr);
     Expr* value = parser.tryParseExpression(location, constant.value.c_str(), symbolTable);
     if (!value) {
         std::stringstream ss;
@@ -135,7 +135,7 @@ void Project::load(std::filesystem::path path)
             file->start = OPT_STRING(start, File);
             file->until = OPT_STRING(until, File);
 
-            FOR_EACH(Section, Files)
+            FOR_EACH(Section, File)
                 file->sections.emplace_back(parseSection(xml, xmlSection, file.get()));
 
             files.emplace_back(std::move(file));

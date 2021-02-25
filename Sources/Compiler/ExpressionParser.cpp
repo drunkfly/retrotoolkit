@@ -7,10 +7,12 @@
 #include "Compiler/Lexer.h"
 #include <sstream>
 
-ExpressionParser::ExpressionParser(GCHeap* heap, const StringSet* registerNames, const StringSet* conditionNames)
+ExpressionParser::ExpressionParser(GCHeap* heap,
+        const StringSet* registerNames, const StringSet* conditionNames, const std::string* localLabelsPrefix)
     : mHeap(heap)
     , mRegisterNames(registerNames)
     , mConditionNames(conditionNames)
+    , mLocalLabelsPrefix(localLabelsPrefix)
     , mErrorLocation(nullptr)
 {
 }
@@ -28,7 +30,7 @@ Expr* ExpressionParser::tryParseExpression(SourceLocation* location, const char*
         variables = new (mHeap) SymbolTable(nullptr);
 
     const Token* token = lexer.firstToken();
-    ParsingContext context(mHeap, token, variables);
+    ParsingContext context(mHeap, token, variables, mLocalLabelsPrefix);
     return tryParseExpression(&context, true);
 }
 
@@ -278,6 +280,26 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
         case TOK_DOLLAR: {
             Expr* expr = new (mHeap) ExprCurrentAddress(mContext->token()->location());
             mContext->nextToken();
+            return expr;
+        }
+
+        case TOK_LABEL_LOCAL_NAME: {
+            if (!mLocalLabelsPrefix || mLocalLabelsPrefix->empty()) {
+                mErrorLocation = mContext->token()->location();
+                mError = "local label name without preceding global label";
+                return nullptr;
+            }
+
+            std::stringstream ss;
+            ss << *mLocalLabelsPrefix;
+            ss << "@@";
+            ss << mContext->token()->text();
+            std::string name = ss.str();
+
+            Expr* expr = new (mHeap) ExprIdentifier(mContext->token()->location(),
+                mContext->symbolTable(), mHeap->allocString(name.c_str(), name.length()));
+            mContext->nextToken();
+
             return expr;
         }
 

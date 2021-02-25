@@ -337,7 +337,7 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                 size_t len = (size_t)(p - start);
                 if (*p == '\'' && len == 2 && (*start == 'a' || *start == 'A') && (start[1] == 'f' || start[1] == 'F')) {
                     ++p;
-                    token(TOK_IDENTIFIER, "identifier", start, len);
+                    token(TOK_IDENTIFIER, "identifier", start, len + 1);
                     continue;
                 }
                 if (*p == ':') {

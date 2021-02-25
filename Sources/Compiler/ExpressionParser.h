@@ -14,7 +14,8 @@ class Expr;
 class ExpressionParser
 {
 public:
-    ExpressionParser(GCHeap* heap, const StringSet* registerNames, const StringSet* conditionNames);
+    ExpressionParser(GCHeap* heap, const StringSet* registerNames,
+        const StringSet* conditionNames, const std::string* localLabelsPrefix);
     ~ExpressionParser();
 
     const std::string& error() const { return mError; }
@@ -28,6 +29,7 @@ private:
     ParsingContext* mContext;
     const StringSet* mRegisterNames;
     const StringSet* mConditionNames;
+    const std::string* mLocalLabelsPrefix;
     std::string mError;
     SourceLocation* mErrorLocation;
 

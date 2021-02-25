@@ -13,8 +13,8 @@ void ParsingContext::nextToken()
 bool ParsingContext::expression(Expr*& expr,
     const StringSet* registerNames, const StringSet* conditionNames, bool unambiguous)
 {
-    ExpressionParser parser(mHeap, registerNames, conditionNames);
-    ParsingContext subcontext(mHeap, mToken, mSymbolTable);
+    ExpressionParser parser(mHeap, registerNames, conditionNames, mLocalLabelsPrefix);
+    ParsingContext subcontext(mHeap, mToken, mSymbolTable, mLocalLabelsPrefix);
     expr = parser.tryParseExpression(&subcontext, unambiguous);
     return (expr != nullptr);
 }
@@ -31,8 +31,8 @@ bool ParsingContext::expressionInParentheses(Expr*& expr,
 
 Expr* ParsingContext::unambiguousExpression()
 {
-    ExpressionParser parser(mHeap, nullptr, nullptr);
-    ParsingContext subcontext(mHeap, mToken, mSymbolTable);
+    ExpressionParser parser(mHeap, nullptr, nullptr, mLocalLabelsPrefix);
+    ParsingContext subcontext(mHeap, mToken, mSymbolTable, mLocalLabelsPrefix);
     Expr* expr = parser.tryParseExpression(&subcontext, true);
     if (!expr)
         throw CompilerError(parser.errorLocation(), parser.error());

@@ -120,7 +120,7 @@ void AssemblerParser::parseLine()
     if (mToken->id() == TOK_LABEL_GLOBAL || mToken->id() == TOK_LABEL_FULL || mToken->id() == TOK_LABEL_LOCAL) {
         /*
         if (mToken->id != TOK_LABEL_LOCAL && !mContext->areGlobalLabelsAllowed())
-            error(tr("global labels are not allowed in this context"));
+            error(tr("global labels are not allowed in this context."));
         */
 
         std::string name = readLabelName();
@@ -158,7 +158,7 @@ void AssemblerParser::parseLine()
     else if (mToken->id() == TOK_LABEL_LOCAL_NAME)
         name = readLabelName();
     else
-        throw CompilerError(nameToken->location(), "expected opcode or directive");
+        throw CompilerError(nameToken->location(), "expected opcode or directive.");
 
     // read directive
     mToken = mToken->next();
@@ -169,7 +169,7 @@ void AssemblerParser::parseLine()
     if (mToken->id() >= TOK_IDENTIFIER && (iter = mDataDirectives.find(lower)) != mDataDirectives.end()) {
         /*
         if (nameToken->id() != TOK_LABEL_LOCAL_NAME && !mContext->areGlobalLabelsAllowed())
-            error(tr("global labels are not allowed in this context"));
+            error(tr("global labels are not allowed in this context."));
         */
 
         mContext->addLabel(mSymbolTable, nameToken->location(), std::move(name));
@@ -178,7 +178,7 @@ void AssemblerParser::parseLine()
         mToken = mToken->next();
 
         const char* rawName = mHeap->allocString(name.c_str(), name.length());
-        Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+        Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()).unambiguousExpression();
 
         auto symbol = new (mHeap) ConstantSymbol(nameToken->location(), rawName, expr);
         if (!mSymbolTable->addSymbol(symbol)) {
@@ -411,8 +411,8 @@ void AssemblerParser::parseDefByte()
                 mContext->addInstruction(new (mHeap) DEFB_STRING(mToken->location(), text));
             mToken = mToken->next();
         } else {
-            Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
-            mContext->addInstruction(new (mHeap) DEFB(expr->location(), expr));
+            auto e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()).unambiguousExpression();
+            mContext->addInstruction(new (mHeap) DEFB(e->location(), e));
         }
     } while (mToken->id() == TOK_COMMA);
     expectEol();
@@ -422,7 +422,7 @@ void AssemblerParser::parseDefWord()
 {
     do {
         mToken = mToken->next();
-        Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+        auto expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()).unambiguousExpression();
         mContext->addInstruction(new (mHeap) DEFW(expr->location(), expr));
     } while (mToken->id() == TOK_COMMA);
     expectEol();
@@ -432,7 +432,7 @@ void AssemblerParser::parseDefDWord()
 {
     do {
         mToken = mToken->next();
-        Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+        auto expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()).unambiguousExpression();
         mContext->addInstruction(new (mHeap) DEFD(expr->location(), expr));
     } while (mToken->id() == TOK_COMMA);
     expectEol();
@@ -441,7 +441,7 @@ void AssemblerParser::parseDefDWord()
 void AssemblerParser::parseDefSpace()
 {
     mToken = mToken->next();
-    Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable).unambiguousExpression();
+    Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()).unambiguousExpression();
     mContext->addInstruction(new (mHeap) DEFS(expr->location(), expr));
     expectEol();
 }
@@ -453,7 +453,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_0(OP, BYTES, TSTATES) \
         { \
-            ParsingContext context(mHeap, mToken, mSymbolTable); \
+            ParsingContext context(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 if (Z80::OP::tryParse(&context)) \
                     return new (mHeap) Z80::OP(location); \
@@ -463,7 +463,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
         { \
-            ParsingContext context(mHeap, mToken, mSymbolTable); \
+            ParsingContext context(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 Z80::OP1 op1; \
                 if (Z80::OP##_##OP1::tryParse(&context, op1)) \
@@ -474,7 +474,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
         { \
-            ParsingContext context(mHeap, mToken, mSymbolTable); \
+            ParsingContext context(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 Z80::OP1 op1; \
                 Z80::OP2 op2; \

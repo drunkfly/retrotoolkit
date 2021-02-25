@@ -46,6 +46,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         outputPath = projectPath / pathFromUtf8(*project.outputDirectory);
     else
         outputPath = projectPath / Project::DefaultOutputDirectory;
+    outputPath = outputPath.lexically_normal();
 
     // Collect list of source files
 
@@ -59,10 +60,15 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         if (it.is_directory())
             continue;
 
+        auto currentPath = it.path().lexically_normal();
+        auto rootEnd = std::mismatch(outputPath.begin(), outputPath.end(), currentPath.begin()).first;
+        if (rootEnd == outputPath.end())
+            continue;
+
         FileType fileType;
         std::vector<SourceFile>* list;
 
-        auto ext = it.path().extension();
+        auto ext = currentPath.extension();
         if (ext == ".asm") {
             fileType = FileType::Asm;
             list = &sourceFiles;
@@ -72,7 +78,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         } else
             continue;
 
-        auto name = it.path().lexically_relative(projectPath);
+        auto name = currentPath.lexically_relative(projectPath);
         list->emplace_back(SourceFile{ fileType, new (&mHeap) FileID(name, it.path()) });
     }
 

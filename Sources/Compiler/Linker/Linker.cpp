@@ -326,7 +326,7 @@ namespace
 
         Expr* parseExpression(SourceLocation* location, const std::string& str)
         {
-            ExpressionParser parser(heap(), nullptr, nullptr);
+            ExpressionParser parser(heap(), nullptr, nullptr, nullptr);
             Expr* expr = parser.tryParseExpression(location, str.c_str(), mProjectVariables);
             if (!expr) {
                 std::stringstream ss;
