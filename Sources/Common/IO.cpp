@@ -1,5 +1,6 @@
 #include "IO.h"
 #include "Common/Common.h"
+#include "Common/Strings.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sstream>
@@ -68,6 +69,15 @@ namespace
     }
 
     throw std::runtime_error(ss.str());
+}
+
+std::filesystem::path pathFromUtf8(const std::string& name)
+{
+  #ifdef _WIN32
+    return std::filesystem::path(wstringFromUtf8(name));
+  #else
+    return std::filesystem::path(name);
+  #endif
 }
 
 std::string loadFile(const std::filesystem::path& fileName)

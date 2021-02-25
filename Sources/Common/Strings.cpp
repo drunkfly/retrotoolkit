@@ -65,6 +65,32 @@ bool boolFromString(bool& out, const char* p, size_t size)
     return false;
 }
 
+bool intFromString(int& out, const char* p, size_t size)
+{
+    if (size == 0)
+        return false;
+
+    int sign = 1;
+    if (*p == '-') {
+        sign = -1;
+        ++p;
+        --size;
+    }
+
+    if (size == 0)
+        return false;
+
+    out = 0;
+    while (size > 0) {
+        if (*p < '0' || *p > '9')
+            return false;
+        out = out * 10 + *p++ - '0';
+        --size;
+    }
+
+    return out * sign;
+}
+
 std::wstring wstringFromUtf8(const std::string& str)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;

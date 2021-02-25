@@ -8,6 +8,7 @@ std::string toLower(std::string str);
 bool equalCaseInsensitive(const char* str1, const char* str2);
 
 bool boolFromString(bool& out, const char* p, size_t size);
+bool intFromString(int& out, const char* p, size_t size);
 
 std::wstring wstringFromUtf8(const std::string& str);
 

@@ -28,6 +28,8 @@ add(Compiler
         Linker/Program.h
         Linker/ProgramSection.cpp
         Linker/ProgramSection.h
+        Output/TRDOSWriter.cpp
+        Output/TRDOSWriter.h
         Tree/Expr.cpp
         Tree/Expr.h
         Tree/SourceLocation.h

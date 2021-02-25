@@ -11,6 +11,8 @@ enum WriteFlag
     SkipIfSameContent = 0x04,
 };
 
+std::filesystem::path pathFromUtf8(const std::string& name);
+
 std::string loadFile(const std::filesystem::path& fileName);
 
 void writeFile(const std::filesystem::path& fileName, const char* str, int flags = 0);

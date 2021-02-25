@@ -9,9 +9,11 @@
 #include <unordered_map>
 
 const char* Project::FileSuffix = "retro";
+const char* Project::DefaultOutputDirectory = "_out";
 
 Project::Project()
 {
+    outputDirectory = DefaultOutputDirectory;
 }
 
 Project::~Project()
@@ -96,9 +98,14 @@ void Project::load(std::filesystem::path path)
     configurations.clear();
     files.clear();
     outputs.clear();
+    outputDirectory.reset();
 
     auto xml = xmlLoad(mPath);
     ROOT(RetroProject);
+
+    IF_HAS(OutputDirectory, RetroProject) {
+        outputDirectory = OPT_STRING(path, OutputDirectory);
+    }
 
     FOR_EACH(Constant, RetroProject) {
         Constant constant;
@@ -139,6 +146,7 @@ void Project::load(std::filesystem::path path)
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTAP;
         output->basicFileName = OPT_STRING(basicFileName, OutputTAP);
+        output->basicStartLine = OPT_INT(basicStartLine, OutputTAP);
         output->enabled = OPT_STRING(enabled, OutputTAP);
 
         FOR_EACH(File, OutputTAP) {
@@ -164,6 +172,7 @@ void Project::load(std::filesystem::path path)
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTRD;
         output->basicFileName = OPT_STRING(basicFileName, OutputTRD);
+        output->basicStartLine = OPT_INT(basicStartLine, OutputTRD);
         output->enabled = OPT_STRING(enabled, OutputTRD);
 
         FOR_EACH(File, OutputTRD) {
@@ -228,6 +237,12 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
         ss << " enabled=";
         xmlEncodeInQuotes(ss, *output.enabled);
     }
+    if (output.basicFileName) {
+        ss << " basicFileName=";
+        xmlEncodeInQuotes(ss, *output.basicFileName);
+    }
+    if (output.basicStartLine)
+        ss << " basicStartLine=\"" << *output.basicStartLine << "\"";
     ss << ">\n";
 
     for (const auto& file : output.files) {
@@ -247,6 +262,12 @@ void Project::save(std::filesystem::path path, bool createNew)
     std::stringstream ss;
     ss << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
     ss << "<RetroProject>\n";
+    if (outputDirectory) {
+        ss << '\n';
+        ss << "    <OutputDirectory path=";
+        xmlEncodeInQuotes(ss, *outputDirectory);
+        ss << " />\n";
+    }
     if (!constants.empty()) {
         ss << '\n';
         for (const auto& it : constants) {
@@ -307,6 +328,11 @@ void Project::save(std::filesystem::path path, bool createNew)
     mPath = std::move(path);
 
     if (createNew) {
-        /* FIXME */
+        std::filesystem::path projectPath = mPath;
+        projectPath.remove_filename();
+
+        std::stringstream ss;
+        ss << "/_out\n";
+        writeFile(projectPath / ".gitignore", ss.str());
     }
 }

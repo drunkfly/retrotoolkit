@@ -46,6 +46,35 @@ std::optional<std::string> xmlGetOptionalAttribute(const XmlDocument& xml, XmlNo
     return result;
 }
 
+int xmlGetRequiredIntAttribute(const XmlDocument& xml, XmlNode node, const char* name)
+{
+    auto attr = node->first_attribute(name);
+    if (!attr)
+        xmlMissingAttributeValue(xml, node, name);
+
+    int result;
+    if (!intFromString(result, attr->value(), attr->value_size()))
+        xmlInvalidAttributeValue(xml, node, name);
+
+    return result;
+}
+
+std::optional<int> xmlGetOptionalIntAttribute(const XmlDocument& xml, XmlNode node, const char* name)
+{
+    std::optional<int> result;
+
+    auto attr = node->first_attribute(name);
+    if (!attr)
+        return result;
+
+    int v;
+    if (!intFromString(v, attr->value(), attr->value_size()))
+        xmlInvalidAttributeValue(xml, node, name);
+
+    result = v;
+    return result;
+}
+
 bool xmlGetRequiredBoolAttribute(const XmlDocument& xml, XmlNode node, const char* name)
 {
     auto attr = node->first_attribute(name);

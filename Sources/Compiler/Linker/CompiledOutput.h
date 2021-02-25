@@ -13,7 +13,10 @@ public:
     explicit CompiledFile(std::string name);
     ~CompiledFile() override;
 
+    const std::string& name() const { return mName; }
+
     size_t loadAddress() const { return mLoadAddress; }
+    void setLoadAddress(size_t address) { mLoadAddress = address; }
 
     bool isUsedByBasic() const { return mUsedByBasic; }
     void setUsedByBasic() { mUsedByBasic = true; }

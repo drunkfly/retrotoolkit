@@ -17,6 +17,7 @@ class Project
 {
 public:
     static const char* FileSuffix;
+    static const char* DefaultOutputDirectory;
 
     struct File;
 
@@ -74,6 +75,7 @@ public:
         Type type;
         std::optional<std::string> enabled;
         std::optional<std::string> basicFileName;
+        std::optional<int> basicStartLine;
         std::vector<File> files;
     };
 
@@ -81,6 +83,7 @@ public:
     std::vector<std::unique_ptr<Configuration>> configurations;
     std::vector<std::unique_ptr<File>> files;
     std::vector<std::unique_ptr<Output>> outputs;
+    std::optional<std::string> outputDirectory;
 
     Project();
     ~Project();

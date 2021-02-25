@@ -20,6 +20,11 @@
 #define OPT_STRING(NAME, PARENT) \
     xmlGetOptionalAttribute(xml, xml##PARENT, #NAME)
 
+#define REQ_INT(NAME, PARENT) \
+    xmlGetRequiredIntAttribute(xml, xml##PARENT, #NAME)
+#define OPT_INT(NAME, PARENT) \
+    xmlGetOptionalIntAttribute(xml, xml##PARENT, #NAME)
+
 #define REQ_BOOL(NAME, PARENT) \
     xmlGetRequiredBoolAttribute(xml, xml##PARENT, #NAME)
 #define OPT_BOOL(NAME, PARENT) \
@@ -43,6 +48,8 @@ XmlNode xmlGetRootElement(const XmlDocument& xml, const char* name);
 
 std::string xmlGetRequiredAttribute(const XmlDocument& xml, XmlNode node, const char* name);
 std::optional<std::string> xmlGetOptionalAttribute(const XmlDocument& xml, XmlNode node, const char* name);
+int xmlGetRequiredIntAttribute(const XmlDocument& xml, XmlNode node, const char* name);
+std::optional<int> xmlGetOptionalIntAttribute(const XmlDocument& xml, XmlNode node, const char* name);
 bool xmlGetRequiredBoolAttribute(const XmlDocument& xml, XmlNode node, const char* name);
 std::optional<bool> xmlGetOptionalBoolAttribute(const XmlDocument& xml, XmlNode node, const char* name);
 

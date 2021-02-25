@@ -3,7 +3,9 @@
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Linker/Program.h"
 #include "Compiler/Linker/Linker.h"
+#include "Compiler/Linker/CompiledOutput.h"
 #include "Compiler/Assembler/AssemblerParser.h"
+#include "Compiler/Output/TRDOSWriter.h"
 #include "Compiler/SourceFile.h"
 #include "Compiler/BasicCompiler.h"
 #include "Compiler/Lexer.h"
@@ -26,11 +28,26 @@ Compiler::~Compiler()
 
 void Compiler::buildProject(const std::filesystem::path& projectFile, const std::string& projectConfiguration)
 {
+    // Read project file
+
     if (mListener)
         mListener->compilerProgress(0, 0, "Reading project file...");
 
     Project project;
     project.load(projectFile);
+
+    std::string projectName = projectFile.stem().string();
+
+    std::filesystem::path projectPath = projectFile;
+    projectPath.remove_filename();
+
+    std::filesystem::path outputPath;
+    if (project.outputDirectory)
+        outputPath = projectPath / pathFromUtf8(*project.outputDirectory);
+    else
+        outputPath = projectPath / Project::DefaultOutputDirectory;
+
+    // Collect list of source files
 
     if (mListener)
         mListener->compilerProgress(0, 0, "Scanning directories...");
@@ -38,9 +55,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     std::vector<SourceFile> sourceFiles;
     std::vector<SourceFile> basicFiles;
 
-    std::filesystem::path dir = projectFile;
-    dir.remove_filename();
-    for (const auto& it : std::filesystem::recursive_directory_iterator(dir)) {
+    for (const auto& it : std::filesystem::recursive_directory_iterator(projectPath)) {
         if (it.is_directory())
             continue;
 
@@ -57,7 +72,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         } else
             continue;
 
-        auto name = it.path().lexically_relative(dir);
+        auto name = it.path().lexically_relative(projectPath);
         list->emplace_back(SourceFile{ fileType, new (&mHeap) FileID(name, it.path()) });
     }
 
@@ -69,9 +84,11 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     int n = int(sourceFiles.size());
     int nBasic = int(basicFiles.size());
     int count = 0;
-    int total = n + nBasic + 3;
+    int total = n + nBasic + project.outputs.size() + 2;
 
     auto program = new (&mHeap) Program();
+
+    // Compile source files
 
     for (int i = 0; i < n; i++) {
         const auto& file = sourceFiles[i];
@@ -89,14 +106,15 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         }
     }
 
+    // Link program
+
     if (mListener)
         mListener->compilerProgress(count++, total, "Linking...");
 
     Linker linker(&mHeap, &project, projectConfiguration);
     auto linkerOutput = linker.link(program);
 
-    if (mListener)
-        mListener->compilerProgress(count++, total, "Reading BASIC code...");
+    // Compile basic files
 
     BasicCompiler compiler(&mHeap, linkerOutput);
 
@@ -113,15 +131,43 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         }
     }
 
+    // Produce code for files
+
     if (mListener)
-        mListener->compilerProgress(count++, total, "Producing BASIC code...");
+        mListener->compilerProgress(count++, total, "Processing BASIC code...");
 
     compiler.compile();
 
-    if (mListener)
-        mListener->compilerProgress(count++, total, "Generating output...");
+    // Generate outputs
 
-    /* FIXME */
+    for (const auto& output : project.outputs) {
+        switch (output->type) {
+            case Project::Output::ZXSpectrumTAP:
+                // FIXME
+                break;
+
+            case Project::Output::ZXSpectrumTRD: {
+                if (mListener)
+                    mListener->compilerProgress(count++, total, "Generating TRD and SCL...");
+                TRDOSWriter writer;
+                if (nBasic > 0) {
+                    std::string name = (output->basicFileName ? *output->basicFileName : "BOOT");
+                    int line = output->basicStartLine ? *output->basicStartLine : -1;
+                    writer.addBasicFile(std::move(name), compiler.compiledData(), line);
+                }
+                for (const auto& file : linkerOutput->files())
+                    writer.addCodeFile(file->name(), file->data(), file->size(), file->loadAddress());
+                writer.writeSclFile(outputPath / (projectName + ".scl"));
+                writer.writeTrdFile(outputPath / (projectName + ".trd"), projectName);
+                break;
+            }
+
+            default:
+                assert(false);
+                ++count;
+                break;
+        }
+    }
 
     if (mListener)
         mListener->compilerProgress(count, total, "Done");

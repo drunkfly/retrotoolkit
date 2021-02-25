@@ -212,6 +212,8 @@ namespace
                 section->code.copyTo(output);
                 offset += section->resolvedSize.value();
             }
+
+            output->setLoadAddress(startAddress);
         }
 
     private:
