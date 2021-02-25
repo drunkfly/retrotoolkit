@@ -4,6 +4,7 @@ add(Compiler
     LIBS
         Common
         RapidXML
+        Bas2Tap
     SOURCES
         Assembler/AssemblerContext.cpp
         Assembler/AssemblerContext.h
@@ -36,6 +37,8 @@ add(Compiler
         Tree/SymbolTable.h
         Tree/Value.cpp
         Tree/Value.h
+        BasicCompiler.cpp
+        BasicCompiler.h
         Compiler.cpp
         Compiler.h
         CompilerError.cpp
@@ -50,6 +53,7 @@ add(Compiler
         ParsingContext.h
         Project.cpp
         Project.h
+        SourceFile.h
         Token.cpp
         Token.h
     )

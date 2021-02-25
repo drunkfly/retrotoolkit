@@ -4,36 +4,14 @@
 #include "Compiler/Linker/Program.h"
 #include "Compiler/Linker/Linker.h"
 #include "Compiler/Assembler/AssemblerParser.h"
+#include "Compiler/SourceFile.h"
+#include "Compiler/BasicCompiler.h"
 #include "Compiler/Lexer.h"
 #include "Compiler/Project.h"
 #include "Common/IO.h"
 #include <vector>
 #include <algorithm>
 #include <sstream>
-
-namespace
-{
-    enum class FileType
-    {
-        Asm,
-    };
-
-    struct SourceFile
-    {
-        FileType fileType;
-        FileID* fileID;
-
-        bool operator<(const SourceFile& other) const
-        {
-            if (fileType < other.fileType)
-                return true;
-            else if (fileType > other.fileType)
-                return false;
-
-            return (fileID->name() < other.fileID->name());
-        }
-    };
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,7 +35,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     if (mListener)
         mListener->compilerProgress(0, 0, "Scanning directories...");
 
-    std::vector<SourceFile> files;
+    std::vector<SourceFile> sourceFiles;
+    std::vector<SourceFile> basicFiles;
 
     std::filesystem::path dir = projectFile;
     dir.remove_filename();
@@ -66,27 +45,36 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             continue;
 
         FileType fileType;
+        std::vector<SourceFile>* list;
+
         auto ext = it.path().extension();
-        if (ext == ".asm")
+        if (ext == ".asm") {
             fileType = FileType::Asm;
-        else
+            list = &sourceFiles;
+        } else if (ext == ".bas") {
+            fileType = FileType::Basic;
+            list = &basicFiles;
+        } else
             continue;
 
         auto name = it.path().lexically_relative(dir);
-        files.emplace_back(SourceFile{ fileType, new (&mHeap) FileID(name, it.path()) });
+        list->emplace_back(SourceFile{ fileType, new (&mHeap) FileID(name, it.path()) });
     }
 
-    std::sort(files.begin(), files.end());
+    std::sort(sourceFiles.begin(), sourceFiles.end());
 
     if (mListener)
         mListener->compilerProgress(0, 0, "Compiling...");
 
-    int n = int(files.size());
+    int n = int(sourceFiles.size());
+    int nBasic = int(basicFiles.size());
     int count = 0;
-    int total = n + 1;
+    int total = n + nBasic + 3;
+
+    auto program = new (&mHeap) Program();
 
     for (int i = 0; i < n; i++) {
-        const auto& file = files[i];
+        const auto& file = sourceFiles[i];
         if (mListener)
             mListener->compilerProgress(count++, total, file.fileID->name().string());
 
@@ -94,11 +82,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             case FileType::Asm: {
                 Lexer lexer(&mHeap);
                 lexer.scan(file.fileID, loadFile(file.fileID->path()).c_str());
-                auto program = new (&mHeap) Program();
                 AssemblerParser parser(&mHeap, program);
                 parser.parse(lexer.firstToken());
-                Linker linker(&mHeap, &project, projectConfiguration);
-                auto linkerOutput = linker.link(program);
                 break;
             }
         }
@@ -106,6 +91,35 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
     if (mListener)
         mListener->compilerProgress(count++, total, "Linking...");
+
+    Linker linker(&mHeap, &project, projectConfiguration);
+    auto linkerOutput = linker.link(program);
+
+    if (mListener)
+        mListener->compilerProgress(count++, total, "Reading BASIC code...");
+
+    BasicCompiler compiler(&mHeap, linkerOutput);
+
+    for (int i = 0; i < nBasic; i++) {
+        auto& file = basicFiles[i];
+        if (mListener)
+            mListener->compilerProgress(count++, total, file.fileID->name().string());
+
+        switch (file.fileType) {
+            case FileType::Basic: {
+                compiler.addFile(&file);
+                break;
+            }
+        }
+    }
+
+    if (mListener)
+        mListener->compilerProgress(count++, total, "Producing BASIC code...");
+
+    compiler.compile();
+
+    if (mListener)
+        mListener->compilerProgress(count++, total, "Generating output...");
 
     /* FIXME */
 

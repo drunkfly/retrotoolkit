@@ -15,9 +15,13 @@ public:
 
     size_t loadAddress() const { return mLoadAddress; }
 
+    bool isUsedByBasic() const { return mUsedByBasic; }
+    void setUsedByBasic() { mUsedByBasic = true; }
+
 private:
     std::string mName;
     size_t mLoadAddress;
+    bool mUsedByBasic;
 
     DISABLE_COPY(CompiledFile);
 };
@@ -30,6 +34,7 @@ public:
 
     const std::vector<CompiledFile*>& files() const { return mFileList; }
 
+    CompiledFile* getFile(const std::string& name);
     CompiledFile* getOrAddFile(const std::string& name);
 
 private:

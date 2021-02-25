@@ -138,6 +138,7 @@ void Project::load(std::filesystem::path path)
     IF_HAS(OutputTAP, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTAP;
+        output->basicFileName = OPT_STRING(basicFileName, OutputTAP);
         output->enabled = OPT_STRING(enabled, OutputTAP);
 
         FOR_EACH(File, OutputTAP) {
@@ -162,6 +163,7 @@ void Project::load(std::filesystem::path path)
     IF_HAS(OutputTRD, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTRD;
+        output->basicFileName = OPT_STRING(basicFileName, OutputTRD);
         output->enabled = OPT_STRING(enabled, OutputTRD);
 
         FOR_EACH(File, OutputTRD) {
