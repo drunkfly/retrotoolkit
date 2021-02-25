@@ -17,6 +17,11 @@ public:
 
     const std::string& name() const { return mName; }
 
+    size_t calculateSizeInBytes() const;
+
+    void resolveLabels(size_t& address);
+    void unresolveLabels();
+
     void addInstruction(Instruction* instruction);
 
 private:

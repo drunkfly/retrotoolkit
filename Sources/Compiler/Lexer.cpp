@@ -251,7 +251,7 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                         ++p;
                         token(TOK_LABEL_LOCAL, "label", str.c_str(), str.length());
                     }
-                    token(TOK_IDENTIFIER, "label name", str.c_str(), str.length());
+                    token(TOK_LABEL_LOCAL_NAME, "label name", str.c_str(), str.length());
                     continue;
                 }
                 token(TOK_AT, "'@'");

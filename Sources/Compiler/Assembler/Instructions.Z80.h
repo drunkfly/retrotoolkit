@@ -310,7 +310,7 @@ namespace Z80
         {
         }
 
-        bool isZ80Opcode() const override;
+        bool isZ80Opcode() const final override;
 
         virtual void toString(std::stringstream& ss) const = 0;
 
@@ -400,7 +400,7 @@ namespace Z80
         { \
         public: \
             explicit OP(SourceLocation* location) : Opcode0(location) {} \
-            unsigned char sizeInBytes() const override \
+            size_t sizeInBytes() const override \
             { \
                 uint8_t high; (void)high; \
                 int64_t nextAddress = 0; (void)nextAddress; \
@@ -413,7 +413,7 @@ namespace Z80
         { \
         public: \
             OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
-            unsigned char sizeInBytes() const override \
+            size_t sizeInBytes() const override \
             { \
                 uint8_t high; (void)high; \
                 int64_t nextAddress = 0; (void)nextAddress; \
@@ -426,7 +426,7 @@ namespace Z80
         { \
         public: \
             OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
-            unsigned char sizeInBytes() const override \
+            size_t sizeInBytes() const override \
             { \
                 uint8_t high; (void)high; \
                 int64_t nextAddress = 0; (void)nextAddress; \

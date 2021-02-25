@@ -62,7 +62,18 @@ static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, Xm
     section->base = OPT_STRING(base, Section);
     section->fileOffset = OPT_STRING(fileOffset, Section);
     section->alignment = OPT_STRING(alignment, Section);
+    section->attachment = Project::Section::Attachment::Default;
     section->compression = Compression::None;
+
+    auto attach = OPT_STRING(attachment, Section);
+    if (attach) {
+        if (*attach == "lower")
+            section->attachment = Project::Section::Attachment::Lower;
+        else if (*attach == "upper")
+            section->attachment = Project::Section::Attachment::Upper;
+        else
+            INVALID(attachment, Section);
+    }
 
     auto comp = OPT_STRING(compression, Section);
     if (comp) {
@@ -118,10 +129,7 @@ void Project::load(std::filesystem::path path)
             file->until = OPT_STRING(until, File);
 
             FOR_EACH(Section, Files)
-                file->lowerSections.emplace_back(parseSection(xml, xmlSection, file.get()));
-
-            FOR_EACH(UpperSection, Files)
-                file->upperSections.emplace_back(parseSection(xml, xmlUpperSection, file.get()));
+                file->sections.emplace_back(parseSection(xml, xmlSection, file.get()));
 
             files.emplace_back(std::move(file));
         }
@@ -192,10 +200,15 @@ static void writeSection(std::stringstream& ss, const char* element, const Proje
         ss << ' ';
         xmlEncodeInQuotes(ss, *section.fileOffset);
     }
+    switch (section.attachment) {
+        case Project::Section::Attachment::Default: break;
+        case Project::Section::Attachment::Lower: ss << " attachment=\"" << "lower" << '"'; break;
+        case Project::Section::Attachment::Upper: ss << " attachment=\"" << "upper" << '"'; break;
+    }
     switch (section.compression) {
         case Compression::None: break;
-        case Compression::Zx7: ss << "compression=\"" << "zx7" << '"'; break;
-        case Compression::Lzsa2: ss << "compression=\"" << "lzsa2" << '"'; break;
+        case Compression::Zx7: ss << " compression=\"" << "zx7" << '"'; break;
+        case Compression::Lzsa2: ss << " compression=\"" << "lzsa2" << '"'; break;
     }
     ss << " />\n";
 }
@@ -273,10 +286,8 @@ void Project::save(std::filesystem::path path, bool createNew)
                 xmlEncodeInQuotes(ss, *file->until);
             }
             ss << ">\n";
-            for (const auto& section : file->lowerSections)
+            for (const auto& section : file->sections)
                 writeSection(ss, "Section", *section);
-            for (const auto& section : file->upperSections)
-                writeSection(ss, "SectionUpper", *section);
             ss << "        </File>\n";
         }
         ss << "    </Files>\n";

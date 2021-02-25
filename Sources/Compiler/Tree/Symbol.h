@@ -6,6 +6,7 @@
 
 class Expr;
 class SourceLocation;
+class Label;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -22,6 +23,7 @@ public:
     const char* name() const { return mName; }
 
     virtual bool isConstantSymbol() const;
+    virtual bool isLabelSymbol() const;
 
 private:
     SourceLocation* mLocation;
@@ -41,7 +43,7 @@ public:
     {
     }
 
-    bool isConstantSymbol() const override;
+    bool isConstantSymbol() const final override;
 
     const Expr* value() const { return mValue; }
 
@@ -49,6 +51,23 @@ private:
     Expr* mValue;
 
     DISABLE_COPY(ConstantSymbol);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class LabelSymbol : public Symbol
+{
+public:
+    LabelSymbol(SourceLocation* location, Label* label);
+
+    bool isLabelSymbol() const final override;
+
+    Label* label() const { return mLabel; }
+
+private:
+    Label* mLabel;
+
+    DISABLE_COPY(LabelSymbol);
 };
 
 #endif

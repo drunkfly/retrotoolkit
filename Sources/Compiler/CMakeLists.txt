@@ -5,6 +5,8 @@ add(Compiler
         Common
         RapidXML
     SOURCES
+        Assembler/AssemblerContext.cpp
+        Assembler/AssemblerContext.h
         Assembler/AssemblerParser.cpp
         Assembler/AssemblerParser.h
         Assembler/Instruction.cpp
@@ -12,7 +14,10 @@ add(Compiler
         Assembler/Instructions.Z80.cpp
         Assembler/Instructions.Z80.h
         Assembler/Instructions.Z80.hh
+        Assembler/Label.cpp
+        Assembler/Label.h
         Compression/Compression.h
+        Linker/CodeEmitter.cpp
         Linker/CodeEmitter.h
         Linker/CompiledOutput.cpp
         Linker/CompiledOutput.h

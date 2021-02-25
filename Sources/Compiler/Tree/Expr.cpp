@@ -70,6 +70,25 @@ uint16_t Expr::evaluateWord() const
         return uint16_t(int16_t(value.number));
 }
 
+uint16_t Expr::evaluateUnsignedWord() const
+{
+    Value value = evaluateValue();
+
+    if (value.bits == SignificantBits::NoMoreThan8 || value.bits == SignificantBits::NoMoreThan16)
+        value.truncateTo16Bit();
+    else if (value.number < 0) {
+        std::stringstream ss;
+        ss << "negative value is not allowed in this context.";
+        throw CompilerError(location(), ss.str());
+    } else if (value.number > 65535) {
+        std::stringstream ss;
+        ss << "value " << value.number << " (0x" << std::hex << value.number << ") does not fit into a word.";
+        throw CompilerError(location(), ss.str());
+    }
+
+    return uint16_t(value.number);
+}
+
 uint32_t Expr::evaluateDWord() const
 {
     Value value = evaluateValue();

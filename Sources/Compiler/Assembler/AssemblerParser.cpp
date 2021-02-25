@@ -3,6 +3,8 @@
 #include "Compiler/ParsingContext.h"
 #include "Compiler/CompilerError.h"
 #include "Compiler/Assembler/Instructions.Z80.h"
+#include "Compiler/Assembler/AssemblerContext.h"
+#include "Compiler/Assembler/Label.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Linker/Program.h"
 #include "Compiler/Linker/ProgramSection.h"
@@ -43,9 +45,10 @@ std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDi
 
 AssemblerParser::AssemblerParser(GCHeap* heap, Program* program)
     : mHeap(heap)
+    , mContext(nullptr)
     , mProgram(program)
-    , mSection(nullptr)
     , mSymbolTable(program->globals())
+    , mToken(nullptr)
 {
 }
 
@@ -55,7 +58,7 @@ AssemblerParser::~AssemblerParser()
 
 void AssemblerParser::parse(const Token* tokens)
 {
-    mSection = nullptr;
+    mContext = new (mHeap) AssemblerContext(nullptr);
     mSymbolTable = mProgram->globals();
 
     mToken = tokens;
@@ -113,22 +116,17 @@ void AssemblerParser::parseLine()
         throw CompilerError(mToken->location(), ss.str());
     }
 
-    //ProgramLabel* label = nullptr;
+    Label* label = nullptr;
 
     // read label, if any
     if (mToken->id() == TOK_LABEL_GLOBAL || mToken->id() == TOK_LABEL_FULL || mToken->id() == TOK_LABEL_LOCAL) {
         /*
         if (mToken->id != TOK_LABEL_LOCAL && !mContext->areGlobalLabelsAllowed())
             error(tr("global labels are not allowed in this context"));
-
-        std::string name = readLabelName(lastTokenId());
-        label = mProgram->addLabel(lastToken(), mContext->codeEmitter(), name);
-        if (!label || mContext->hasVariable(name))
-            error(tr("duplicate identifier '%1'").arg(name.c_str()));
-
-        mContext->adjustLabel(label);
         */
 
+        std::string name = readLabelName();
+        mContext->addLabel(mSymbolTable, mToken->location(), std::move(name));
         mToken = mToken->next();
 
         // skip label-only lines
@@ -140,9 +138,7 @@ void AssemblerParser::parseLine()
     if (mToken->id() >= TOK_IDENTIFIER) {
         Instruction* instruction = parseOpcode();
         if (instruction) {
-            if (!mSection)
-                throw CompilerError(instruction->location(), "code or data not in a section.");
-            mSection->addInstruction(instruction);
+            mContext->addInstruction(instruction);
             return;
         }
 
@@ -162,10 +158,8 @@ void AssemblerParser::parseLine()
     std::string name;
     if (mToken->id() >= TOK_IDENTIFIER)
         name = nameToken->text();
-    /*
-    else if (lastTokenId() == T_LOCAL_LABEL_NAME)
-        name = readLabelName(lastTokenId());
-    */
+    else if (mToken->id() == TOK_LABEL_LOCAL_NAME)
+        name = readLabelName();
     else
         throw CompilerError(nameToken->location(), "expected opcode or directive");
 
@@ -200,29 +194,17 @@ void AssemblerParser::parseLine()
     }
 }
 
-/*
-// FIXME: duplicate of one in TapeFileWriter
-static bool endsWith(const std::string& str, const std::string& end)
-{
-    if (str.length() < end.length())
-        return false;
-    return memcmp(str.data() + str.length() - end.length(), end.data(), end.length()) == 0;
-}
-*/
-
 void AssemblerParser::parseSectionDecl()
 {
     mToken = mToken->next();
 
+    SourceLocation* location = mToken->location();
     const char* sectionName = consumeIdentifier();
     auto section = mProgram->getOrAddSection(sectionName);
 
-    /*
     if (!mContext->setCurrentSection(section))
-        error(tr("'section' directive is not allowed in this context"));
-    */
+        throw CompilerError(location, "'section' directive is not allowed in this context.");
 
-    mSection = section;
     expectEol();
 }
 
@@ -526,38 +508,34 @@ Instruction* AssemblerParser::parseOpcode()
     return nullptr;
 }
 
-/*
-std::string AssemblerParser::readLabelName(int tokenId)
+std::string AssemblerParser::readLabelName()
 {
-    switch (tokenId) {
+    switch (mToken->id()) {
         case TOK_LABEL_GLOBAL: {
-            const auto& name = lastTokenText();
-            mContext->setLocalLabelsPrefix(name, lastToken(), mReporter);
-            return name;
+            mContext->setLocalLabelsPrefix(mToken->location(), mToken->text());
+            return mToken->text();
         }
 
         case TOK_LABEL_FULL:
-            return lastTokenText();
+            return mToken->text();
 
         case TOK_LABEL_LOCAL:
-        case T_LOCAL_LABEL_NAME: {
-            auto prefix = mContext->localLabelsPrefix();
+        case TOK_LABEL_LOCAL_NAME: {
+            const auto& prefix = mContext->localLabelsPrefix();
             if (prefix.empty())
-                error(tr("found local label name without previous global label"));
+                throw CompilerError(mToken->location(), "local label name without preceding global label");
 
             std::stringstream ss;
             ss << prefix;
             ss << "@@";
-            ss << lastTokenText();
+            ss << mToken->text();
             return ss.str();
         }
     }
 
-    Q_ASSERT(false);
-    error(tr("internal compiler error"));
-    return std::string();
+    assert(false);
+    throw CompilerError(mToken->location(), "internal compiler error: invalid label token.");
 }
-*/
 
 const char* AssemblerParser::consumeIdentifier()
 {

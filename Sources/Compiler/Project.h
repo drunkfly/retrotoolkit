@@ -34,11 +34,19 @@ public:
 
     struct Section
     {
+        enum Attachment
+        {
+            Default,
+            Lower,
+            Upper,
+        };
+
         File* file;
         std::string name;
         std::optional<std::string> base;
         std::optional<std::string> fileOffset;
         std::optional<std::string> alignment;
+        Attachment attachment;
         Compression compression;
     };
 
@@ -47,8 +55,7 @@ public:
         std::string name;
         std::optional<std::string> start;
         std::optional<std::string> until;
-        std::vector<std::unique_ptr<Section>> lowerSections;
-        std::vector<std::unique_ptr<Section>> upperSections;
+        std::vector<std::unique_ptr<Section>> sections;
     };
 
     struct Output

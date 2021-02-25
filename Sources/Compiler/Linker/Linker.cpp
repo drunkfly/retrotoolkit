@@ -1,5 +1,6 @@
 #include "Linker.h"
 #include "Common/GC.h"
+#include "Compiler/Tree/Expr.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Linker/CompiledOutput.h"
@@ -17,9 +18,17 @@ namespace
     struct LinkerSection : public GCObject
     {
         ProgramSection* programSection;
+        Project::Section::Attachment attachment;
+        Compression compression;
+        UncompressedCodeEmitter code;
         Expr* base;
         Expr* fileOffset;
         Expr* alignment;
+        size_t uncompressedSize;
+        std::optional<size_t> resolvedSize;
+        std::optional<size_t> resolvedBase;
+        std::optional<size_t> resolvedFileOffset;
+        bool autoFileOffset;
     };
 
     class LinkerFile : public GCObject
@@ -37,21 +46,99 @@ namespace
             mFileStart = tryParseExpression(location, file->start);
             mFileUntil = tryParseExpression(location, file->until);
 
-            mSections.reserve(file->lowerSections.size() + file->upperSections.size());
-            for (const auto& it : file->lowerSections)
+            mSections.reserve(file->sections.size());
+            for (const auto& it : file->sections)
                 addSection(location, it.get());
-            mSections.emplace_back(nullptr); // separator between lower/upper sections
-            for (const auto& it : file->upperSections)
-                addSection(location, it.get());
+
+            // we can easily calculate size for all uncompressed sections
+
+            for (auto section : mSections) {
+                if (section->compression == Compression::None)
+                    section->resolvedSize = section->uncompressedSize;
+            }
+
+            // resolve addresses for all sections with known base
+
+            bool hasSectionWithKnownBase = false;
+            for (auto section : mSections) {
+                if (section->base) {
+                    section->resolvedBase = section->base->evaluateUnsignedWord();
+                    section->programSection->resolveLabels(*section->resolvedBase);
+                    if (section->fileOffset && !section->autoFileOffset) {
+                        section->resolvedFileOffset = section->fileOffset->evaluateUnsignedWord();
+                        hasSectionWithKnownBase = true;
+                    }
+                }
+            }
+
+            // if neither start, nor end of file is specified, there should be at least one section with known base
+
+            if (!mFileStart && !mFileUntil && !hasSectionWithKnownBase) {
+                std::stringstream ss;
+                ss << "unable to resolve addresses in file \"" << file->name << "\".";
+                throw CompilerError(location, ss.str());
+            }
+
+            // convert all "lower" sections at the beginning of file to "upper" if file start is unspecified
+
+            if (!mFileStart) {
+                for (auto section : mSections) {
+                    if (section->resolvedFileOffset)
+                        break;
+                    if (section->attachment == Project::Section::Upper)
+                        break;
+                    section->attachment = Project::Section::Upper;
+                }
+            }
+
+            // convert all "upper" sections at the end of file to "lower" if file end is unspecified
+
+            if (!mFileUntil) {
+                for (auto section : mSections) {
+                    if (section->resolvedFileOffset)
+                        break;
+                    if (section->attachment != Project::Section::Upper)
+                        break;
+                    section->attachment = Project::Section::Lower;
+                }
+            }
+
+            // resolve addresses for sections at start of file while we can
+
+            if (mFileStart) {
+                size_t address = mFileStart->evaluateUnsignedWord();
+                resolveSectionsFrom(address, 0);
+            }
+
+            // resolve addresses for sections at end of file while we can
+
+            if (mFileUntil) {
+                size_t address = mFileUntil->evaluateUnsignedWord();
+                resolveSectionsTo(address, mSections.size());
+            }
         }
 
         const Project::File* file() const { return mFile; }
-        bool isResolved() const { return mIsResolved; }
 
-        bool tryResolve()
+        bool tryResolve(bool& didResolve, std::string& resolveError)
         {
-            // FIXME
-            return false;
+            if (mIsResolved)
+                return true;
+
+            // Try to resolve size for compressed sections
+
+            for (auto section : mSections) {
+                if (!section->resolvedSize) {
+                    /* FIXME */
+                }
+            }
+
+            // Try to resolve addresses for still-unresolved sections
+
+            /* FIXME */
+            resolveError = "unimplemented.";
+
+            return true;
         }
 
         void generateCode(CompiledFile* output)
@@ -80,12 +167,65 @@ namespace
                 throw CompilerError(location, ss.str());
             }
 
+            bool autoOffset = (sectionInfo->fileOffset && *sectionInfo->fileOffset == "auto");
+
             auto linkerSection = new (heap()) LinkerSection();
             linkerSection->programSection = section;
             linkerSection->base = tryParseExpression(location, sectionInfo->base);
-            linkerSection->fileOffset = tryParseExpression(location, sectionInfo->fileOffset);
+            linkerSection->fileOffset = (autoOffset ? nullptr : tryParseExpression(location, sectionInfo->fileOffset));
             linkerSection->alignment = tryParseExpression(location, sectionInfo->alignment);
+            linkerSection->uncompressedSize = section->calculateSizeInBytes();
+            linkerSection->attachment = sectionInfo->attachment;
+            linkerSection->compression = sectionInfo->compression;
+            linkerSection->autoFileOffset = autoOffset;
             mSections.emplace_back(linkerSection);
+
+            if (linkerSection->fileOffset && !linkerSection->base) {
+                std::stringstream ss;
+                ss << "section \"" << sectionInfo->name << " has file offset without base address.";
+                throw CompilerError(location, ss.str());
+            }
+        }
+
+        void resolveSectionsFrom(size_t address, size_t i)
+        {
+            size_t n = mSections.size();
+            for (; i < n; i++) {
+                auto section = mSections[i];
+                if (section->attachment == Project::Section::Attachment::Upper || section->resolvedFileOffset)
+                    break;
+
+                section->resolvedFileOffset = address;
+
+                if (!section->resolvedBase) {
+                    section->resolvedBase = address;
+                    section->programSection->resolveLabels(address);
+                }
+
+                if (!section->resolvedSize)
+                    break;
+
+                address += *section->resolvedSize;
+            }
+        }
+
+        void resolveSectionsTo(size_t address, size_t i)
+        {
+            while (i-- > 0) {
+                auto section = mSections[i];
+                if (section->attachment == Project::Section::Attachment::Lower || section->resolvedFileOffset)
+                    break;
+                if (!section->resolvedSize)
+                    break;
+
+                address -= *section->resolvedSize;
+                section->resolvedFileOffset = address;
+
+                if (!section->resolvedBase) {
+                    section->resolvedBase = address;
+                    section->programSection->resolveLabels(address);
+                }
+            }
         }
 
         Expr* parseExpression(SourceLocation* location, const std::string& str)
@@ -149,21 +289,18 @@ CompiledOutput* Linker::link(Program* program)
     for (;;) {
         bool resolvedAll = true;
         bool didResolve = false;
+        std::string resolveError;
 
         for (const auto& file : files) {
-            if (!file->isResolved()) {
-                if (file->tryResolve())
-                    didResolve = true;
-                else
-                    resolvedAll = false;
-            }
+            if (!file->tryResolve(didResolve, resolveError))
+                resolvedAll = false;
         }
 
         if (resolvedAll)
             break;
 
         if (!didResolve)
-            throw CompilerError(location, "resolve error."); // FIXME
+            throw CompilerError(location, resolveError);
     }
 
     auto output = new (mHeap) CompiledOutput();

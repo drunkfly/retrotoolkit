@@ -25,6 +25,7 @@ public:
     uint8_t evaluateByte() const;
     uint8_t evaluateByteOffset(int64_t nextAddress) const;
     uint16_t evaluateWord() const;
+    uint16_t evaluateUnsignedWord() const;
     uint32_t evaluateDWord() const;
     Value evaluateValue() const;
 

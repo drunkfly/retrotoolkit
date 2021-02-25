@@ -9,8 +9,8 @@
 
 struct Token;
 class GCHeap;
+class AssemblerContext;
 class Program;
-class ProgramSection;
 class SymbolTable;
 class Instruction;
 
@@ -24,13 +24,12 @@ public:
 
 private:
     GCHeap* mHeap;
+    AssemblerContext* mContext;
     Program* mProgram;
-    ProgramSection* mSection;
     SymbolTable* mSymbolTable;
     const Token* mToken;
 
     /*
-    std::unique_ptr<AssemblerContext> mContext;
     static std::unordered_map<std::string, void(AssemblerParser::*)()> mDataDirectives;
     */
     static std::unordered_map<std::string, void(AssemblerParser::*)()> mDirectives;
@@ -65,9 +64,7 @@ private:
 
     Instruction* parseOpcode();
 
-    /*
-    std::string readLabelName(int tokenId);
-    */
+    std::string readLabelName();
 
     const char* consumeIdentifier();
     //void expectComma(int tokenId);
