@@ -50,4 +50,5 @@ void AssemblerContext::addLabel(SymbolTable* symbolTable, SourceLocation* locati
         throw CompilerError(location, "label not in a section.");
     auto label = new (heap()) Label(location, std::move(name));
     symbolTable->addSymbol(new (heap()) LabelSymbol(location, label));
+    mSection->addInstruction(label);
 }

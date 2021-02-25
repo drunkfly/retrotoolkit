@@ -308,13 +308,13 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                 }
                 /* falls through. */
             case DIGIT_1_9: {
-                uint64_t value = charToInt(*p);
-                do {
+                uint64_t value = charToInt(*p++);
+                while (isDigit(*p)) {
                     if (value >= 0xfffffffful / 10)
                         throw CompilerError(location(), "number is too large.");
                     value *= 10;
                     value |= charToInt(*p++);
-                } while (isDigit(*p));
+                }
                 token(TOK_NUMBER, "number", value);
                 continue;
             }

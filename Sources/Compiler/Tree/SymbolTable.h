@@ -16,6 +16,7 @@ public:
     SymbolTable* parent() const { return mParent; }
 
     bool addSymbol(Symbol* symbol);
+    Symbol* findSymbol(const std::string& name) const;
 
 private:
     SymbolTable* mParent;

@@ -20,11 +20,11 @@ bool ParsingContext::expression(Expr*& expr,
 }
 
 bool ParsingContext::expressionInParentheses(Expr*& expr,
-    const StringSet* registerNames, const StringSet* conditionNames)
+    const StringSet* registerNames, const StringSet* conditionNames, bool unambiguous)
 {
     if (!consumeLeftParenthesis())
         return false;
-    if (!expression(expr, registerNames, conditionNames, true))
+    if (!expression(expr, registerNames, conditionNames, unambiguous))
         return false;
     return consumeRightParenthesis();
 }

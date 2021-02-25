@@ -20,6 +20,7 @@ public:
 
     bool hasAddress() const;
     Address* address() const;
+    size_t addressValue() const;
 
     void setAddress(size_t address);
     void unsetAddress();

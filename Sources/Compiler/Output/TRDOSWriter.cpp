@@ -3,6 +3,7 @@
 #include "Common/StreamUtils.h"
 #include "Common/IO.h"
 #include <assert.h>
+#include <string.h>
 #include <sstream>
 
 enum

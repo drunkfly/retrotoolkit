@@ -182,7 +182,7 @@ void Z80::memAddr::toString(std::stringstream& ss) const
 
 bool Z80::memAddr::tryParse(ParsingContext* c)
 {
-    return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames);
+    return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false);
 }
 
 int Z80::memAddr::low(int& high) const
@@ -312,7 +312,7 @@ void Z80::portAddr::toString(std::stringstream& ss) const
 
 bool Z80::portAddr::tryParse(ParsingContext* c)
 {
-    return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames);
+    return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false);
 }
 
 int Z80::portAddr::value() const
@@ -407,7 +407,7 @@ bool Z80::AF_::tryParse(ParsingContext* context)
     { \
         int high; (void)high; \
         int64_t nextAddress = 0; (void)nextAddress; \
-        return arraySize BYTES; \
+        return decltype(arrayType BYTES)::Size; \
     } \
     void Z80::OP##_##OP1::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
     { \
@@ -423,7 +423,7 @@ bool Z80::AF_::tryParse(ParsingContext* context)
     { \
         int high; (void)high; \
         int64_t nextAddress = 0; (void)nextAddress; \
-        return arraySize BYTES; \
+        return decltype(arrayType BYTES)::Size; \
     } \
     void Z80::OP##_##OP1##_##OP2::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
     { \

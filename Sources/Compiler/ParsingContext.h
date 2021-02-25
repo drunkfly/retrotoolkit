@@ -28,7 +28,8 @@ public:
     void nextToken();
 
     bool expression(Expr*& expr, const StringSet* registerNames, const StringSet* conditionNames, bool unambiguous);
-    bool expressionInParentheses(Expr*& expr, const StringSet* registerNames, const StringSet* conditionNames);
+    bool expressionInParentheses(Expr*& expr,
+        const StringSet* registerNames, const StringSet* conditionNames, bool unambiguous);
     Expr* unambiguousExpression();
 
     bool consumeComma();

@@ -13,6 +13,12 @@ class Label;
 class Symbol : public GCObject
 {
 public:
+    enum Type
+    {
+        Constant,
+        Label,
+    };
+
     Symbol(SourceLocation* location, const char* name)
         : mLocation(location)
         , mName(name)
@@ -22,8 +28,7 @@ public:
     SourceLocation* location() const { return mLocation; }
     const char* name() const { return mName; }
 
-    virtual bool isConstantSymbol() const;
-    virtual bool isLabelSymbol() const;
+    virtual Type type() const = 0;
 
 private:
     SourceLocation* mLocation;
@@ -43,7 +48,7 @@ public:
     {
     }
 
-    bool isConstantSymbol() const final override;
+    Type type() const final override;
 
     const Expr* value() const { return mValue; }
 
@@ -58,14 +63,14 @@ private:
 class LabelSymbol : public Symbol
 {
 public:
-    LabelSymbol(SourceLocation* location, Label* label);
+    LabelSymbol(SourceLocation* location, ::Label* label);
 
-    bool isLabelSymbol() const final override;
+    Type type() const final override;
 
-    Label* label() const { return mLabel; }
+    ::Label* label() const { return mLabel; }
 
 private:
-    Label* mLabel;
+    ::Label* mLabel;
 
     DISABLE_COPY(LabelSymbol);
 };

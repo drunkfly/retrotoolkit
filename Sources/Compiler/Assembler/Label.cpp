@@ -114,6 +114,12 @@ Label::Address* Label::address() const
     return mAddress;
 }
 
+size_t Label::addressValue() const
+{
+    assert(mAddress && mAddress->isValid());
+    return mAddress->value();
+}
+
 void Label::setAddress(size_t address)
 {
     mAddress->setValue(address);

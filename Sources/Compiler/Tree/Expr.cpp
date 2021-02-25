@@ -1,4 +1,6 @@
 #include "Expr.h"
+#include "Compiler/Assembler/Label.h"
+#include "Compiler/Tree/Symbol.h"
 #include "Compiler/CompilerError.h"
 #include <sstream>
 
@@ -202,10 +204,29 @@ void ExprNumber::toString(std::stringstream& ss) const
 
 Value ExprIdentifier::evaluate() const
 {
-    // FIXME
-    std::stringstream ss;
-    ss << "Use of undeclared identifier '" << mName << "'.";
-    throw CompilerError(location(), ss.str());
+    auto symbol = mSymbolTable->findSymbol(mName);
+    if (!symbol) {
+        std::stringstream ss;
+        ss << "Use of undeclared identifier '" << mName << "'.";
+        throw CompilerError(location(), ss.str());
+    }
+
+    switch (symbol->type()) {
+        case Symbol::Constant:
+            return static_cast<ConstantSymbol*>(symbol)->value()->evaluate();
+
+        case Symbol::Label: {
+            auto label = static_cast<LabelSymbol*>(symbol)->label();
+            if (!label->hasAddress()) {
+                std::stringstream ss;
+                ss << "value for symbol \"" << label->name() << "\" is not available at this context.";
+                throw CompilerError(location(), ss.str());
+            }
+            return Value(label->addressValue(), Sign::Unsigned, SignificantBits::NoMoreThan16);
+        }
+    }
+
+    throw CompilerError(symbol->location(), "internal compiler error: invalid symbol type.");
 }
 
 void ExprIdentifier::toString(std::stringstream& ss) const

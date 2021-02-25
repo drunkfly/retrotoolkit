@@ -3,32 +3,20 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Symbol::isConstantSymbol() const
+Symbol::Type ConstantSymbol::type() const
 {
-    return false;
-}
-
-bool Symbol::isLabelSymbol() const
-{
-    return false;
+    return Constant;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ConstantSymbol::isConstantSymbol() const
-{
-    return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-LabelSymbol::LabelSymbol(SourceLocation* location, Label* label)
+LabelSymbol::LabelSymbol(SourceLocation* location, ::Label* label)
     : Symbol(location, label->name().c_str())
     , mLabel(label)
 {
 }
 
-bool LabelSymbol::isLabelSymbol() const
+Symbol::Type LabelSymbol::type() const
 {
-    return true;
+    return Label;
 }
