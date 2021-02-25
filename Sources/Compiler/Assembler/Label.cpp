@@ -100,6 +100,10 @@ size_t Label::sizeInBytes() const
     return 0;
 }
 
+void Label::emitCode(CodeEmitter*, int64_t&) const
+{
+}
+
 bool Label::hasAddress() const
 {
     return mAddress->isValid();

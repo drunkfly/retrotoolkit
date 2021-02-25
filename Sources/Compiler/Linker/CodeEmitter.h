@@ -10,10 +10,18 @@ class SourceLocation;
 class CodeEmitter
 {
 public:
+    struct Byte
+    {
+        SourceLocation* location;
+        uint8_t value;
+    };
+
     CodeEmitter();
     virtual ~CodeEmitter();
 
     virtual void emitByte(SourceLocation* location, uint8_t byte) = 0;
+    virtual void emitBytes(SourceLocation* location, const uint8_t* bytes, size_t count) = 0;
+    virtual void emitBytes(const Byte* bytes, size_t count) = 0;
 
     DISABLE_COPY(CodeEmitter);
 };
@@ -21,18 +29,16 @@ public:
 class UncompressedCodeEmitter : public CodeEmitter
 {
 public:
-    struct Byte
-    {
-        SourceLocation* location;
-        uint8_t value;
-    };
-
     UncompressedCodeEmitter();
     ~UncompressedCodeEmitter();
 
     void clear();
 
     void emitByte(SourceLocation* location, uint8_t byte) override;
+    void emitBytes(SourceLocation* location, const uint8_t* bytes, size_t count) override;
+    void emitBytes(const Byte* bytes, size_t count) override;
+
+    void copyTo(CodeEmitter* target) const;
 
 private:
     std::vector<Byte> mBytes;

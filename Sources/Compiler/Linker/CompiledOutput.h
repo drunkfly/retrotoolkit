@@ -7,23 +7,17 @@
 #include <vector>
 #include <unordered_map>
 
-class CompiledFile : public GCObject, public CodeEmitter
+class CompiledFile : public GCObject, public UncompressedCodeEmitter
 {
 public:
-    struct Byte
-    {
-        SourceLocation* location;
-        uint8_t value;
-    };
-
     explicit CompiledFile(std::string name);
     ~CompiledFile() override;
 
-    void emitByte(SourceLocation* location, uint8_t byte) override;
+    size_t loadAddress() const { return mLoadAddress; }
 
 private:
     std::string mName;
-    std::vector<Byte> mBytes;
+    size_t mLoadAddress;
 
     DISABLE_COPY(CompiledFile);
 };

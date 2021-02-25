@@ -8,6 +8,7 @@
 #include <string>
 
 class Instruction;
+class CodeEmitter;
 
 class ProgramSection : public GCObject
 {
@@ -23,6 +24,8 @@ public:
     void unresolveLabels();
 
     void addInstruction(Instruction* instruction);
+
+    void emitCode(CodeEmitter* emitter, size_t baseAddress) const;
 
 private:
     std::string mName;

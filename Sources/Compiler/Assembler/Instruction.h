@@ -5,6 +5,8 @@
 #include "Common/GC.h"
 #include "Compiler/Tree/SourceLocation.h"
 
+class CodeEmitter;
+
 class Instruction : public GCObject
 {
 public:
@@ -17,6 +19,7 @@ public:
     virtual bool isZ80Opcode() const;
 
     virtual size_t sizeInBytes() const = 0;
+    virtual void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const = 0;
 
     SourceLocation* location() const { return mLocation; }
 

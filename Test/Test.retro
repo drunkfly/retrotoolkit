@@ -13,10 +13,10 @@
 
     <Files>
         <File name="LOADER" start="0x6000" until="0x8000">
-            <SectionUpper name="loader" />
-            <SectionUpper name="loader_logo" compression="lzsa2" />
-            <SectionUpper name="loader_main" />
-            <SectionUpper name="bank5_engine_topmost" />
+            <Section name="loader" />
+            <Section name="loader_logo" compression="lzsa2" />
+            <Section name="loader_main" />
+            <Section name="bank5_engine_topmost" />
         </File>
     </Files>
 

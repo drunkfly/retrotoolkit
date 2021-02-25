@@ -400,12 +400,8 @@ namespace Z80
         { \
         public: \
             explicit OP(SourceLocation* location) : Opcode0(location) {} \
-            size_t sizeInBytes() const override \
-            { \
-                uint8_t high; (void)high; \
-                int64_t nextAddress = 0; (void)nextAddress; \
-                return sizeofByteArray BYTES; \
-            } \
+            size_t sizeInBytes() const override; \
+            void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override; \
         }
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
@@ -413,12 +409,8 @@ namespace Z80
         { \
         public: \
             OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
-            size_t sizeInBytes() const override \
-            { \
-                uint8_t high; (void)high; \
-                int64_t nextAddress = 0; (void)nextAddress; \
-                return sizeofByteArray BYTES; \
-            } \
+            size_t sizeInBytes() const override; \
+            void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override; \
         }
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
@@ -426,12 +418,8 @@ namespace Z80
         { \
         public: \
             OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
-            size_t sizeInBytes() const override \
-            { \
-                uint8_t high; (void)high; \
-                int64_t nextAddress = 0; (void)nextAddress; \
-                return sizeofByteArray BYTES; \
-            } \
+            size_t sizeInBytes() const override; \
+            void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override; \
         }
 
     #include "Instructions.Z80.hh"

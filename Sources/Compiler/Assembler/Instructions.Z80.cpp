@@ -1,4 +1,5 @@
 #include "Instructions.Z80.h"
+#include "Compiler/Linker/CodeEmitter.h"
 #include "Compiler/Token.h"
 #include "Compiler/CompilerError.h"
 
@@ -383,8 +384,52 @@ bool Z80::AF_::tryParse(ParsingContext* context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define Z80_OPCODE_0(OP, BYTES, TSTATES)
-#define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES)
-#define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES)
+#define Z80_OPCODE_0(OP, BYTES, TSTATES) \
+    size_t Z80::OP::sizeInBytes() const \
+    { \
+        uint8_t high; (void)high; \
+        int64_t nextAddress = 0; (void)nextAddress; \
+        return sizeofByteArray BYTES; \
+    } \
+    void Z80::OP::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
+    { \
+        uint8_t high; (void)high;\
+        (void)nextAddress; \
+        auto array = makeByteArray BYTES; \
+        emitter->emitBytes(location(), array.data(), array.size()); \
+        nextAddress += array.size(); \
+    }
+
+#define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
+    size_t Z80::OP##_##OP1::sizeInBytes() const \
+    { \
+        uint8_t high; (void)high; \
+        int64_t nextAddress = 0; (void)nextAddress; \
+        return sizeofByteArray BYTES; \
+    } \
+    void Z80::OP##_##OP1::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
+    { \
+        uint8_t high; (void)high;\
+        (void)nextAddress; \
+        auto array = makeByteArray BYTES; \
+        emitter->emitBytes(location(), array.data(), array.size()); \
+        nextAddress += array.size(); \
+    }
+
+#define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
+    size_t Z80::OP##_##OP1##_##OP2::sizeInBytes() const \
+    { \
+        uint8_t high; (void)high; \
+        int64_t nextAddress = 0; (void)nextAddress; \
+        return sizeofByteArray BYTES; \
+    } \
+    void Z80::OP##_##OP1##_##OP2::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
+    { \
+        uint8_t high; (void)high;\
+        (void)nextAddress; \
+        auto array = makeByteArray BYTES; \
+        emitter->emitBytes(location(), array.data(), array.size()); \
+        nextAddress += array.size(); \
+    }
 
 #include "Instructions.Z80.hh"

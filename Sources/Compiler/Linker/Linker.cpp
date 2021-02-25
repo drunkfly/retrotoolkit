@@ -28,6 +28,7 @@ namespace
         std::optional<size_t> resolvedSize;
         std::optional<size_t> resolvedBase;
         std::optional<size_t> resolvedFileOffset;
+        bool codeGenerated;
         bool autoFileOffset;
     };
 
@@ -67,6 +68,21 @@ namespace
                     if (section->fileOffset && !section->autoFileOffset) {
                         section->resolvedFileOffset = section->fileOffset->evaluateUnsignedWord();
                         hasSectionWithKnownBase = true;
+                    }
+
+                    if (section->alignment) {
+                        size_t alignment = section->alignment->evaluateUnsignedWord();
+                        if (alignment == 0) {
+                            std::stringstream ss;
+                            ss << "section \"" << section->programSection->name()
+                                << "\" has invalid alignment in file \"" << file->name << "\".";
+                            throw CompilerError(location, ss.str());
+                        } else if ((section->resolvedBase.value() % alignment) != 0) {
+                            std::stringstream ss;
+                            ss << "conflicting base and alignment for section \""
+                                << section->programSection->name() << "\" in file \"" << file->name << "\".";
+                            throw CompilerError(location, ss.str());
+                        }
                     }
                 }
             }
@@ -143,7 +159,58 @@ namespace
 
         void generateCode(CompiledFile* output)
         {
-            // FIXME
+            if (mSections.empty())
+                return;
+
+            std::sort(mSections.begin(), mSections.end(), [](LinkerSection* a, LinkerSection* b) {
+                    return (a->resolvedFileOffset.value() < b->resolvedFileOffset.value());
+                });
+
+            size_t startAddress = 0;
+            if (mFileStart)
+                startAddress = mFileStart->evaluateUnsignedWord();
+            else
+                startAddress = mSections[0]->resolvedFileOffset.value();
+
+            size_t endAddress = 0;
+            if (mFileUntil) {
+                endAddress = mFileUntil->evaluateUnsignedWord();
+                if (mFileStart && startAddress >= endAddress) {
+                    std::stringstream ss;
+                    ss << "file \"" << mFile->name << "\"has invalid bounds.";
+                    throw CompilerError(mLocation, ss.str());
+                }
+            }
+
+            size_t offset = startAddress;
+            for (auto section : mSections) {
+                size_t targetOffset = section->resolvedFileOffset.value();
+                if (targetOffset < startAddress) {
+                    std::stringstream ss;
+                    ss << "section " << section->programSection->name()
+                        << " is out of bounds in file \"" << mFile->name << "\".";
+                    throw CompilerError(mLocation, ss.str());
+                }
+                if (targetOffset < offset) {
+                    std::stringstream ss;
+                    ss << "section " << section->programSection->name()
+                        << " is overlapping with previous section in file \"" << mFile->name << "\".";
+                    throw CompilerError(mLocation, ss.str());
+                }
+
+                while (targetOffset > offset) {
+                    output->emitByte(nullptr, 0);
+                    ++offset;
+                }
+
+                if (!section->codeGenerated) {
+                    section->programSection->emitCode(&section->code, offset);
+                    section->codeGenerated = true;
+                }
+
+                section->code.copyTo(output);
+                offset += section->resolvedSize.value();
+            }
         }
 
     private:
@@ -177,6 +244,7 @@ namespace
             linkerSection->uncompressedSize = section->calculateSizeInBytes();
             linkerSection->attachment = sectionInfo->attachment;
             linkerSection->compression = sectionInfo->compression;
+            linkerSection->codeGenerated = false;
             linkerSection->autoFileOffset = autoOffset;
             mSections.emplace_back(linkerSection);
 
@@ -194,6 +262,19 @@ namespace
                 auto section = mSections[i];
                 if (section->attachment == Project::Section::Attachment::Upper || section->resolvedFileOffset)
                     break;
+
+                if (section->alignment) {
+                    size_t alignment = section->alignment->evaluateUnsignedWord();
+                    if (alignment == 0) {
+                        std::stringstream ss;
+                        ss << "section \"" << section->programSection->name()
+                            << "\" has invalid alignment in file \"" << mFile->name << "\".";
+                        throw CompilerError(mLocation, ss.str());
+                    }
+                    address += alignment - 1;
+                    address /= alignment;
+                    address *= alignment;
+                }
 
                 section->resolvedFileOffset = address;
 
@@ -219,6 +300,18 @@ namespace
                     break;
 
                 address -= *section->resolvedSize;
+
+                if (section->alignment) {
+                    size_t alignment = section->alignment->evaluateUnsignedWord();
+                    if (alignment == 0) {
+                        std::stringstream ss;
+                        ss << "section \"" << section->programSection->name()
+                            << "\" has invalid alignment in file \"" << mFile->name << "\".";
+                        throw CompilerError(mLocation, ss.str());
+                    }
+                    address -= address % alignment;
+                }
+
                 section->resolvedFileOffset = address;
 
                 if (!section->resolvedBase) {

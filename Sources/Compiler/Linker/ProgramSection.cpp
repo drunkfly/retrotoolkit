@@ -1,4 +1,5 @@
 #include "ProgramSection.h"
+#include "Compiler/Linker/CodeEmitter.h"
 #include "Compiler/Assembler/Instruction.h"
 #include "Compiler/Assembler/Label.h"
 
@@ -41,4 +42,11 @@ void ProgramSection::unresolveLabels()
 void ProgramSection::addInstruction(Instruction* instruction)
 {
     mInstructions.emplace_back(instruction);
+}
+
+void ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress) const
+{
+    int64_t nextAddress = int64_t(baseAddress);
+    for (const auto& instruction : mInstructions)
+        instruction->emitCode(emitter, nextAddress);
 }

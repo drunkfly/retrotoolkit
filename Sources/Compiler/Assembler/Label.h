@@ -16,6 +16,7 @@ public:
     const std::string& name() const { return mName; }
 
     size_t sizeInBytes() const override;
+    void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override;
 
     bool hasAddress() const;
     Address* address() const;

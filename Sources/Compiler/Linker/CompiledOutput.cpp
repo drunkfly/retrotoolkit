@@ -10,11 +10,6 @@ CompiledFile::~CompiledFile()
 {
 }
 
-void CompiledFile::emitByte(SourceLocation* location, uint8_t byte)
-{
-    mBytes.emplace_back(Byte{ location, byte });
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CompiledOutput::CompiledOutput()
