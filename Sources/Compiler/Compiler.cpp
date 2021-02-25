@@ -116,7 +116,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
     // Compile basic files
 
-    BasicCompiler compiler(&mHeap, linkerOutput);
+    BasicCompiler basicCompiler(&mHeap, linkerOutput);
 
     for (int i = 0; i < nBasic; i++) {
         auto& file = basicFiles[i];
@@ -125,7 +125,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
         switch (file.fileType) {
             case FileType::Basic: {
-                compiler.addFile(&file);
+                basicCompiler.addFile(&file);
                 break;
             }
         }
@@ -136,9 +136,27 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     if (mListener)
         mListener->compilerProgress(count++, total, "Processing BASIC code...");
 
-    compiler.compile();
+    basicCompiler.compile();
 
-    // Generate outputs
+    // Generate standard outputs
+
+    std::filesystem::path individualFilesPath = outputPath / "files";
+
+    if (nBasic > 0)
+        writeFile(individualFilesPath / "boot.bas", basicCompiler.compiledData());
+
+    for (const auto& file : linkerOutput->files()) {
+        size_t n = file->size();
+        const auto* p = file->data();
+
+        std::unique_ptr<uint8_t[]> bytes{new uint8_t[n]};
+        for (size_t i = 0; i < n; i++)
+            bytes[i] = p[i].value;
+
+        writeFile(individualFilesPath / file->name(), bytes.get(), n);
+    }
+
+    // Generate outputs configured in the project
 
     for (const auto& output : project.outputs) {
         switch (output->type) {
@@ -153,7 +171,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 if (nBasic > 0) {
                     std::string name = (output->basicFileName ? *output->basicFileName : "BOOT");
                     int line = output->basicStartLine ? *output->basicStartLine : -1;
-                    writer.addBasicFile(std::move(name), compiler.compiledData(), line);
+                    writer.addBasicFile(std::move(name), basicCompiler.compiledData(), line);
                 }
                 for (const auto& file : linkerOutput->files())
                     writer.addCodeFile(file->name(), file->data(), file->size(), file->loadAddress());
