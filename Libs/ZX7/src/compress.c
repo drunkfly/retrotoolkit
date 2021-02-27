@@ -28,24 +28,37 @@
 
 #include "zx7.h"
 
+typedef struct Ctx {
 unsigned char* output_data;
 size_t output_index;
 size_t bit_index;
 int bit_mask;
 long diff;
+} Ctx;
 
-void read_bytes(int n, long *delta) {
+#define output_data (ctx->output_data)
+#define output_index (ctx->output_index)
+#define bit_index (ctx->bit_index)
+#define bit_mask (ctx->bit_mask)
+#define diff (ctx->diff)
+#define read_bytes(n, delta) read_bytes_(ctx, n, delta)
+#define write_byte(value) write_byte_(ctx, value)
+#define write_bit(value) write_bit_(ctx, value)
+#define write_elias_gamma(value) write_elias_gamma_(ctx, value)
+#define compress zx7_compress
+
+static void read_bytes_(Ctx* ctx, int n, long *delta) {
    diff += n;
    if (diff > *delta)
        *delta = diff;
 }
 
-void write_byte(int value) {
+static void write_byte_(Ctx* ctx, int value) {
     output_data[output_index++] = value;
     diff--;
 }
 
-void write_bit(int value) {
+static void write_bit_(Ctx* ctx, int value) {
     if (bit_mask == 0) {
         bit_mask = 128;
         bit_index = output_index;
@@ -57,7 +70,7 @@ void write_bit(int value) {
     bit_mask >>= 1;
 }
 
-void write_elias_gamma(int value) {
+static void write_elias_gamma_(Ctx* ctx, int value) {
     int i;
 
     for (i = 2; i <= value; i <<= 1) {
@@ -74,14 +87,16 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
     int offset1;
     int mask;
     int i;
+    Ctx ctx_, *ctx = &ctx_;
 
     /* calculate and allocate output buffer */
     input_index = input_size-1;
     *output_size = (optimal[input_index].bits+18+7)/8;
     output_data = (unsigned char *)malloc(*output_size);
     if (!output_data) {
-         fprintf(stderr, "Error: Insufficient memory\n");
-         exit(1);
+         /*fprintf(stderr, "Error: Insufficient memory\n");
+         exit(1);*/
+         return NULL;
     }
 
     /* initialize delta */
@@ -97,6 +112,7 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
     }
 
     output_index = 0;
+    bit_index = 0;
     bit_mask = 0;
 
     /* first byte is always literal */

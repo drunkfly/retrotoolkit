@@ -27,8 +27,9 @@
 #include <stdlib.h>
 
 #include "zx7.h"
+#define optimize zx7_optimize
 
-int elias_gamma_bits(int value) {
+static int elias_gamma_bits(int value) {
     int bits;
 
     bits = 1;
@@ -39,7 +40,7 @@ int elias_gamma_bits(int value) {
     return bits;
 }
 
-int count_bits(int offset, int len) {
+static int count_bits(int offset, int len) {
     return 1 + (offset > 128 ? 12 : 8) + elias_gamma_bits(len-1);
 }
 
@@ -65,8 +66,14 @@ Optimal* optimize(unsigned char *input_data, size_t input_size, long skip) {
     optimal = (Optimal *)calloc(input_size, sizeof(Optimal));
 
     if (!min || !max || !matches || !match_slots || !optimal) {
-         fprintf(stderr, "Error: Insufficient memory\n");
-         exit(1);
+         if (min) free(min);
+         if (max) free(max);
+         if (matches) free(matches);
+         if (match_slots) free(match_slots);
+         if (optimal) free(optimal);
+         /*fprintf(stderr, "Error: Insufficient memory\n");
+         exit(1);*/
+         return NULL;
     }
 
     /* index skipped bytes */
@@ -118,7 +125,9 @@ Optimal* optimize(unsigned char *input_data, size_t input_size, long skip) {
         matches[match_index] = i;
     }
 
-    /* save time by releasing the largest block only, the O.S. will clean everything else later */
+    free(min);
+    free(max);
+    free(matches);
     free(match_slots);
 
     return optimal;

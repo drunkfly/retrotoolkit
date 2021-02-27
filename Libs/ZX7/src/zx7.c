@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* generate output file */
-    output_data = compress(optimize(input_data, input_size, skip), input_data, input_size, skip, &output_size, &delta);
+    output_data = zx7_compress(zx7_optimize(input_data, input_size, skip), input_data, input_size, skip, &output_size, &delta);
 
     /* conditionally reverse output file */
     if (backwards_mode) {
