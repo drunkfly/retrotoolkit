@@ -5,6 +5,8 @@ add(Compiler
         Common
         RapidXML
         Bas2Tap
+        ZX7
+        LZSA
     SOURCES
         Assembler/AssemblerContext.cpp
         Assembler/AssemblerContext.h
@@ -20,8 +22,17 @@ add(Compiler
         Assembler/Label.cpp
         Assembler/Label.h
         Compression/Compression.h
+        Compression/Compressor.h
+        Compression/LzsaCompressor.cpp
+        Compression/LzsaCompressor.h
+        Compression/Zx7Compressor.cpp
+        Compression/Zx7Compressor.h
         Linker/CodeEmitter.cpp
         Linker/CodeEmitter.h
+        Linker/CodeEmitterCompressed.cpp
+        Linker/CodeEmitterCompressed.h
+        Linker/CodeEmitterUncompressed.cpp
+        Linker/CodeEmitterUncompressed.h
         Linker/CompiledOutput.cpp
         Linker/CompiledOutput.h
         Linker/Linker.cpp

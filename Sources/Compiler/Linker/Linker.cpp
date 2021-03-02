@@ -21,7 +21,7 @@ namespace
         ProgramSection* programSection;
         Project::Section::Attachment attachment;
         Compression compression;
-        UncompressedCodeEmitter code;
+        CodeEmitterUncompressed code;
         Expr* base;
         Expr* fileOffset;
         Expr* alignment;

@@ -3,11 +3,11 @@
 
 #include "Common/Common.h"
 #include "Common/GC.h"
-#include "Compiler/Linker/CodeEmitter.h"
+#include "Compiler/Linker/CodeEmitterUncompressed.h"
 #include <vector>
 #include <unordered_map>
 
-class CompiledFile : public GCObject, public UncompressedCodeEmitter
+class CompiledFile : public GCObject, public CodeEmitterUncompressed
 {
 public:
     explicit CompiledFile(std::string name);
