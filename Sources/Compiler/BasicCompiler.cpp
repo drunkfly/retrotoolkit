@@ -4,6 +4,7 @@
 #include "Linker/CompiledOutput.h"
 #include "Common/IO.h"
 #include <assert.h>
+#include <string.h>
 #include <stdarg.h>
 #include <bas2tap.h>
 
