@@ -10498,7 +10498,7 @@ namespace Catch {
                 rhs.find('\n') == std::string::npos )
             os << lhs << " " << op << " " << rhs;
         else
-            os << lhs << "\n" << op << "\n" << rhs;
+            os << " \n" << lhs << "\n" << op << "\n" << rhs;
     }
 }
 // end catch_decomposer.cpp
@@ -16033,7 +16033,7 @@ private:
 
         void CompactReporter::testRunEnded( TestRunStats const& _testRunStats ) {
             printTotals( stream, _testRunStats.totals );
-            stream << '\n' << std::endl;
+            stream << /*'\n' <<*/ std::endl;
             StreamingReporterBase::testRunEnded( _testRunStats );
         }
 
@@ -16515,7 +16515,7 @@ void ConsoleReporter::testGroupEnded(TestGroupStats const& _testGroupStats) {
         printSummaryDivider();
         stream << "Summary for group '" << _testGroupStats.groupInfo.name << "':\n";
         printTotals(_testGroupStats.totals);
-        stream << '\n' << std::endl;
+        stream << /*'\n' <<*/ std::endl;
     }
     StreamingReporterBase::testGroupEnded(_testGroupStats);
 }

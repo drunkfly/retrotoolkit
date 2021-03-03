@@ -6,3 +6,4 @@ include_directories(
 add_subdirectory(Common)
 add_subdirectory(Compiler)
 add_subdirectory(GUI)
+add_subdirectory(Tests)

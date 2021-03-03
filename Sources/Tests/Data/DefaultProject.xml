@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RetroProject>
+    <Files>
+        <File name="MAIN">
+            <Section name="main" base="0x1234" />
+            <Section name="main_0x15" base="0x15" />
+        </File>
+    </Files>
+</RetroProject>

@@ -8,6 +8,7 @@ add(RetroToolkit
     LIBS
         Common
         Compiler
+        RunTests
     SOURCES
         Util/Conversion.cpp
         Util/Conversion.h
