@@ -230,6 +230,8 @@ bool Z80::IX_byte::tryParse(ParsingContext* c)
 {
     if (!c->consumeLeftParenthesis())
         return false;
+
+    SourceLocation* registerLocation = c->token()->location();
     if (!c->consumeIdentifier("ix"))
         return false;
 
@@ -238,11 +240,13 @@ bool Z80::IX_byte::tryParse(ParsingContext* c)
         if (!c->expression(mValue, &RegisterNames, &ConditionNames, true))
             return false;
     } else if (c->token()->id() == TOK_MINUS) {
+        SourceLocation* minusLocation = c->token()->location();
         c->nextToken();
         if (!c->expression(mValue, &RegisterNames, &ConditionNames, true))
             return false;
-        mValue = new (c->heap()) ExprNegate(mValue->location(), mValue);
-    }
+        mValue = new (c->heap()) ExprNegate(minusLocation, mValue);
+    } else
+        mValue = new (c->heap()) ExprNumber(registerLocation, 0);
 
     return c->consumeRightParenthesis();
 }
@@ -275,6 +279,8 @@ bool Z80::IY_byte::tryParse(ParsingContext* c)
 {
     if (!c->consumeLeftParenthesis())
         return false;
+
+    SourceLocation* registerLocation = c->token()->location();
     if (!c->consumeIdentifier("iy"))
         return false;
 
@@ -282,12 +288,16 @@ bool Z80::IY_byte::tryParse(ParsingContext* c)
         c->nextToken();
         if (!c->expression(mValue, &RegisterNames, &ConditionNames, true))
             return false;
-    } else if (c->token()->id() == TOK_MINUS) {
+    }
+    else if (c->token()->id() == TOK_MINUS) {
+        SourceLocation* minusLocation = c->token()->location();
         c->nextToken();
         if (!c->expression(mValue, &RegisterNames, &ConditionNames, true))
             return false;
-        mValue = new (c->heap()) ExprNegate(mValue->location(), mValue);
+        mValue = new (c->heap()) ExprNegate(minusLocation, mValue);
     }
+    else
+        mValue = new (c->heap()) ExprNumber(registerLocation, 0);
 
     return c->consumeRightParenthesis();
 }
