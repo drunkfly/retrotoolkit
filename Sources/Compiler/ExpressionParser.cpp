@@ -271,6 +271,7 @@ Expr* ExpressionParser::parseUnaryExpression(bool unambiguous)
 Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
 {
     switch (mContext->token()->id()) {
+        case TOK_CHAR:
         case TOK_NUMBER: {
             Expr* expr = new (mHeap) ExprNumber(mContext->token()->location(), mContext->token()->number());
             mContext->nextToken();

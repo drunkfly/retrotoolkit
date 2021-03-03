@@ -26,4 +26,6 @@ bool isIdentifier(char ch);
 
 unsigned charToInt(char ch);
 
+int asciiCode(char ch);
+
 #endif

@@ -448,7 +448,10 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                         throw CompilerError(location(), "empty character literal.");
                     else if (str.length() != 1)
                         throw CompilerError(location(), "character literal is too long.");
-                    token(TOK_CHAR, "character literal", (unsigned char)str[0]);
+                    int code = asciiCode(str[0]);
+                    if (code < 0)
+                        throw CompilerError(location(), "not a printable ASCII character.");
+                    token(TOK_CHAR, "character literal", code);
                 }
                 continue;
             }
