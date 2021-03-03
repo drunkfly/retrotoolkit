@@ -173,8 +173,12 @@ void AssemblerParser::parseLine()
         */
 
         mContext->addLabel(mSymbolTable, nameToken->location(), std::move(name));
+        if (nameToken->id() >= TOK_IDENTIFIER)
+            mContext->setLocalLabelsPrefix(nameToken->location(), nameToken->text());
+
         (this->*(iter->second))();
-    } else if ((mToken->id() >= TOK_IDENTIFIER && lower == "equ") || mToken->id() == TOK_ASSIGN) {
+    } else if (nameToken->id() >= TOK_IDENTIFIER
+            && (mToken->id() >= TOK_IDENTIFIER && lower == "equ") || mToken->id() == TOK_ASSIGN) {
         mToken = mToken->next();
 
         const char* rawName = mHeap->allocString(name.c_str(), name.length());

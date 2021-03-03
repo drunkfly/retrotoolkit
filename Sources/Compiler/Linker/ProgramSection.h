@@ -22,7 +22,7 @@ public:
 
     size_t calculateSizeInBytes() const;
 
-    void resolveLabels(size_t& address);
+    void resolveLabels(size_t address);
     void unresolveLabels();
 
     void addInstruction(Instruction* instruction);

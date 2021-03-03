@@ -198,8 +198,8 @@ Expr* ExpressionParser::parseAdditionExpression(bool unambiguous)
             return nullptr;
 
         switch (token->id()) {
-            case TOK_PLUS: new (mHeap) ExprAdd(token->location(), expr, op2); break;
-            case TOK_MINUS: new (mHeap) ExprSubtract(token->location(), expr, op2); break;
+            case TOK_PLUS: expr = new (mHeap) ExprAdd(token->location(), expr, op2); break;
+            case TOK_MINUS: expr = new (mHeap) ExprSubtract(token->location(), expr, op2); break;
         }
     }
 

@@ -284,7 +284,7 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                     if (!isHexDigit(*p))
                         throw CompilerError(location(), "syntax error in hexadecimal number.");
                     do {
-                        if (value >= 0x0ffffffful)
+                        if (value > 0x0ffffffful)
                             throw CompilerError(location(), "hexadecimal number is too large.");
                         value <<= 4;
                         value |= charToInt(*p++);
@@ -298,7 +298,7 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                     if (!isBinaryDigit(*p))
                         throw CompilerError(location(), "syntax error in binary number.");
                     do {
-                        if (value >= 0x7ffffffful)
+                        if (value > 0x7ffffffful)
                             throw CompilerError(location(), "binary number is too large.");
                         value <<= 1;
                         value |= charToInt(*p++);
@@ -310,7 +310,7 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
             case DIGIT_1_9: {
                 uint64_t value = charToInt(*p++);
                 while (isDigit(*p)) {
-                    if (value >= 0xfffffffful / 10)
+                    if (value > 0xfffffffful / 10)
                         throw CompilerError(location(), "number is too large.");
                     value *= 10;
                     value |= charToInt(*p++);

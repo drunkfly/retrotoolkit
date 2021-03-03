@@ -21,7 +21,7 @@ size_t ProgramSection::calculateSizeInBytes() const
     return size;
 }
 
-void ProgramSection::resolveLabels(size_t& address)
+void ProgramSection::resolveLabels(size_t address)
 {
     for (const auto& instruction : mInstructions) {
         if (instruction->isLabel())

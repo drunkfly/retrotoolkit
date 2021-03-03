@@ -77,7 +77,7 @@ namespace
 
             // resolve addresses for all sections with known base
 
-            bool hasSectionWithKnownBase = false;
+            bool hasSectionWithKnownFileOffset = false;
             for (auto section : mSections) {
                 if (section->base) {
                     section->resolvedBase = section->base->evaluateUnsignedWord(nullptr);
@@ -106,7 +106,7 @@ namespace
                             << "\" in file \"" << file->name << "\".\n";
                         OutputDebugStringA(ss.str().c_str()); }
                       #endif
-                        hasSectionWithKnownBase = true;
+                        hasSectionWithKnownFileOffset = true;
                     }
 
                     if (section->alignment) {
@@ -124,14 +124,6 @@ namespace
                         }
                     }
                 }
-            }
-
-            // if neither start, nor end of file is specified, there should be at least one section with known base
-
-            if (!mFileStart && !mFileUntil && !hasSectionWithKnownBase) {
-                std::stringstream ss;
-                ss << "unable to resolve addresses in file \"" << file->name << "\".";
-                throw CompilerError(location, ss.str());
             }
 
             // convert all "lower" sections at the beginning of file to "upper" if file start is unspecified
@@ -170,6 +162,37 @@ namespace
             if (mFileUntil) {
                 size_t address = mFileUntil->evaluateUnsignedWord(nullptr);
                 resolveSectionsTo(address, mSections.size());
+            }
+
+            // if neither start, nor end of file is specified, there should be at least one section with known base
+
+            if (!mFileStart && !mFileUntil && !hasSectionWithKnownFileOffset) {
+                bool found = false;
+                for (auto section : mSections) {
+                    if (section->resolvedBase && !section->fileOffset && !section->autoFileOffset) {
+                        section->resolvedFileOffset = *section->resolvedBase;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    for (auto section : mSections) {
+                        if (section->resolvedBase && section->autoFileOffset) {
+                            section->resolvedFileOffset = *section->resolvedBase;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        std::stringstream ss;
+                        ss << "unable to resolve addresses in file \"" << file->name
+                            << "\": there is no section with known base and neither start, "
+                                "nor end addresses for file were not specified.";
+                        throw CompilerError(location, ss.str());
+                    }
+                }
             }
         }
 
