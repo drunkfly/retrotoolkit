@@ -100,8 +100,9 @@ size_t Label::sizeInBytes() const
     return 0;
 }
 
-void Label::emitCode(CodeEmitter*, int64_t&) const
+bool Label::emitCode(CodeEmitter*, int64_t&, std::unique_ptr<CompilerError>&) const
 {
+    return true;
 }
 
 bool Label::hasAddress() const

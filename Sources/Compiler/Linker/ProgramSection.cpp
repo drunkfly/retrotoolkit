@@ -44,9 +44,13 @@ void ProgramSection::addInstruction(Instruction* instruction)
     mInstructions.emplace_back(instruction);
 }
 
-void ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress) const
+bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
+    std::unique_ptr<CompilerError>& resolveError) const
 {
     int64_t nextAddress = int64_t(baseAddress);
-    for (const auto& instruction : mInstructions)
-        instruction->emitCode(emitter, nextAddress);
+    for (const auto& instruction : mInstructions) {
+        if (!instruction->emitCode(emitter, nextAddress, resolveError))
+            return false;
+    }
+    return true;
 }

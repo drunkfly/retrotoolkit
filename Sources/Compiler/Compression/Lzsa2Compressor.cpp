@@ -1,4 +1,4 @@
-#include "LzsaCompressor.h"
+#include "Lzsa2Compressor.h"
 #include "Compiler/CompilerError.h"
 #include <string.h>
 
@@ -58,7 +58,15 @@ namespace
     };
 }
 
-void LzsaCompressor::compress(SourceLocation* location, std::vector<uint8_t> src, std::vector<uint8_t>& dst)
+Lzsa2Compressor::Lzsa2Compressor()
+{
+}
+
+Lzsa2Compressor::~Lzsa2Compressor()
+{
+}
+
+void Lzsa2Compressor::compress(SourceLocation* location, std::vector<uint8_t> src, std::vector<uint8_t>& dst)
 {
     if (src.empty())
         return;

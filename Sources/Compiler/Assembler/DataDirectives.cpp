@@ -20,10 +20,13 @@ size_t DEFB::sizeInBytes() const
     return 1;
 }
 
-void DEFB::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const
+bool DEFB::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    emitter->emitByte(location(), mValue->evaluateByte());
+    if (!mValue->canEvaluateValue(&nextAddress, resolveError))
+        return false;
+    emitter->emitByte(location(), mValue->evaluateByte(&nextAddress));
     nextAddress++;
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,10 +47,11 @@ size_t DEFB_STRING::sizeInBytes() const
     return mLength;
 }
 
-void DEFB_STRING::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const
+bool DEFB_STRING::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const
 {
     emitter->emitBytes(location(), reinterpret_cast<const uint8_t*>(mText), mLength);
     nextAddress += mLength;
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,15 +71,17 @@ size_t DEFW::sizeInBytes() const
     return 2;
 }
 
-void DEFW::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const
+bool DEFW::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    uint16_t value = mValue->evaluateWord();
-    uint8_t bytes[] = {
-            uint8_t(value & 0xff),
-            uint8_t((value >> 8) & 0xff),
-        };
+    if (!mValue->canEvaluateValue(&nextAddress, resolveError))
+        return false;
+
+    uint16_t value = mValue->evaluateWord(&nextAddress);
+    uint8_t bytes[] = { uint8_t(value & 0xff), uint8_t((value >> 8) & 0xff) };
     emitter->emitBytes(location(), bytes, 2);
+
     nextAddress += 2;
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,9 +101,12 @@ size_t DEFD::sizeInBytes() const
     return 4;
 }
 
-void DEFD::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const
+bool DEFD::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    uint32_t value = mValue->evaluateDWord();
+    if (!mValue->canEvaluateValue(&nextAddress, resolveError))
+        return false;
+
+    uint32_t value = mValue->evaluateDWord(&nextAddress);
     uint8_t bytes[] = {
             uint8_t(value & 0xff),
             uint8_t((value >> 8) & 0xff),
@@ -105,7 +114,9 @@ void DEFD::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const
             uint8_t((value >> 24) & 0xff),
         };
     emitter->emitBytes(location(), bytes, 4);
+
     nextAddress += 4;
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,14 +134,15 @@ DEFS::~DEFS()
 size_t DEFS::sizeInBytes() const
 {
     if (!mSize)
-        mSize = mValue->evaluateUnsignedWord();
+        mSize = mValue->evaluateUnsignedWord(nullptr);
     return *mSize;
 }
 
-void DEFS::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const
+bool DEFS::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const
 {
     size_t n = mSize.value();
     for (size_t i = 0; i < n; i++)
         emitter->emitByte(location(), 0);
     nextAddress += n;
+    return true;
 }

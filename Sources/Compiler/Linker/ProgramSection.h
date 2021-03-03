@@ -6,9 +6,11 @@
 #include "Compiler/Compression/Compression.h"
 #include <vector>
 #include <string>
+#include <memory>
 
 class Instruction;
 class CodeEmitter;
+class CompilerError;
 
 class ProgramSection : public GCObject
 {
@@ -25,7 +27,7 @@ public:
 
     void addInstruction(Instruction* instruction);
 
-    void emitCode(CodeEmitter* emitter, size_t baseAddress) const;
+    bool emitCode(CodeEmitter* emitter, size_t baseAddress, std::unique_ptr<CompilerError>& resolveError) const;
 
 private:
     std::string mName;

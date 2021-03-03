@@ -4,8 +4,10 @@
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Linker/CompiledOutput.h"
+#include "Compiler/Linker/CodeEmitterCompressed.h"
 #include "Compiler/Linker/ProgramSection.h"
 #include "Compiler/Linker/Program.h"
+#include "Compiler/Compression/Compressor.h"
 #include "Compiler/Project.h"
 #include "Compiler/ExpressionParser.h"
 #include "Compiler/CompilerError.h"
@@ -14,6 +16,14 @@
 #include <vector>
 #include <algorithm>
 
+#define DEBUG_LINKER 1
+
+#if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 namespace
 {
     struct LinkerSection : public GCObject
@@ -21,7 +31,7 @@ namespace
         ProgramSection* programSection;
         Project::Section::Attachment attachment;
         Compression compression;
-        CodeEmitterUncompressed code;
+        std::unique_ptr<CodeEmitter> code;
         Expr* base;
         Expr* fileOffset;
         Expr* alignment;
@@ -29,7 +39,6 @@ namespace
         std::optional<size_t> resolvedSize;
         std::optional<size_t> resolvedBase;
         std::optional<size_t> resolvedFileOffset;
-        bool codeGenerated;
         bool autoFileOffset;
     };
 
@@ -55,8 +64,15 @@ namespace
             // we can easily calculate size for all uncompressed sections
 
             for (auto section : mSections) {
-                if (section->compression == Compression::None)
+                if (section->compression == Compression::None) {
                     section->resolvedSize = section->uncompressedSize;
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved size " << *section->resolvedSize << " for \"" << section->programSection->name()
+                        << "\" in file \"" << file->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
+                }
             }
 
             // resolve addresses for all sections with known base
@@ -64,15 +80,37 @@ namespace
             bool hasSectionWithKnownBase = false;
             for (auto section : mSections) {
                 if (section->base) {
-                    section->resolvedBase = section->base->evaluateUnsignedWord();
+                    section->resolvedBase = section->base->evaluateUnsignedWord(nullptr);
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved base 0x" << std::hex << *section->resolvedBase
+                        << " for \"" << section->programSection->name()
+                        << "\" in file \"" << file->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
+
                     section->programSection->resolveLabels(*section->resolvedBase);
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved labels in \"" << section->programSection->name()
+                        << "\" in file \"" << file->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
+
                     if (section->fileOffset && !section->autoFileOffset) {
-                        section->resolvedFileOffset = section->fileOffset->evaluateUnsignedWord();
+                        section->resolvedFileOffset = section->fileOffset->evaluateUnsignedWord(nullptr);
+                      #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                        { std::stringstream ss;
+                        ss << "resolved file offset 0x" << std::hex << *section->resolvedFileOffset
+                            << " for \"" << section->programSection->name()
+                            << "\" in file \"" << file->name << "\".\n";
+                        OutputDebugStringA(ss.str().c_str()); }
+                      #endif
                         hasSectionWithKnownBase = true;
                     }
 
                     if (section->alignment) {
-                        size_t alignment = section->alignment->evaluateUnsignedWord();
+                        size_t alignment = section->alignment->evaluateUnsignedWord(nullptr);
                         if (alignment == 0) {
                             std::stringstream ss;
                             ss << "section \"" << section->programSection->name()
@@ -123,39 +161,137 @@ namespace
             // resolve addresses for sections at start of file while we can
 
             if (mFileStart) {
-                size_t address = mFileStart->evaluateUnsignedWord();
+                size_t address = mFileStart->evaluateUnsignedWord(nullptr);
                 resolveSectionsFrom(address, 0);
             }
 
             // resolve addresses for sections at end of file while we can
 
             if (mFileUntil) {
-                size_t address = mFileUntil->evaluateUnsignedWord();
+                size_t address = mFileUntil->evaluateUnsignedWord(nullptr);
                 resolveSectionsTo(address, mSections.size());
             }
         }
 
         const Project::File* file() const { return mFile; }
 
-        bool tryResolve(bool& didResolve, std::string& resolveError)
+        LinkerSection* firstUnresolvedSection() const
+        {
+            for (auto section : mSections) {
+                if (!section->resolvedFileOffset || !section->resolvedSize || !section->code)
+                    return section;
+            }
+            return nullptr;
+        }
+
+        bool tryResolve(bool& didResolve, std::unique_ptr<CompilerError>& resolveError)
         {
             if (mIsResolved)
                 return true;
 
-            // Try to resolve size for compressed sections
+            didResolve = false;
+
+            // Try to compress some sections
 
             for (auto section : mSections) {
-                if (!section->resolvedSize) {
-                    /* FIXME */
+                if (section->resolvedSize || !section->resolvedBase)
+                    continue;
+
+                if (section->compression == Compression::None) {
+                    throw CompilerError(mLocation,
+                        "internal compiler error: unexpected uncompressed section with unresolved size.");
+                }
+
+                auto compressor = Compressor::create(mLocation, section->compression);
+                auto code = std::make_unique<CodeEmitterCompressed>(std::move(compressor));
+
+                if (section->programSection->emitCode(code.get(), section->resolvedBase.value(), resolveError)) {
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "generated code for section \"" << section->programSection->name()
+                        << "\" in file \"" << file()->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
+
+                    code->compress();
+
+                    section->resolvedSize = code->compressedSize();
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved size " << *section->resolvedSize << " for \"" << section->programSection->name()
+                        << "\" in file \"" << file()->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
+
+                    section->code = std::move(code);
+                    didResolve = true;
                 }
             }
 
-            // Try to resolve addresses for still-unresolved sections
+            // Try to resolve still-unresolved sections
 
-            /* FIXME */
-            resolveError = "unimplemented.";
+            bool hasUnresolved = false;
+            size_t n = mSections.size();
+            for (size_t i = 0; i < n; i++) {
+                auto section = mSections[i];
+                if (!section->resolvedFileOffset) {
+                    hasUnresolved = true;
+                    continue;
+                }
 
-            return true;
+                if (!section->code && section->compression == Compression::None) {
+                    auto code = std::make_unique<CodeEmitterUncompressed>();
+                    if (!section->programSection->emitCode(code.get(), section->resolvedBase.value(), resolveError)) {
+                        hasUnresolved = true;
+                        continue;
+                    } else {
+                      #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                        { std::stringstream ss;
+                        ss << "generated code for section \"" << section->programSection->name()
+                            << "\" in file \"" << file()->name << "\".\n";
+                        OutputDebugStringA(ss.str().c_str()); }
+                      #endif
+
+                        if (!section->resolvedSize) {
+                            section->resolvedSize = code->size();
+                          #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                            { std::stringstream ss;
+                            ss << "resolved size " << *section->resolvedSize
+                                << " for \"" << section->programSection->name()
+                                << "\" in file \"" << file()->name << "\".\n";
+                            OutputDebugStringA(ss.str().c_str()); }
+                          #endif
+                        } else if (*section->resolvedSize != code->size()) {
+                            std::stringstream ss;
+                            ss << "internal compiler error: size of generated code for section \""
+                                << section->programSection->name() << "\" in file \"" << file()->name
+                                << "\" differs from resolved size ("
+                                << *section->resolvedSize << " != " << code->size() << ").";
+                            throw CompilerError(mLocation, ss.str());
+                        }
+
+                        section->code = std::move(code);
+                        didResolve = true;
+                    }
+                }
+
+                size_t off = *section->resolvedFileOffset;
+                didResolve = resolveSectionsTo(off, i) || didResolve;
+
+                if (!section->resolvedSize)
+                    hasUnresolved = true;
+                else
+                    didResolve = resolveSectionsFrom(off + *section->resolvedSize, i + 1) || didResolve;
+            }
+
+            // Did we resolve all?
+
+            if (!hasUnresolved) {
+                mIsResolved = true;
+                return true;
+            }
+
+            return false;
         }
 
         void generateCode(CompiledFile* output)
@@ -169,13 +305,13 @@ namespace
 
             size_t startAddress = 0;
             if (mFileStart)
-                startAddress = mFileStart->evaluateUnsignedWord();
+                startAddress = mFileStart->evaluateUnsignedWord(nullptr);
             else
                 startAddress = mSections[0]->resolvedFileOffset.value();
 
             size_t endAddress = 0;
             if (mFileUntil) {
-                endAddress = mFileUntil->evaluateUnsignedWord();
+                endAddress = mFileUntil->evaluateUnsignedWord(nullptr);
                 if (mFileStart && startAddress >= endAddress) {
                     std::stringstream ss;
                     ss << "file \"" << mFile->name << "\"has invalid bounds.";
@@ -188,14 +324,14 @@ namespace
                 size_t targetOffset = section->resolvedFileOffset.value();
                 if (targetOffset < startAddress) {
                     std::stringstream ss;
-                    ss << "section " << section->programSection->name()
-                        << " is out of bounds in file \"" << mFile->name << "\".";
+                    ss << "section \"" << section->programSection->name()
+                        << "\" is out of bounds in file \"" << mFile->name << "\".";
                     throw CompilerError(mLocation, ss.str());
                 }
                 if (targetOffset < offset) {
                     std::stringstream ss;
-                    ss << "section " << section->programSection->name()
-                        << " is overlapping with previous section in file \"" << mFile->name << "\".";
+                    ss << "section \"" << section->programSection->name()
+                        << "\" is overlapping with previous section in file \"" << mFile->name << "\".";
                     throw CompilerError(mLocation, ss.str());
                 }
 
@@ -204,12 +340,35 @@ namespace
                     ++offset;
                 }
 
-                if (!section->codeGenerated) {
-                    section->programSection->emitCode(&section->code, offset);
-                    section->codeGenerated = true;
+                if (section->code)
+                    section->code->copyTo(output);
+                else {
+                    if (section->compression != Compression::None) {
+                        std::stringstream ss;
+                        ss << "internal compiler error: no code was generated for compressed section \""
+                            << section->programSection->name() << "\" in file \"" << mFile->name << "\".";
+                        throw CompilerError(mLocation, ss.str());
+                    }
+
+                    std::unique_ptr<CompilerError> resolveError;
+                    if (!section->programSection->emitCode(output, offset, resolveError)) {
+                      #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                        { std::stringstream ss;
+                        ss << "generated code for section \"" << section->programSection->name()
+                            << "\" in file \"" << file()->name << "\".\n";
+                        OutputDebugStringA(ss.str().c_str()); }
+                      #endif
+                    } else {
+                        if (resolveError)
+                            throw* resolveError;
+
+                        std::stringstream ss;
+                        ss << "unable to emit code for section \"" << section->programSection->name()
+                            << "\" in file \"" << mFile->name << "\".";
+                        throw CompilerError(mLocation, ss.str());
+                    }
                 }
 
-                section->code.copyTo(output);
                 offset += section->resolvedSize.value();
             }
 
@@ -233,7 +392,7 @@ namespace
             if (!mSectionSet.emplace(section).second) {
                 std::stringstream ss;
                 ss << "section \"" << sectionInfo->name
-                    << " is referenced multiple times for file \"" << sectionInfo->file->name << "\".";
+                    << "\" is referenced multiple times for file \"" << sectionInfo->file->name << "\".";
                 throw CompilerError(location, ss.str());
             }
 
@@ -247,27 +406,30 @@ namespace
             linkerSection->uncompressedSize = section->calculateSizeInBytes();
             linkerSection->attachment = sectionInfo->attachment;
             linkerSection->compression = sectionInfo->compression;
-            linkerSection->codeGenerated = false;
             linkerSection->autoFileOffset = autoOffset;
             mSections.emplace_back(linkerSection);
 
             if (linkerSection->fileOffset && !linkerSection->base) {
                 std::stringstream ss;
-                ss << "section \"" << sectionInfo->name << " has file offset without base address.";
+                ss << "section \"" << sectionInfo->name << "\" has file offset without base address.";
                 throw CompilerError(location, ss.str());
             }
         }
 
-        void resolveSectionsFrom(size_t address, size_t i)
+        bool resolveSectionsFrom(size_t address, size_t i)
         {
+            bool resolvedSomething = false;
+
             size_t n = mSections.size();
             for (; i < n; i++) {
                 auto section = mSections[i];
                 if (section->attachment == Project::Section::Attachment::Upper || section->resolvedFileOffset)
                     break;
 
+                resolvedSomething = true;
+
                 if (section->alignment) {
-                    size_t alignment = section->alignment->evaluateUnsignedWord();
+                    size_t alignment = section->alignment->evaluateUnsignedWord(nullptr);
                     if (alignment == 0) {
                         std::stringstream ss;
                         ss << "section \"" << section->programSection->name()
@@ -280,10 +442,29 @@ namespace
                 }
 
                 section->resolvedFileOffset = address;
+              #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                { std::stringstream ss;
+                ss << "resolved file offset 0x" << std::hex << *section->resolvedFileOffset
+                    << " for \"" << section->programSection->name() << "\" in file \"" << file()->name << "\".\n";
+                OutputDebugStringA(ss.str().c_str()); }
+              #endif
 
                 if (!section->resolvedBase) {
                     section->resolvedBase = address;
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved base 0x" << std::hex << *section->resolvedBase
+                        << " for \"" << section->programSection->name() << "\" in file \"" << file()->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
+
                     section->programSection->resolveLabels(address);
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved labels in \"" << section->programSection->name()
+                        << "\" in file \"" << file()->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
                 }
 
                 if (!section->resolvedSize)
@@ -291,10 +472,14 @@ namespace
 
                 address += *section->resolvedSize;
             }
+
+            return resolvedSomething;
         }
 
-        void resolveSectionsTo(size_t address, size_t i)
+        bool resolveSectionsTo(size_t address, size_t i)
         {
+            bool resolvedSomething = false;
+
             while (i-- > 0) {
                 auto section = mSections[i];
                 if (section->attachment == Project::Section::Attachment::Lower || section->resolvedFileOffset)
@@ -302,10 +487,11 @@ namespace
                 if (!section->resolvedSize)
                     break;
 
+                resolvedSomething = true;
                 address -= *section->resolvedSize;
 
                 if (section->alignment) {
-                    size_t alignment = section->alignment->evaluateUnsignedWord();
+                    size_t alignment = section->alignment->evaluateUnsignedWord(nullptr);
                     if (alignment == 0) {
                         std::stringstream ss;
                         ss << "section \"" << section->programSection->name()
@@ -316,12 +502,35 @@ namespace
                 }
 
                 section->resolvedFileOffset = address;
+              #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                { std::stringstream ss;
+                ss << "resolved file offset 0x" << std::hex << *section->resolvedFileOffset
+                    << " for \"" << section->programSection->name()
+                    << "\" in file \"" << file()->name << "\".\n";
+                OutputDebugStringA(ss.str().c_str()); }
+              #endif
 
                 if (!section->resolvedBase) {
                     section->resolvedBase = address;
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved base 0x" << std::hex << *section->resolvedBase
+                        << " for \"" << section->programSection->name()
+                        << "\" in file \"" << file()->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
+
                     section->programSection->resolveLabels(address);
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved labels in \"" << section->programSection->name()
+                        << "\" in file \"" << file()->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
                 }
             }
+
+            return resolvedSomething;
         }
 
         Expr* parseExpression(SourceLocation* location, const std::string& str)
@@ -385,7 +594,7 @@ CompiledOutput* Linker::link(Program* program)
     for (;;) {
         bool resolvedAll = true;
         bool didResolve = false;
-        std::string resolveError;
+        std::unique_ptr<CompilerError> resolveError;
 
         for (const auto& file : files) {
             if (!file->tryResolve(didResolve, resolveError))
@@ -395,8 +604,22 @@ CompiledOutput* Linker::link(Program* program)
         if (resolvedAll)
             break;
 
-        if (!didResolve)
-            throw CompilerError(location, resolveError);
+        if (!didResolve) {
+            if (resolveError)
+                throw *resolveError;
+
+            for (const auto& file : files) {
+                auto section = file->firstUnresolvedSection();
+                if (section) {
+                    std::stringstream ss;
+                    ss << "unable to resolve section \"" << section->programSection->name()
+                        << "\" in file \"" << file->file()->name << "\".";
+                    throw CompilerError(location, ss.str());
+                }
+            }
+
+            throw CompilerError(location, "unable to resolve section.");
+        }
     }
 
     auto output = new (mHeap) CompiledOutput();

@@ -22,6 +22,7 @@ namespace Z80
             struct NAME { \
                 static void toString(std::stringstream& ss) { ss << #NAME; } \
                 static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
+                static bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) { return true; } \
             }
 
         Z80_MNEMONIC(ADC);
@@ -101,7 +102,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int value(uint8_t baseByte) const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, uint8_t baseByte) const;
     private:
         Expr* mValue;
     };
@@ -111,7 +113,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int value() const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress) const;
     private:
         Expr* mValue;
     };
@@ -121,7 +124,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int low(int& high) const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int low(int64_t currentAddress, int& high) const;
     private:
         Expr* mValue;
     };
@@ -130,36 +134,42 @@ namespace Z80
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memDE
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memHL
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memIX
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memIY
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memSP
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     class memAddr
@@ -167,7 +177,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int low(int& high) const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int low(int64_t currentAddress, int& high) const;
     private:
         Expr* mValue;
     };
@@ -177,7 +188,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int value() const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress) const;
     private:
         Expr* mValue;
     };
@@ -187,7 +199,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int value() const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress) const;
     private:
         Expr* mValue;
     };
@@ -197,7 +210,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int value(int64_t nextAddress) const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, int64_t nextAddress) const;
     private:
         Expr* mValue;
     };
@@ -207,6 +221,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
+        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     class portAddr
@@ -214,7 +229,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int value() const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress) const;
     private:
         Expr* mValue;
     };
@@ -224,7 +240,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int value() const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress) const;
     private:
         Expr* mValue;
     };
@@ -234,7 +251,8 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        int value(uint8_t baseByte) const;
+        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, uint8_t baseByte) const;
     private:
         Expr* mValue;
     };
@@ -243,12 +261,14 @@ namespace Z80
         struct NAME { \
             static void toString(std::stringstream& ss) { ss << #NAME; } \
             static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
+            static bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) { return true; } \
         }
 
     struct AF_
     {
         static void toString(std::stringstream& ss);
         static bool tryParse(ParsingContext* context);
+        static bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) { return true; }
     };
 
     Z80_REGOP(A);
@@ -278,6 +298,7 @@ namespace Z80
         struct flag##NAME { \
             static void toString(std::stringstream& ss) { ss << #NAME; } \
             static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
+            static bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) { return true; } \
         }
 
     Z80_FLAGOP(C);
@@ -400,8 +421,9 @@ namespace Z80
         { \
         public: \
             explicit OP(SourceLocation* location) : Opcode0(location) {} \
-            size_t sizeInBytes() const override; \
-            void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override; \
+            size_t sizeInBytes() const final override; \
+            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+                std::unique_ptr<CompilerError>& resolveError) const final override; \
         }
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
@@ -409,8 +431,9 @@ namespace Z80
         { \
         public: \
             OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
-            size_t sizeInBytes() const override; \
-            void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override; \
+            size_t sizeInBytes() const final override; \
+            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+                std::unique_ptr<CompilerError>& resolveError) const final override; \
         }
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
@@ -418,11 +441,28 @@ namespace Z80
         { \
         public: \
             OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
-            size_t sizeInBytes() const override; \
-            void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override; \
+            size_t sizeInBytes() const final override; \
+            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+                std::unique_ptr<CompilerError>& resolveError) const final override; \
         }
 
+    #define OP1
+    #define OP2
+    #define OP1V(X)
+    #define OP2V(X)
+    #define OP1W
+    #define OP2W
+    #define NEXT
+
     #include "Instructions.Z80.hh"
+
+    #undef NEXT
+    #undef OP2W
+    #undef OP1W
+    #undef OP2V
+    #undef OP1V
+    #undef OP2
+    #undef OP1
 
     #undef Z80_OPCODE_2
     #undef Z80_OPCODE_1

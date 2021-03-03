@@ -10,6 +10,7 @@
 #include <memory>
 
 class ExprIdentifier;
+class CompilerError;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -24,19 +25,26 @@ public:
 
     virtual void toString(std::stringstream& ss) const = 0;
 
-    uint8_t evaluateByte() const;
-    uint8_t evaluateByteOffset(int64_t nextAddress) const;
-    uint16_t evaluateWord() const;
-    uint16_t evaluateUnsignedWord() const;
-    uint32_t evaluateDWord() const;
-    Value evaluateValue() const;
+    bool canEvaluateValue(const int64_t* currentAddress, std::unique_ptr<CompilerError>& resolveError) const;
+
+    uint8_t evaluateByte(const int64_t* currentAddress) const;
+    uint8_t evaluateByteOffset(int64_t nextAddress, const int64_t* currentAddress) const;
+    uint16_t evaluateWord(const int64_t* currentAddress) const;
+    uint16_t evaluateUnsignedWord(const int64_t* currentAddress) const;
+    uint32_t evaluateDWord(const int64_t* currentAddress) const;
+    Value evaluateValue(const int64_t* currentAddress) const;
 
 protected:
+    mutable const int64_t* mCurrentAddress;
+
+    virtual bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const = 0;
     virtual Value evaluate() const = 0;
 
     template <bool SUB, typename T> static Value smartEvaluate(T&& operatr, Value a, Value b);
 
 private:
+    class MarkAsEvaluating;
+
     SourceLocation* mLocation;
     mutable bool mEvaluating;
 
@@ -57,6 +65,7 @@ public:
     void toString(std::stringstream& ss) const override;
 
 private:
+    bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override;
     Value evaluate() const override;
 
     DISABLE_COPY(ExprCurrentAddress);
@@ -78,6 +87,7 @@ public:
 private:
     int64_t mValue;
 
+    bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override;
     Value evaluate() const override;
 
     DISABLE_COPY(ExprNumber);
@@ -102,6 +112,7 @@ private:
     SymbolTable* mSymbolTable;
     std::string mName;
 
+    bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override;
     Value evaluate() const override;
 
     DISABLE_COPY(ExprIdentifier);
@@ -127,6 +138,7 @@ private:
     Expr* mThen;
     Expr* mElse;
 
+    bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override;
     Value evaluate() const override;
 
     DISABLE_COPY(ExprConditional);
@@ -147,6 +159,7 @@ private:
         void toString(std::stringstream& ss) const override; \
     private: \
         Expr* mOperand; \
+        bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override; \
         Value evaluate() const override; \
         DISABLE_COPY(Expr##NAME); \
     }
@@ -165,6 +178,7 @@ private:
     private: \
         Expr* mOperand1; \
         Expr* mOperand2; \
+        bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override; \
         Value evaluate() const override; \
         DISABLE_COPY(Expr##NAME); \
     }
@@ -187,6 +201,7 @@ public:
 private:
     Expr* mOperand;
 
+    bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override;
     Value evaluate() const override;
 
     DISABLE_COPY(ExprNegate);

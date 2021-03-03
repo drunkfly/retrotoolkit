@@ -22,6 +22,8 @@ public:
     virtual void emitBytes(SourceLocation* location, const uint8_t* bytes, size_t count) = 0;
     virtual void emitBytes(const Byte* bytes, size_t count) = 0;
 
+    virtual void copyTo(CodeEmitter* target) const = 0;
+
     DISABLE_COPY(CodeEmitter);
 };
 

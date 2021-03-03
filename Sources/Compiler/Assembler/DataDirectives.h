@@ -15,7 +15,8 @@ public:
     ~DEFB() override;
 
     size_t sizeInBytes() const override;
-    void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+        std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
     Expr* mValue;
@@ -32,7 +33,8 @@ public:
     ~DEFB_STRING() override;
 
     size_t sizeInBytes() const override;
-    void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+        std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
     const char* mText;
@@ -50,7 +52,8 @@ public:
     ~DEFW() override;
 
     size_t sizeInBytes() const override;
-    void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+        std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
     Expr* mValue;
@@ -67,7 +70,8 @@ public:
     ~DEFD() override;
 
     size_t sizeInBytes() const override;
-    void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+        std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
     Expr* mValue;
@@ -84,7 +88,8 @@ public:
     ~DEFS() override;
 
     size_t sizeInBytes() const override;
-    void emitCode(CodeEmitter* emitter, int64_t& nextAddress) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+        std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
     Expr* mValue;

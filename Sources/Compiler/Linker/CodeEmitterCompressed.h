@@ -3,17 +3,18 @@
 
 #include "Compiler/Linker/CodeEmitter.h"
 #include <vector>
+#include <memory>
 
 class Compressor;
 
-class CodeEmitterCompressed : public CodeEmitter
+class CodeEmitterCompressed final : public CodeEmitter
 {
 public:
-    explicit CodeEmitterCompressed(Compressor* compressor);
+    explicit CodeEmitterCompressed(std::unique_ptr<Compressor> compressor);
     ~CodeEmitterCompressed();
 
-    size_t size() const;
-    const uint8_t* data() const;
+    size_t compressedSize() const;
+    const uint8_t* compressedData() const;
 
     void clear();
 
@@ -23,11 +24,11 @@ public:
 
     void compress();
 
-    void copyTo(CodeEmitter* target) const;
+    void copyTo(CodeEmitter* target) const override;
 
 private:
     SourceLocation* mLocation;
-    Compressor* mCompressor;
+    std::unique_ptr<Compressor> mCompressor;
     std::vector<uint8_t> mCompressedBytes;
     std::vector<uint8_t> mUncompressedBytes;
     bool mCompressed;

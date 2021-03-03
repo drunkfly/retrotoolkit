@@ -15,11 +15,11 @@ public:
 
     void clear();
 
-    void emitByte(SourceLocation* location, uint8_t byte) override;
-    void emitBytes(SourceLocation* location, const uint8_t* bytes, size_t count) override;
-    void emitBytes(const Byte* bytes, size_t count) override;
+    void emitByte(SourceLocation* location, uint8_t byte) final override;
+    void emitBytes(SourceLocation* location, const uint8_t* bytes, size_t count) final override;
+    void emitBytes(const Byte* bytes, size_t count) final override;
 
-    void copyTo(CodeEmitter* target) const;
+    void copyTo(CodeEmitter* target) const final override;
 
 private:
     std::vector<Byte> mBytes;

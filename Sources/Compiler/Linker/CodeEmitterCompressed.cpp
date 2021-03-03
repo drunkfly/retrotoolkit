@@ -2,9 +2,9 @@
 #include "Compiler/Compression/Compressor.h"
 #include "Compiler/CompilerError.h"
 
-CodeEmitterCompressed::CodeEmitterCompressed(Compressor* compressor)
+CodeEmitterCompressed::CodeEmitterCompressed(std::unique_ptr<Compressor> compressor)
     : mLocation(nullptr)
-    , mCompressor(compressor)
+    , mCompressor(std::move(compressor))
     , mCompressed(false)
 {
 }
@@ -13,14 +13,14 @@ CodeEmitterCompressed::~CodeEmitterCompressed()
 {
 }
 
-size_t CodeEmitterCompressed::size() const
+size_t CodeEmitterCompressed::compressedSize() const
 {
     if (!mCompressed)
         throw CompilerError(mLocation, "internal compiler error: compressed size is not known at this point.");
     return mCompressedBytes.size();
 }
 
-const uint8_t* CodeEmitterCompressed::data() const
+const uint8_t* CodeEmitterCompressed::compressedData() const
 {
     if (!mCompressed)
         throw CompilerError(mLocation, "internal compiler error: compressed data is not available at this point.");

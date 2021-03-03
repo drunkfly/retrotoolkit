@@ -55,9 +55,14 @@ bool Z80::bit::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-int Z80::bit::value(uint8_t baseByte) const
+bool Z80::bit::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    Value value = mValue->evaluateValue();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::bit::value(int64_t currentAddress, uint8_t baseByte) const
+{
+    Value value = mValue->evaluateValue(&currentAddress);
     if (value.number < 0 || value.number > 7)
         throw CompilerError(mValue->location(), "bit index is out of range.");
     return uint8_t(baseByte | (uint8_t(value.number) << 3));
@@ -75,9 +80,14 @@ bool Z80::byte::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-int Z80::byte::value() const
+bool Z80::byte::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->evaluateByte();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::byte::value(int64_t currentAddress) const
+{
+    return mValue->evaluateByte(&currentAddress);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,9 +102,14 @@ bool Z80::word::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-int Z80::word::low(int& high) const
+bool Z80::word::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    auto word = mValue->evaluateWord();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::word::low(int64_t currentAddress, int& high) const
+{
+    auto word = mValue->evaluateWord(&currentAddress);
     high = uint8_t((word >> 8) & 0xff);
     return uint8_t(word & 0xff);
 }
@@ -185,9 +200,14 @@ bool Z80::memAddr::tryParse(ParsingContext* c)
     return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-int Z80::memAddr::low(int& high) const
+bool Z80::memAddr::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    auto word = mValue->evaluateWord();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::memAddr::low(int64_t currentAddress, int& high) const
+{
+    auto word = mValue->evaluateWord(&currentAddress);
     high = uint8_t((word >> 8) & 0xff);
     return uint8_t(word & 0xff);
 }
@@ -227,9 +247,14 @@ bool Z80::IX_byte::tryParse(ParsingContext* c)
     return c->consumeRightParenthesis();
 }
 
-int Z80::IX_byte::value() const
+bool Z80::IX_byte::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->evaluateByte();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::IX_byte::value(int64_t currentAddress) const
+{
+    return mValue->evaluateByte(&currentAddress);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -267,9 +292,14 @@ bool Z80::IY_byte::tryParse(ParsingContext* c)
     return c->consumeRightParenthesis();
 }
 
-int Z80::IY_byte::value() const
+bool Z80::IY_byte::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->evaluateByte();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::IY_byte::value(int64_t currentAddress) const
+{
+    return mValue->evaluateByte(&currentAddress);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -284,9 +314,14 @@ bool Z80::relOffset::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-int Z80::relOffset::value(int64_t nextAddress) const
+bool Z80::relOffset::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->evaluateByteOffset(nextAddress);
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::relOffset::value(int64_t currentAddress, int64_t nextAddress) const
+{
+    return mValue->evaluateByteOffset(nextAddress, &currentAddress);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -315,9 +350,14 @@ bool Z80::portAddr::tryParse(ParsingContext* c)
     return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-int Z80::portAddr::value() const
+bool Z80::portAddr::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->evaluateByte();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::portAddr::value(int64_t currentAddress) const
+{
+    return mValue->evaluateByte(&currentAddress);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -332,9 +372,14 @@ bool Z80::intMode::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-int Z80::intMode::value() const
+bool Z80::intMode::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    Value value = mValue->evaluateValue();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::intMode::value(int64_t currentAddress) const
+{
+    Value value = mValue->evaluateValue(&currentAddress);
     switch (value.number) {
         case 0: return 0x46;
         case 1: return 0x56;
@@ -355,9 +400,14 @@ bool Z80::rstIndex::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-int Z80::rstIndex::value(uint8_t baseByte) const
+bool Z80::rstIndex::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
 {
-    Value value = mValue->evaluateValue();
+    return mValue->canEvaluateValue(nextAddress, resolveError);
+}
+
+int Z80::rstIndex::value(int64_t currentAddress, uint8_t baseByte) const
+{
+    Value value = mValue->evaluateValue(&currentAddress);
     switch (value.number) {
         case 0x00:
         case 0x08:
@@ -394,12 +444,13 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         int64_t nextAddress = 0; (void)nextAddress; \
         return OP##_bytes.size(); \
     } \
-    void Z80::OP::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
+    bool Z80::OP::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high;\
         (void)nextAddress; \
         emitter->emitBytes(location(), OP##_bytes.data(), OP##_bytes.size()); \
         nextAddress += OP##_bytes.size(); \
+        return true; \
     }
 
 #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
@@ -409,13 +460,17 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         int64_t nextAddress = 0; (void)nextAddress; \
         return decltype(arrayType BYTES)::Size; \
     } \
-    void Z80::OP##_##OP1::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
+    bool Z80::OP##_##OP1::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+        std::unique_ptr<CompilerError>& resolveError) const \
     { \
         int high; (void)high;\
         (void)nextAddress; \
+        if (!mOp1.canEvaluate(&nextAddress, resolveError)) \
+            return false; \
         auto array = toArray BYTES; \
         emitter->emitBytes(location(), array.data(), array.size()); \
         nextAddress += array.size(); \
+        return true; \
     }
 
 #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
@@ -425,13 +480,28 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         int64_t nextAddress = 0; (void)nextAddress; \
         return decltype(arrayType BYTES)::Size; \
     } \
-    void Z80::OP##_##OP1##_##OP2::emitCode(CodeEmitter* emitter, int64_t& nextAddress) const \
+    bool Z80::OP##_##OP1##_##OP2::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+        std::unique_ptr<CompilerError>& resolveError) const \
     { \
         int high; (void)high;\
         (void)nextAddress; \
+        if (!mOp1.canEvaluate(&nextAddress, resolveError) || !mOp2.canEvaluate(&nextAddress, resolveError)) \
+            return false; \
         auto array = toArray BYTES; \
         emitter->emitBytes(location(), array.data(), array.size()); \
         nextAddress += array.size(); \
+        return true; \
     }
+
+#define OP1 mOp1.value(nextAddress)
+#define OP2 mOp2.value(nextAddress)
+
+#define OP1V(X) mOp1.value(nextAddress, (X))
+#define OP2V(X) mOp2.value(nextAddress, (X))
+
+#define OP1W mOp1.low(nextAddress, high), high
+#define OP2W mOp2.low(nextAddress, high), high
+
+#define NEXT (nextAddress + sizeInBytes())
 
 #include "Instructions.Z80.hh"

@@ -22,9 +22,10 @@ add(Compiler
         Assembler/Label.cpp
         Assembler/Label.h
         Compression/Compression.h
+        Compression/Compressor.cpp
         Compression/Compressor.h
-        Compression/LzsaCompressor.cpp
-        Compression/LzsaCompressor.h
+        Compression/Lzsa2Compressor.cpp
+        Compression/Lzsa2Compressor.h
         Compression/Zx7Compressor.cpp
         Compression/Zx7Compressor.h
         Linker/CodeEmitter.cpp
