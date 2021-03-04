@@ -10,6 +10,8 @@
 #include <memory>
 
 class ExprIdentifier;
+class AssemblerContext;
+class Label;
 class CompilerError;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,6 +26,8 @@ public:
     virtual bool isNegate() const;
 
     virtual void toString(std::stringstream& ss) const = 0;
+
+    virtual void replaceCurrentAddressWithLabel(AssemblerContext* context) = 0;
 
     bool canEvaluateValue(const int64_t* currentAddress, std::unique_ptr<CompilerError>& resolveError) const;
 
@@ -59,12 +63,17 @@ class ExprCurrentAddress : public Expr
 public:
     explicit ExprCurrentAddress(SourceLocation* location)
         : Expr(location)
+        , mLabel(nullptr)
     {
     }
 
     void toString(std::stringstream& ss) const override;
 
+    void replaceCurrentAddressWithLabel(AssemblerContext* context) override;
+
 private:
+    Label* mLabel;
+
     bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override;
     Value evaluate() const override;
 
@@ -83,6 +92,8 @@ public:
     }
 
     void toString(std::stringstream& ss) const override;
+
+    void replaceCurrentAddressWithLabel(AssemblerContext* context) override;
 
 private:
     int64_t mValue;
@@ -107,6 +118,8 @@ public:
     }
 
     void toString(std::stringstream& ss) const override;
+
+    void replaceCurrentAddressWithLabel(AssemblerContext* context) override;
 
 private:
     SymbolTable* mSymbolTable;
@@ -133,6 +146,8 @@ public:
 
     void toString(std::stringstream& ss) const override;
 
+    void replaceCurrentAddressWithLabel(AssemblerContext* context) override;
+
 private:
     Expr* mCondition;
     Expr* mThen;
@@ -157,6 +172,7 @@ private:
         } \
         Expr* operand() const noexcept { return mOperand; } \
         void toString(std::stringstream& ss) const override; \
+        void replaceCurrentAddressWithLabel(AssemblerContext* context) override; \
     private: \
         Expr* mOperand; \
         bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override; \
@@ -175,6 +191,7 @@ private:
         { \
         } \
         void toString(std::stringstream& ss) const override; \
+        void replaceCurrentAddressWithLabel(AssemblerContext* context) override; \
     private: \
         Expr* mOperand1; \
         Expr* mOperand2; \
@@ -197,6 +214,8 @@ public:
     Expr* operand() const noexcept { return mOperand; }
 
     void toString(std::stringstream& ss) const override;
+
+    void replaceCurrentAddressWithLabel(AssemblerContext* context) override;
 
 private:
     Expr* mOperand;

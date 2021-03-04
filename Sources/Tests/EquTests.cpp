@@ -349,8 +349,10 @@ TEST_CASE("'$' in equ", "[equ]")
         "equ1 equ $\n"
         "equ2 equ $-2\n"
         "ld a, (equ1)\n"
-        "ld a, (equ2)\n"
+        "ld a, (equ3)\n"
         "ld a, (equ1)\n"
+        "equ3 equ $\n"
+        "ld a, (equ2)\n"
         ;
 
     static const unsigned char binary[] = {
@@ -358,10 +360,13 @@ TEST_CASE("'$' in equ", "[equ]")
         0x34,
         0x12,
         0x3a,
-        0x35,
+        0x3d,
         0x12,
         0x3a,
+        0x34,
+        0x12,
         0x3a,
+        0x32,
         0x12,
         };
 
@@ -371,6 +376,18 @@ TEST_CASE("'$' in equ", "[equ]")
     REQUIRE(errorConsumer.errorMessage() == "");
     REQUIRE(actual == expected);
     REQUIRE(!actual.hasFiles());
+}
+
+TEST_CASE("'$' outside of a section", "[equ]")
+{
+    static const char source[] =
+        "equ1 equ 3*(4+$)\n"
+        "#section main\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:1: current address is not available outside of a section.");
 }
 
 TEST_CASE("ensure unused equs are validated", "[equ]")

@@ -10,6 +10,7 @@
 AssemblerContext::AssemblerContext(AssemblerContext* prev)
     : mPrev(prev)
     , mSection(nullptr)
+    , mEphemeralLabelCounter(0)
 {
     registerFinalizer();
 }
@@ -56,4 +57,17 @@ void AssemblerContext::addLabel(SymbolTable* symbolTable, SourceLocation* locati
         throw CompilerError(location, ss.str());
     }
     mSection->addInstruction(label);
+}
+
+Label* AssemblerContext::addEphemeralLabel(SourceLocation* location)
+{
+    if (!mSection)
+        throw CompilerError(location, "current address is not available outside of a section.");
+
+    std::stringstream ss;
+    ss << '$' << mEphemeralLabelCounter++;
+    auto label = new (heap()) Label(location, ss.str());
+    mSection->addInstruction(label);
+
+    return label;
 }

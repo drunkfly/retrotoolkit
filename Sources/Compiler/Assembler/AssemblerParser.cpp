@@ -183,6 +183,8 @@ void AssemblerParser::parseLine()
         const char* rawName = mHeap->allocString(name.c_str(), name.length());
         Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix()).unambiguousExpression();
 
+        expr->replaceCurrentAddressWithLabel(mContext);
+
         auto symbol = new (mHeap) ConstantSymbol(nameToken->location(), rawName, expr);
         if (!mSymbolTable->addSymbol(symbol)) {
             std::stringstream ss;

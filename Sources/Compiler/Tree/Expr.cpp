@@ -1,5 +1,6 @@
 #include "Expr.h"
 #include "Compiler/Assembler/Label.h"
+#include "Compiler/Assembler/AssemblerContext.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/CompilerError.h"
 #include <sstream>
@@ -189,23 +190,49 @@ template <bool SUB, typename T> Value Expr::smartEvaluate(T&& operatr, Value a, 
 
 bool ExprCurrentAddress::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    if (!mCurrentAddress) {
-        resolveError = std::make_unique<CompilerError>(location(), "current address is not available at this point.");
-        return false;
+    if (!mLabel) {
+        if (!mCurrentAddress) {
+            resolveError = std::make_unique<CompilerError>(location(),
+                "current address is not available at this point.");
+            return false;
+        }
+    } else {
+        if (!mLabel->hasAddress()) {
+            std::stringstream ss;
+            ss << "value of '$' in EQU is not available at this point.";
+            resolveError = std::make_unique<CompilerError>(location(), ss.str());
+            return false;
+        }
     }
     return true;
 }
 
 Value ExprCurrentAddress::evaluate() const
 {
-    if (!mCurrentAddress)
-        throw CompilerError(location(), "current address is not available at this point.");
-    return Value(*mCurrentAddress);
+    if (!mLabel) {
+        if (!mCurrentAddress)
+            throw CompilerError(location(), "current address is not available at this point.");
+        return Value(*mCurrentAddress);
+    } else {
+        if (!mLabel->hasAddress()) {
+            std::stringstream ss;
+            ss << "value of '$' in EQU is not available at this point.";
+            throw CompilerError(location(), ss.str());
+        }
+        return Value(mLabel->addressValue(), Sign::Unsigned, SignificantBits::NoMoreThan16);
+    }
 }
 
 void ExprCurrentAddress::toString(std::stringstream& ss) const
 {
     ss << '$';
+}
+
+void ExprCurrentAddress::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    if (mLabel)
+        throw CompilerError(location(), "internal compiler error: '$' is already replaced with label.");
+    mLabel = context->addEphemeralLabel(location());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,6 +250,10 @@ Value ExprNumber::evaluate() const
 void ExprNumber::toString(std::stringstream& ss) const
 {
     ss << mValue;
+}
+
+void ExprNumber::replaceCurrentAddressWithLabel(AssemblerContext*)
+{
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -286,6 +317,10 @@ void ExprIdentifier::toString(std::stringstream& ss) const
     ss << mName;
 }
 
+void ExprIdentifier::replaceCurrentAddressWithLabel(AssemblerContext*)
+{
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprConditional::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -308,6 +343,13 @@ void ExprConditional::toString(std::stringstream& ss) const
     mThen->toString(ss);
     ss << " : ";
     mElse->toString(ss);
+}
+
+void ExprConditional::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mCondition->replaceCurrentAddressWithLabel(context);
+    mThen->replaceCurrentAddressWithLabel(context);
+    mElse->replaceCurrentAddressWithLabel(context);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -363,6 +405,11 @@ void ExprNegate::toString(std::stringstream& ss) const
     mOperand->toString(ss);
 }
 
+void ExprNegate::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprBitwiseNot::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -384,6 +431,11 @@ void ExprBitwiseNot::toString(std::stringstream& ss) const
     mOperand->toString(ss);
 }
 
+void ExprBitwiseNot::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprLogicNot::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -401,6 +453,11 @@ void ExprLogicNot::toString(std::stringstream& ss) const
 {
     ss << '!';
     mOperand->toString(ss);
+}
+
+void ExprLogicNot::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand->replaceCurrentAddressWithLabel(context);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -425,6 +482,12 @@ void ExprAdd::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprAdd::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprSubtract::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -445,6 +508,12 @@ void ExprSubtract::toString(std::stringstream& ss) const
     mOperand1->toString(ss);
     ss << " - ";
     mOperand2->toString(ss);
+}
+
+void ExprSubtract::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -469,6 +538,12 @@ void ExprMultiply::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprMultiply::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprDivide::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -491,6 +566,12 @@ void ExprDivide::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprDivide::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprModulo::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -511,6 +592,12 @@ void ExprModulo::toString(std::stringstream& ss) const
     mOperand1->toString(ss);
     ss << " % ";
     mOperand2->toString(ss);
+}
+
+void ExprModulo::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -548,6 +635,12 @@ void ExprShiftLeft::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprShiftLeft::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprShiftRight::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -583,6 +676,12 @@ void ExprShiftRight::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprShiftRight::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprLess::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -603,6 +702,12 @@ void ExprLess::toString(std::stringstream& ss) const
     mOperand1->toString(ss);
     ss << " < ";
     mOperand2->toString(ss);
+}
+
+void ExprLess::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -627,6 +732,12 @@ void ExprLessEqual::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprLessEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprGreater::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -647,6 +758,12 @@ void ExprGreater::toString(std::stringstream& ss) const
     mOperand1->toString(ss);
     ss << " > ";
     mOperand2->toString(ss);
+}
+
+void ExprGreater::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -671,6 +788,12 @@ void ExprGreaterEqual::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprGreaterEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -693,6 +816,12 @@ void ExprEqual::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprNotEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -713,6 +842,12 @@ void ExprNotEqual::toString(std::stringstream& ss) const
     mOperand1->toString(ss);
     ss << " != ";
     mOperand2->toString(ss);
+}
+
+void ExprNotEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -739,6 +874,12 @@ void ExprBitwiseAnd::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprBitwiseAnd::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprBitwiseOr::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -761,6 +902,12 @@ void ExprBitwiseOr::toString(std::stringstream& ss) const
     mOperand1->toString(ss);
     ss << " | ";
     mOperand2->toString(ss);
+}
+
+void ExprBitwiseOr::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -787,6 +934,12 @@ void ExprBitwiseXor::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprBitwiseXor::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprLogicAnd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -809,6 +962,12 @@ void ExprLogicAnd::toString(std::stringstream& ss) const
     mOperand2->toString(ss);
 }
 
+void ExprLogicAnd::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprLogicOr::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -829,4 +988,10 @@ void ExprLogicOr::toString(std::stringstream& ss) const
     mOperand1->toString(ss);
     ss << " || ";
     mOperand2->toString(ss);
+}
+
+void ExprLogicOr::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
 }

@@ -8,6 +8,7 @@ class ProgramSection;
 class Instruction;
 class SymbolTable;
 class SourceLocation;
+class Label;
 
 class AssemblerContext : public GCObject
 {
@@ -24,11 +25,15 @@ public:
 
     virtual void addInstruction(Instruction* instruction);
     virtual void addLabel(SymbolTable* symbolTable, SourceLocation* location, std::string name);
+    virtual Label* addEphemeralLabel(SourceLocation* location);
 
 private:
     AssemblerContext* mPrev;
     ProgramSection* mSection;
     std::string mLocalLabelsPrefix;
+    int mEphemeralLabelCounter;
+
+    DISABLE_COPY(AssemblerContext);
 };
 
 #endif
