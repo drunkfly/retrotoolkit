@@ -177,8 +177,7 @@ void AssemblerParser::parseLine()
             mContext->setLocalLabelsPrefix(nameToken->location(), nameToken->text());
 
         (this->*(iter->second))();
-    } else if (nameToken->id() >= TOK_IDENTIFIER
-            && (mToken->id() >= TOK_IDENTIFIER && lower == "equ") || mToken->id() == TOK_ASSIGN) {
+    } else if ((mToken->id() >= TOK_IDENTIFIER && lower == "equ") || mToken->id() == TOK_ASSIGN) {
         mToken = mToken->next();
 
         const char* rawName = mHeap->allocString(name.c_str(), name.length());
@@ -518,7 +517,7 @@ std::string AssemblerParser::readLabelName()
         case TOK_LABEL_LOCAL_NAME: {
             const auto& prefix = mContext->localLabelsPrefix();
             if (prefix.empty())
-                throw CompilerError(mToken->location(), "local label name without preceding global label");
+                throw CompilerError(mToken->location(), "local label name without preceding global label.");
 
             std::stringstream ss;
             ss << prefix;

@@ -232,7 +232,7 @@ bool ExprIdentifier::canEvaluate(std::unique_ptr<CompilerError>& resolveError) c
     auto symbol = mSymbolTable->findSymbol(mName);
     if (!symbol) {
         std::stringstream ss;
-        ss << "Use of undeclared identifier '" << mName << "'.";
+        ss << "use of undeclared identifier '" << mName << "'.";
         throw CompilerError(location(), ss.str());
     }
 
@@ -259,13 +259,13 @@ Value ExprIdentifier::evaluate() const
     auto symbol = mSymbolTable->findSymbol(mName);
     if (!symbol) {
         std::stringstream ss;
-        ss << "Use of undeclared identifier '" << mName << "'.";
+        ss << "use of undeclared identifier '" << mName << "'.";
         throw CompilerError(location(), ss.str());
     }
 
     switch (symbol->type()) {
         case Symbol::Constant:
-            return static_cast<ConstantSymbol*>(symbol)->value()->evaluate();
+            return static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(mCurrentAddress);
 
         case Symbol::Label: {
             auto label = static_cast<LabelSymbol*>(symbol)->label();

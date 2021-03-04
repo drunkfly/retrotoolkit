@@ -2,11 +2,13 @@
 #include "Common/GC.h"
 #include "Compiler/Tree/Expr.h"
 #include "Compiler/Tree/SourceLocation.h"
+#include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Linker/CompiledOutput.h"
 #include "Compiler/Linker/CodeEmitterCompressed.h"
 #include "Compiler/Linker/ProgramSection.h"
 #include "Compiler/Linker/Program.h"
+#include "Compiler/Assembler/Label.h"
 #include "Compiler/Compression/Compressor.h"
 #include "Compiler/Project.h"
 #include "Compiler/ExpressionParser.h"
@@ -648,6 +650,25 @@ CompiledOutput* Linker::link(Program* program)
     auto output = new (mHeap) CompiledOutput();
     for (const auto& file : files)
         file->generateCode(output->getOrAddFile(file->file()->name));
+
+    for (const auto& it : mProgram->globals()->symbols()) {
+        Symbol* symbol = it.second;
+        switch (symbol->type()) {
+            case Symbol::Label:
+                if (!static_cast<LabelSymbol*>(symbol)->label()->hasAddress()) {
+                    std::stringstream ss;
+                    ss << "unable to resolve address for label \"" << symbol->name() << "\".";
+                    throw CompilerError(symbol->location(), ss.str());
+                }
+                break;
+
+            case Symbol::Constant: {
+                int64_t addr = 0;
+                static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(&addr);
+                break;
+            }
+        }
+    }
 
     return output;
 }

@@ -5,6 +5,7 @@
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/CompilerError.h"
+#include <sstream>
 
 AssemblerContext::AssemblerContext(AssemblerContext* prev)
     : mPrev(prev)
@@ -49,6 +50,10 @@ void AssemblerContext::addLabel(SymbolTable* symbolTable, SourceLocation* locati
     if (!mSection)
         throw CompilerError(location, "label not in a section.");
     auto label = new (heap()) Label(location, std::move(name));
-    symbolTable->addSymbol(new (heap()) LabelSymbol(location, label));
+    if (!symbolTable->addSymbol(new (heap()) LabelSymbol(location, label))) {
+        std::stringstream ss;
+        ss << "duplicate identifier \"" << label->name() << "\".";
+        throw CompilerError(location, ss.str());
+    }
     mSection->addInstruction(label);
 }

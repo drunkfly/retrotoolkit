@@ -15,6 +15,8 @@ public:
 
     SymbolTable* parent() const { return mParent; }
 
+    const std::unordered_map<std::string, Symbol*>& symbols() const { return mSymbols; }
+
     bool addSymbol(Symbol* symbol);
     Symbol* findSymbol(const std::string& name) const;
 

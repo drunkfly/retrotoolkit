@@ -287,7 +287,7 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
         case TOK_LABEL_LOCAL_NAME: {
             if (!mLocalLabelsPrefix || mLocalLabelsPrefix->empty()) {
                 mErrorLocation = mContext->token()->location();
-                mError = "local label name without preceding global label";
+                mError = "local label name without preceding global label.";
                 return nullptr;
             }
 
