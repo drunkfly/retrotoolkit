@@ -16,6 +16,7 @@ add(Tests
         Util/TestUtil.cpp
         Util/TestUtil.h
         DataTests.cpp
+        EquTests.cpp
         OpcodeTests.cpp
         main.cpp
     )

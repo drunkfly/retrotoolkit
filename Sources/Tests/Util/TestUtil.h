@@ -7,5 +7,6 @@
 #include "Tests/Util/ErrorConsumer.h"
 
 DataBlob assemble(ErrorConsumer& errorConsumer, const char* source);
+DataBlob assemble2(ErrorConsumer& errorConsumer, const char* source1, const char* source2);
 
 #endif

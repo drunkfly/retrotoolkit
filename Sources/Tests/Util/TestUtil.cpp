@@ -51,3 +51,17 @@ DataBlob assemble(ErrorConsumer& errorConsumer, const char* source)
         return DataBlob();
     }
 }
+
+DataBlob assemble2(ErrorConsumer& errorConsumer, const char* source1, const char* source2)
+{
+    try {
+        auto program = new (&heap) Program();
+        auto project = loadProject("DefaultProject.xml");
+        assemble(program, "source1", source1);
+        assemble(program, "source2", source2);
+        return link(project, program);
+    } catch (const CompilerError& error) {
+        errorConsumer.setError(error);
+        return DataBlob();
+    }
+}
