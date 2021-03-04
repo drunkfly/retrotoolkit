@@ -67,15 +67,9 @@ private:
     const char* consumeIdentifier();
     //void expectComma(int tokenId);
     void expectEol();
+    void expectNotEol();
 
     bool matchEol() const;
-    /*
-    bool matchToken(int token);
-    bool matchIdentifier(const char* ident);
-    bool matchExpression(std::unique_ptr<Expression>* out, bool unambiguous = false);
-    bool matchExpressionNegative(const Token& minusToken, std::unique_ptr<Expression>* out);
-    bool matchByte(quint8* out);
-    */
 
     DISABLE_COPY(AssemblerParser);
 };

@@ -14,7 +14,7 @@ bool ParsingContext::expression(Expr*& expr,
     const StringSet* registerNames, const StringSet* conditionNames, bool unambiguous)
 {
     ExpressionParser parser(mHeap, registerNames, conditionNames, mLocalLabelsPrefix);
-    ParsingContext subcontext(mHeap, mToken, mSymbolTable, mLocalLabelsPrefix);
+    ParsingContext subcontext(mHeap, mToken, mSymbolTable, mLocalLabelsPrefix, mAllowEol);
     expr = parser.tryParseExpression(&subcontext, unambiguous);
     return (expr != nullptr);
 }
@@ -32,7 +32,7 @@ bool ParsingContext::expressionInParentheses(Expr*& expr,
 Expr* ParsingContext::unambiguousExpression()
 {
     ExpressionParser parser(mHeap, nullptr, nullptr, mLocalLabelsPrefix);
-    ParsingContext subcontext(mHeap, mToken, mSymbolTable, mLocalLabelsPrefix);
+    ParsingContext subcontext(mHeap, mToken, mSymbolTable, mLocalLabelsPrefix, mAllowEol);
     Expr* expr = parser.tryParseExpression(&subcontext, true);
     if (!expr)
         throw CompilerError(parser.errorLocation(), parser.error());
@@ -77,6 +77,16 @@ bool ParsingContext::consumeIdentifier(const char* name)
 bool ParsingContext::consumeIdentifierInParentheses(const char* name)
 {
     return consumeLeftParenthesis() && consumeIdentifier(name) && consumeRightParenthesis();
+}
+
+void ParsingContext::ensureNotEol()
+{
+    if (!mAllowEol && mToken->isFirstOnLine()) {
+        auto loc = mToken->location();
+        auto file = (loc ? loc->file() : nullptr);
+        int line = (loc && loc->line() > 1 ? loc->line() - 1 : 0);
+        throw CompilerError(new (mHeap) SourceLocation(file, line), "unexpected end of line.");
+    }
 }
 
 void ParsingContext::end()

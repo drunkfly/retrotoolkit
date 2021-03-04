@@ -23,14 +23,14 @@ ExpressionParser::~ExpressionParser()
 
 Expr* ExpressionParser::tryParseExpression(SourceLocation* location, const char* str, SymbolTable* variables)
 {
-    Lexer lexer(mHeap, Lexer::Mode::Assembler);
+    Lexer lexer(mHeap, Lexer::Mode::SingleLineExpression);
     lexer.scan(location->file(), str, location->line());
 
     if (!variables)
         variables = new (mHeap) SymbolTable(nullptr);
 
     const Token* token = lexer.firstToken();
-    ParsingContext context(mHeap, token, variables, mLocalLabelsPrefix);
+    ParsingContext context(mHeap, token, variables, mLocalLabelsPrefix, false);
     return tryParseExpression(&context, true);
 }
 
@@ -60,6 +60,7 @@ Expr* ExpressionParser::parseConditionalExpression(bool unambiguous)
         return nullptr;
 
     if (mContext->token()->id() == TOK_QUESTION) {
+        mContext->ensureNotEol();
         auto location = mContext->token()->location();
 
         mContext->nextToken();
@@ -73,6 +74,7 @@ Expr* ExpressionParser::parseConditionalExpression(bool unambiguous)
             return nullptr;
         }
 
+        mContext->ensureNotEol();
         mContext->nextToken();
         auto opElse = parseConditionalExpression(true);
         if (!opElse)
@@ -92,6 +94,8 @@ Expr* ExpressionParser::parseConditionalExpression(bool unambiguous)
             return nullptr; \
         \
         while (mContext->token()->id() == TOKEN) { \
+            mContext->ensureNotEol(); \
+            \
             auto location = mContext->token()->location(); \
             mContext->nextToken(); \
             \
@@ -118,6 +122,8 @@ Expr* ExpressionParser::parseEqualityExpression(bool unambiguous)
         return nullptr;
 
     while (mContext->token()->id() == TOK_EQ || mContext->token()->id() == TOK_INEQ) {
+        mContext->ensureNotEol();
+
         const Token* token = mContext->token();
         mContext->nextToken();
 
@@ -142,6 +148,8 @@ Expr* ExpressionParser::parseRelationalExpression(bool unambiguous)
 
     while (mContext->token()->id() == TOK_LESS || mContext->token()->id() == TOK_LESSEQ
             || mContext->token()->id() == TOK_GREATER || mContext->token()->id() == TOK_GREATEREQ) {
+        mContext->ensureNotEol();
+
         const Token* token = mContext->token();
         mContext->nextToken();
 
@@ -167,6 +175,8 @@ Expr* ExpressionParser::parseShiftExpression(bool unambiguous)
         return nullptr;
 
     while (mContext->token()->id() == TOK_SHL || mContext->token()->id() == TOK_SHR) {
+        mContext->ensureNotEol();
+
         const Token* token = mContext->token();
         mContext->nextToken();
 
@@ -190,6 +200,8 @@ Expr* ExpressionParser::parseAdditionExpression(bool unambiguous)
         return nullptr;
 
     while (mContext->token()->id() == TOK_PLUS || mContext->token()->id() == TOK_MINUS) {
+        mContext->ensureNotEol();
+
         const Token* token = mContext->token();
         mContext->nextToken();
 
@@ -214,6 +226,8 @@ Expr* ExpressionParser::parseMultiplicationExpression(bool unambiguous)
 
     while (mContext->token()->id() == TOK_ASTERISK || mContext->token()->id() == TOK_SLASH
             || mContext->token()->id() == TOK_PERCENT) {
+        mContext->ensureNotEol();
+
         const Token* token = mContext->token();
         mContext->nextToken();
 
@@ -235,6 +249,7 @@ Expr* ExpressionParser::parseUnaryExpression(bool unambiguous)
 {
     switch (mContext->token()->id()) {
         case TOK_MINUS: {
+            mContext->ensureNotEol();
             auto location = mContext->token()->location();
             mContext->nextToken();
             auto operand = parseAtomicExpression(true);
@@ -244,9 +259,12 @@ Expr* ExpressionParser::parseUnaryExpression(bool unambiguous)
         }
 
         case TOK_PLUS:
+            mContext->ensureNotEol();
+            mContext->nextToken();
             return parseAtomicExpression(true);
 
         case TOK_EXCLAMATION: {
+            mContext->ensureNotEol();
             auto location = mContext->token()->location();
             mContext->nextToken();
             auto operand = parseAtomicExpression(true);
@@ -256,6 +274,7 @@ Expr* ExpressionParser::parseUnaryExpression(bool unambiguous)
         }
 
         case TOK_TILDE: {
+            mContext->ensureNotEol();
             auto location = mContext->token()->location();
             mContext->nextToken();
             auto operand = parseAtomicExpression(true);
@@ -273,18 +292,22 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
     switch (mContext->token()->id()) {
         case TOK_CHAR:
         case TOK_NUMBER: {
+            mContext->ensureNotEol();
             Expr* expr = new (mHeap) ExprNumber(mContext->token()->location(), mContext->token()->number());
             mContext->nextToken();
             return expr;
         }
 
         case TOK_DOLLAR: {
+            mContext->ensureNotEol();
             Expr* expr = new (mHeap) ExprCurrentAddress(mContext->token()->location());
             mContext->nextToken();
             return expr;
         }
 
         case TOK_LABEL_LOCAL_NAME: {
+            mContext->ensureNotEol();
+
             if (!mLocalLabelsPrefix || mLocalLabelsPrefix->empty()) {
                 mErrorLocation = mContext->token()->location();
                 mError = "local label name without preceding global label.";
@@ -305,6 +328,8 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
         }
 
         case TOK_IDENTIFIER: {
+            mContext->ensureNotEol();
+
             if (!unambiguous && (mRegisterNames || mConditionNames)) {
                 std::string lowerText = toLower(mContext->token()->text());
                 if (mRegisterNames && mRegisterNames->find(lowerText) != mRegisterNames->end()) {
@@ -333,6 +358,8 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
         }
 
         case TOK_LPAREN:
+            mContext->ensureNotEol();
+
             if (unambiguous) {
                 mContext->nextToken();
                 auto expr = parseExpression(true);
@@ -345,6 +372,7 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
                     return nullptr;
                 }
 
+                mContext->ensureNotEol();
                 mContext->nextToken();
                 return expr;
             }

@@ -21,7 +21,7 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
 {
     mFile = file;
     mLine = startLine;
-    mLineStart = true;
+    mLineStart = (mMode != Mode::SingleLineExpression);
 
     for (;;) {
         const char* start = p;

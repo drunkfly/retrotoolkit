@@ -13,6 +13,7 @@ public:
     enum class Mode
     {
         Assembler,
+        SingleLineExpression,
     };
 
     Lexer(GCHeap* heap, Mode mode);

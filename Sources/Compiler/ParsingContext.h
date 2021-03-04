@@ -12,12 +12,14 @@ class Expr;
 class ParsingContext
 {
 public:
-    ParsingContext(GCHeap* heap, const Token*& token, SymbolTable* symbolTable, const std::string* localLabelsPrefix)
+    ParsingContext(GCHeap* heap, const Token*& token,
+            SymbolTable* symbolTable, const std::string* localLabelsPrefix, bool allowEol)
         : mHeap(heap)
         , mToken(token)
         , mTokenRef(token)
         , mLocalLabelsPrefix(localLabelsPrefix)
         , mSymbolTable(symbolTable)
+        , mAllowEol(allowEol)
     {
     }
 
@@ -38,6 +40,8 @@ public:
     bool consumeIdentifier(const char* name);
     bool consumeIdentifierInParentheses(const char* name);
 
+    void ensureNotEol();
+
     void end();
     bool checkEnd();
 
@@ -47,6 +51,7 @@ private:
     const Token*& mTokenRef;
     const std::string* mLocalLabelsPrefix;
     SymbolTable* mSymbolTable;
+    bool mAllowEol;
 
     DISABLE_COPY(ParsingContext);
 };
