@@ -21,7 +21,7 @@ public:
 
     virtual bool isIf() const;
     virtual bool hasElse() const;
-    virtual void beginElse(Token* token);
+    virtual void beginElse(const Token* token);
 
     virtual bool isRepeat() const;
     virtual bool hasVariable(const std::string& name) const;

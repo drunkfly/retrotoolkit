@@ -30,7 +30,7 @@ bool AssemblerContext::hasElse() const
     throw CompilerError(nullptr, "internal compiler error: hasElse() called on invalid context.");
 }
 
-void AssemblerContext::beginElse(Token* token)
+void AssemblerContext::beginElse(const Token* token)
 {
     throw CompilerError(token->location(), "internal compiler error: beginElse() called on invalid context.");
 }

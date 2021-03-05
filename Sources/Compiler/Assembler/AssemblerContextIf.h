@@ -13,10 +13,10 @@ public:
     */
 
     bool isIf() const final override;
-    /*
     bool hasElse() const final override;
-    void beginElse(IErrorReporter* reporter, const Token& token) final override;
+    void beginElse(const Token* token) final override;
 
+    /*
     std::string localLabelsPrefix() const override;
     void setLocalLabelsPrefix(std::string prefix, const Token& token, IErrorReporter* reporter) override;
     bool areGlobalLabelsAllowed() const override;
@@ -31,13 +31,11 @@ public:
     */
 
 private:
-    /*
-    std::weak_ptr<CodeEmitter> mThenCodeEmitter;
-    std::weak_ptr<CodeEmitter> mElseCodeEmitter;
-    Token mIfToken;
-    Token mElseToken;
+    //std::weak_ptr<CodeEmitter> mThenCodeEmitter;
+    //std::weak_ptr<CodeEmitter> mElseCodeEmitter;
+    const Token* mIfToken;
+    const Token* mElseToken;
     bool mHasElse;
-    */
 
     DISABLE_COPY(AssemblerContextIf);
 };
