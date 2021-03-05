@@ -6,9 +6,12 @@
             <Section name="mAiN" base="0x1235" />
             <Section name="main_0x15" base="0x15" />
             <Section name="main_0x100" base="0x100" />
+            <Section name="main_0xfffe" base="0xfffe" />
+            <Section name="main_0xffff" base="0xffff" />
             <Section name="sec1" base="0x1230" />
             <Section name="sec1_0x1234" base="0x1234" />
             <Section name="sec2" base="0x123c" />
+            <Section name="sec2_0x1236" base="0x1236" />
         </File>
     </Files>
 </RetroProject>

@@ -1,4 +1,5 @@
 #include "ProgramSection.h"
+#include "Compiler/CompilerError.h"
 #include "Compiler/Linker/CodeEmitter.h"
 #include "Compiler/Assembler/Instruction.h"
 #include "Compiler/Assembler/Label.h"
@@ -24,6 +25,9 @@ size_t ProgramSection::calculateSizeInBytes() const
 void ProgramSection::resolveLabels(size_t address)
 {
     for (const auto& instruction : mInstructions) {
+        if (address > 0xffff)
+            throw CompilerError(instruction->location(), "address is over 64K.");
+
         if (instruction->isLabel())
             static_cast<Label*>(instruction)->setAddress(address);
         else
@@ -49,8 +53,19 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
 {
     int64_t nextAddress = int64_t(baseAddress);
     for (const auto& instruction : mInstructions) {
+        if (nextAddress > 0xffff) {
+            resolveError = std::make_unique<CompilerError>(instruction->location(), "address is over 64K.");
+            return false;
+        }
+
         if (!instruction->emitCode(emitter, nextAddress, resolveError))
             return false;
+
+        if (nextAddress > 0x10000) {
+            resolveError = std::make_unique<CompilerError>(instruction->location(), "address is over 64K.");
+            return false;
+        }
     }
+
     return true;
 }

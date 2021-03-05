@@ -35,7 +35,7 @@ TEST_CASE("invalid label 1", "[errors]")
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    REQUIRE(errorConsumer.errorMessage() == "source:3: unexpected end of line.");
+    REQUIRE(errorConsumer.errorMessage() == "source:3: missing ':' after local label name.");
 }
 
 TEST_CASE("invalid label 2", "[errors]")
@@ -48,7 +48,7 @@ TEST_CASE("invalid label 2", "[errors]")
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    REQUIRE(errorConsumer.errorMessage() == "source:3: unexpected end of file.");
+    REQUIRE(errorConsumer.errorMessage() == "source:3: missing ':' after local label name.");
 }
 
 TEST_CASE("invalid label 3", "[errors]")
@@ -61,7 +61,7 @@ TEST_CASE("invalid label 3", "[errors]")
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    REQUIRE(errorConsumer.errorMessage() == "source:3: unexpected \"ld\".");
+    REQUIRE(errorConsumer.errorMessage() == "source:3: missing ':' after local label name.");
 }
 
 TEST_CASE("invalid label 4", "[errors]")

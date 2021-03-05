@@ -202,17 +202,8 @@ void AssemblerParser::parseLine()
             std::stringstream ss;
             ss << "unknown opcode \"" << nameToken->text() << "\".";
             throw CompilerError(nameToken->location(), ss.str());
-        } else if (mToken->id() >= TOK_IDENTIFIER) {
-            expectNotEol();
-            std::stringstream ss;
-            ss << "unexpected \"" << mToken->text() << "\".";
-            throw CompilerError(mToken->location(), ss.str());
-        } else {
-            expectNotEol();
-            std::stringstream ss;
-            ss << "unexpected " << mToken->name() << '.';
-            throw CompilerError(mToken->location(), ss.str());
         }
+        throw CompilerError(nameToken->location(), "missing ':' after local label name.");
     }
 }
 
