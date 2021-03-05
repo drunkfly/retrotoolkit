@@ -20,3 +20,16 @@ Symbol::Type LabelSymbol::type() const
 {
     return Label;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RepeatVariableSymbol::RepeatVariableSymbol(SourceLocation* location, const char* name, Value* value)
+    : Symbol(location, name)
+    , mValue(value)
+{
+}
+
+Symbol::Type RepeatVariableSymbol::type() const
+{
+    return RepeatVariable;
+}

@@ -4,6 +4,7 @@
 #include "Compiler/Linker/ProgramSection.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/Token.h"
 #include "Compiler/CompilerError.h"
 #include <sstream>
 
@@ -17,6 +18,31 @@ AssemblerContext::AssemblerContext(AssemblerContext* prev)
 
 AssemblerContext::~AssemblerContext()
 {
+}
+
+bool AssemblerContext::isIf() const
+{
+    return false;
+}
+
+bool AssemblerContext::hasElse() const
+{
+    throw CompilerError(nullptr, "internal compiler error: hasElse() called on invalid context.");
+}
+
+void AssemblerContext::beginElse(Token* token)
+{
+    throw CompilerError(token->location(), "internal compiler error: beginElse() called on invalid context.");
+}
+
+bool AssemblerContext::isRepeat() const
+{
+    return false;
+}
+
+bool AssemblerContext::hasVariable(const std::string& name) const
+{
+    return (mPrev ? mPrev->hasVariable(name) : false);
 }
 
 const std::string& AssemblerContext::localLabelsPrefix() const

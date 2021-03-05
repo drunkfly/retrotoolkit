@@ -10,6 +10,10 @@ add(Compiler
     SOURCES
         Assembler/AssemblerContext.cpp
         Assembler/AssemblerContext.h
+        Assembler/AssemblerContextIf.cpp
+        Assembler/AssemblerContextIf.h
+        Assembler/AssemblerContextRepeat.cpp
+        Assembler/AssemblerContextRepeat.h
         Assembler/AssemblerParser.cpp
         Assembler/AssemblerParser.h
         Assembler/DataDirectives.cpp

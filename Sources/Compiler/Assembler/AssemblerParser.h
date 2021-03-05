@@ -3,9 +3,6 @@
 
 #include "Common/Common.h"
 #include <unordered_map>
-/*
-#include <memory>
-*/
 
 struct Token;
 class GCHeap;
@@ -32,20 +29,18 @@ private:
     static std::unordered_map<std::string, void(AssemblerParser::*)()> mDataDirectives;
     static std::unordered_map<std::string, void(AssemblerParser::*)()> mDirectives;
 
-    /*
     template <typename T, typename... ARGS> T* pushContext(ARGS&&... args);
     void popContext();
-    */
 
     void parseLine();
 
     void parseSectionDecl();
-    /*
     void parseRepeatDecl();
     void parseEndRepeatDecl();
     void parseIfDecl();
     void parseElseDecl();
     void parseEndIfDecl();
+    /*
     void parseAllowWrite();
     void parseDisallowWrite();
     void parsePushAllowWrite();

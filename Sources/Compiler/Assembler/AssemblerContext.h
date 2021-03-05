@@ -9,6 +9,7 @@ class Instruction;
 class SymbolTable;
 class SourceLocation;
 class Label;
+class Token;
 
 class AssemblerContext : public GCObject
 {
@@ -18,9 +19,17 @@ public:
 
     AssemblerContext* prev() const { return mPrev; }
 
+    virtual bool isIf() const;
+    virtual bool hasElse() const;
+    virtual void beginElse(Token* token);
+
+    virtual bool isRepeat() const;
+    virtual bool hasVariable(const std::string& name) const;
+
     virtual const std::string& localLabelsPrefix() const;
     virtual void setLocalLabelsPrefix(SourceLocation* location, std::string prefix);
 
+    ProgramSection* currentSection() const { return mSection; }
     virtual bool setCurrentSection(ProgramSection* section);
 
     virtual void addInstruction(Instruction* instruction);

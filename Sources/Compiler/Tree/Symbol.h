@@ -7,6 +7,7 @@
 class Expr;
 class SourceLocation;
 class Label;
+class Value;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -17,6 +18,7 @@ public:
     {
         Constant,
         Label,
+        RepeatVariable,
     };
 
     Symbol(SourceLocation* location, const char* name)
@@ -73,6 +75,23 @@ private:
     ::Label* mLabel;
 
     DISABLE_COPY(LabelSymbol);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class RepeatVariableSymbol : public Symbol
+{
+public:
+    RepeatVariableSymbol(SourceLocation* location, const char* name, Value* value);
+
+    Type type() const final override;
+
+    Value* value() const { return mValue; }
+
+private:
+    Value* mValue;
+
+    DISABLE_COPY(RepeatVariableSymbol);
 };
 
 #endif

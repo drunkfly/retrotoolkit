@@ -15,6 +15,7 @@ add(Tests
         Util/ErrorConsumer.h
         Util/TestUtil.cpp
         Util/TestUtil.h
+        CaseTests.cpp
         DataTests.cpp
         EquTests.cpp
         ErrorTests.cpp

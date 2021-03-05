@@ -5,6 +5,8 @@
 #include "Compiler/Assembler/Instructions.Z80.h"
 #include "Compiler/Assembler/DataDirectives.h"
 #include "Compiler/Assembler/AssemblerContext.h"
+#include "Compiler/Assembler/AssemblerContextRepeat.h"
+#include "Compiler/Assembler/AssemblerContextIf.h"
 #include "Compiler/Assembler/Label.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
@@ -27,12 +29,12 @@ std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDa
 
 std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDirectives = {
         { "section", &AssemblerParser::parseSectionDecl },
-        /*
         { "repeat", &AssemblerParser::parseRepeatDecl },
         { "endrepeat", &AssemblerParser::parseEndRepeatDecl },
         { "if", &AssemblerParser::parseIfDecl },
         { "else", &AssemblerParser::parseElseDecl },
         { "endif", &AssemblerParser::parseEndIfDecl },
+        /*
         { "allowwrite", &AssemblerParser::parseAllowWrite },
         { "disallowwrite", &AssemblerParser::parseDisallowWrite },
         { "pushallowwrite", &AssemblerParser::parsePushAllowWrite },
@@ -65,37 +67,29 @@ void AssemblerParser::parse(const Token* tokens)
     while (mToken->id() != TOK_EOF)
         parseLine();
 
-    /*
     if (mContext->prev()) {
         if (mContext->isRepeat())
-            error(tr("missing 'endrepeat'"));
+            throw CompilerError(mToken->location(), "missing 'endrepeat'.");
         else if (mContext->isIf())
-            error(tr("missing 'endif'"));
-        else {
-            Q_ASSERT(false);
-            error(tr("internal compiler error"));
-        }
+            throw CompilerError(mToken->location(), "missing 'endif'.");
+        else
+            throw CompilerError(mToken->location(), "internal compiler error: context stack is not empty.");
     }
-    */
 }
 
-/*
 template <typename T, typename... ARGS> T* AssemblerParser::pushContext(ARGS&&... args)
 {
-    auto uniq = std::make_unique<T>(mCompiler, std::move(mContext), std::forward<ARGS>(args)...);
-    auto ptr = uniq.get();
-    mContext = std::move(uniq);
-    return ptr;
+    T* context = new (mHeap) T(mContext, std::forward<ARGS>(args)...);
+    mContext = context;
+    return context;
 }
 
 void AssemblerParser::popContext()
 {
-    mContext = mContext->takePrev();
-    Q_ASSERT(mContext != nullptr);
+    mContext = mContext->prev();
     if (!mContext)
-        error(tr("internal compiler error"));
+        throw CompilerError(mToken->location(), "internal compiler error: context stack is empty.");
 }
-*/
 
 void AssemblerParser::parseLine()
 {
@@ -222,72 +216,85 @@ void AssemblerParser::parseSectionDecl()
     expectEol();
 }
 
-/*
 void AssemblerParser::parseRepeatDecl()
 {
-    Token token = lastToken();
+    const Token* token = mToken;
 
-    auto count = parseExpression(nextToken(), true);
+    mToken = mToken->next();
+    expectNotEol();
+
+    Expr* e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+
     std::string variable;
 
-    if (lastTokenId() == T_COMMA) {
-        variable = expectIdentifier(nextToken());
-        if (mContext->hasVariable(variable) || mProgram->isDeclared(variable))
-            error(tr("duplicate identifier '%1'").arg(variable.c_str()));
-        nextToken();
+    if (mToken->id() == TOK_COMMA) {
+        expectNotEol();
+
+        mToken = mToken->next();
+        expectNotEol();
+
+        variable = consumeIdentifier();
+        //if (!symbolTable->mContext->hasVariable(variable) || mProgram->isDeclared(variable))
+        //    error(tr("duplicate identifier '%1'").arg(variable.c_str()));
     }
 
-    auto parentCodeEmitter = mContext->codeEmitter();
+    //auto parentCodeEmitter = mContext->codeEmitter();
 
-    auto context = pushContext<AssemblerRepeatContext>(token, std::move(variable), std::move(count));
-    parentCodeEmitter->emit<RepeatMacro>(token, context->codeEmitterSharedPtr());
+    auto context = pushContext<AssemblerContextRepeat>(token, std::move(variable), e);
+    //parentCodeEmitter->emit<RepeatMacro>(token, context->codeEmitterSharedPtr());
 
-    expectEol(lastTokenId());
+    expectEol();
 }
 
 void AssemblerParser::parseEndRepeatDecl()
 {
+    expectNotEol();
+
     if (!mContext->isRepeat())
-        error(tr("mismatched 'endrepeat'"));
+        throw CompilerError(mToken->location(), "mismatched 'endrepeat'.");
 
     popContext();
 
-    expectEol(nextToken());
+    mToken = mToken->next();
+    expectEol();
 }
 
 void AssemblerParser::parseIfDecl()
 {
+    /*
     Token token = lastToken();
 
     auto cond = parseExpression(nextToken(), true);
     auto parentCodeEmitter = mContext->codeEmitter();
 
-    auto context = pushContext<AssemblerIfContext>(token);
+    auto context = pushContext<AssemblerContextIf>(token);
     parentCodeEmitter->emit<IfMacro>(token, std::move(cond), context->thenCodeEmitter(), context->elseCodeEmitter());
+    */
 
-    expectEol(lastTokenId());
+    expectEol();
 }
 
 void AssemblerParser::parseElseDecl()
 {
     if (!mContext->isIf() || mContext->hasElse())
-        error(tr("unexpected 'else'"));
+        throw CompilerError(mToken->location(), "unexpected 'else'.");
 
-    mContext->beginElse(mReporter, lastToken());
+    //mContext->beginElse(lastToken());
 
-    expectEol(nextToken());
+    expectEol();
 }
 
 void AssemblerParser::parseEndIfDecl()
 {
     if (!mContext->isIf())
-        error(tr("mismatched 'endif'"));
+        throw CompilerError(mToken->location(), "mismatched 'endif'.");
 
     popContext();
 
-    expectEol(nextToken());
+    expectEol();
 }
 
+/*
 void AssemblerParser::parseAllowWrite()
 {
     Token token = lastToken();
