@@ -448,11 +448,18 @@ bool Z80::AF_::tryParse(ParsingContext* context)
 
 #define Z80_OPCODE_0(OP, BYTES, TSTATES) \
     static const auto OP##_bytes = toArray BYTES; \
-    size_t Z80::OP::sizeInBytes() const \
+    constexpr size_t Z80::OP::arraySizeInBytes() \
+    { \
+        int high = 0; (void)high; \
+        int64_t nextAddress = 0; (void)nextAddress; \
+        return OP##_bytes.size(); \
+    } \
+    bool Z80::OP::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
         int64_t nextAddress = 0; (void)nextAddress; \
-        return OP##_bytes.size(); \
+        outSize = OP##_bytes.size(); \
+        return true; \
     } \
     bool Z80::OP::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const \
     { \
@@ -464,11 +471,18 @@ bool Z80::AF_::tryParse(ParsingContext* context)
     }
 
 #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
-    size_t Z80::OP##_##OP1::sizeInBytes() const \
+    constexpr size_t Z80::OP##_##OP1::arraySizeInBytes() \
+    { \
+        int high = 0; (void)high; \
+        int64_t nextAddress = 0; (void)nextAddress; \
+        return decltype(arrayType BYTES)::Size; \
+    } \
+    bool Z80::OP##_##OP1::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
         int64_t nextAddress = 0; (void)nextAddress; \
-        return decltype(arrayType BYTES)::Size; \
+        outSize = decltype(arrayType BYTES)::Size; \
+        return true; \
     } \
     bool Z80::OP##_##OP1::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
         std::unique_ptr<CompilerError>& resolveError) const \
@@ -484,11 +498,18 @@ bool Z80::AF_::tryParse(ParsingContext* context)
     }
 
 #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
-    size_t Z80::OP##_##OP1##_##OP2::sizeInBytes() const \
+    constexpr size_t Z80::OP##_##OP1##_##OP2::arraySizeInBytes() \
+    { \
+        int high = 0; (void)high; \
+        int64_t nextAddress = 0; (void)nextAddress; \
+        return decltype(arrayType BYTES)::Size; \
+    } \
+    bool Z80::OP##_##OP1##_##OP2::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
         int64_t nextAddress = 0; (void)nextAddress; \
-        return decltype(arrayType BYTES)::Size; \
+        outSize = decltype(arrayType BYTES)::Size; \
+        return true; \
     } \
     bool Z80::OP##_##OP1##_##OP2::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
         std::unique_ptr<CompilerError>& resolveError) const \
@@ -512,6 +533,6 @@ bool Z80::AF_::tryParse(ParsingContext* context)
 #define OP1W mOp1.low(nextAddress, high), high
 #define OP2W mOp2.low(nextAddress, high), high
 
-#define NEXT (nextAddress + sizeInBytes())
+#define NEXT (nextAddress + arraySizeInBytes())
 
 #include "Instructions.Z80.hh"

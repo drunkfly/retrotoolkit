@@ -22,7 +22,7 @@ public:
 
     SourceLocation* location() const { return mLocation; }
 
-    virtual size_t sizeInBytes() const = 0;
+    virtual bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const = 0;
     virtual bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         std::unique_ptr<CompilerError>& resolveError) const = 0;
 

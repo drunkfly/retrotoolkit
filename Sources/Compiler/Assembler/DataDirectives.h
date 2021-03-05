@@ -14,7 +14,7 @@ public:
     DEFB(SourceLocation* location, Expr* value);
     ~DEFB() override;
 
-    size_t sizeInBytes() const override;
+    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
@@ -32,7 +32,7 @@ public:
     DEFB_STRING(SourceLocation* location, const char* text);
     ~DEFB_STRING() override;
 
-    size_t sizeInBytes() const override;
+    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
@@ -51,7 +51,7 @@ public:
     DEFW(SourceLocation* location, Expr* value);
     ~DEFW() override;
 
-    size_t sizeInBytes() const override;
+    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
@@ -69,7 +69,7 @@ public:
     DEFD(SourceLocation* location, Expr* value);
     ~DEFD() override;
 
-    size_t sizeInBytes() const override;
+    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
@@ -87,7 +87,7 @@ public:
     DEFS(SourceLocation* location, Expr* value);
     ~DEFS() override;
 
-    size_t sizeInBytes() const override;
+    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         std::unique_ptr<CompilerError>& resolveError) const override;
 

@@ -6,6 +6,7 @@
 #include "Compiler/Compression/Compression.h"
 #include <vector>
 #include <string>
+#include <optional>
 #include <memory>
 
 class Instruction;
@@ -20,9 +21,9 @@ public:
 
     const std::string& name() const { return mName; }
 
-    size_t calculateSizeInBytes() const;
+    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const;
 
-    void resolveLabels(size_t address);
+    bool resolveLabels(size_t address, std::unique_ptr<CompilerError>& resolveError);
     void unresolveLabels();
 
     void addInstruction(Instruction* instruction);
@@ -32,6 +33,7 @@ public:
 private:
     std::string mName;
     std::vector<Instruction*> mInstructions;
+    mutable std::optional<size_t> mCalculatedSize;
 
     DISABLE_COPY(ProgramSection);
 };

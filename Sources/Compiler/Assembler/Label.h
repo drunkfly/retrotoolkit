@@ -15,7 +15,7 @@ public:
 
     const std::string& name() const { return mName; }
 
-    size_t sizeInBytes() const override;
+    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         std::unique_ptr<CompilerError>& resolveError) const override;
 

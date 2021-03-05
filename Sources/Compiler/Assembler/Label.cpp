@@ -95,9 +95,10 @@ bool Label::isLabel() const
     return true;
 }
 
-size_t Label::sizeInBytes() const
+bool Label::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
 {
-    return 0;
+    outSize = 0;
+    return true;
 }
 
 bool Label::emitCode(CodeEmitter*, int64_t&, std::unique_ptr<CompilerError>&) const

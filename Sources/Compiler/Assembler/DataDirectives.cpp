@@ -15,9 +15,10 @@ DEFB::~DEFB()
 {
 }
 
-size_t DEFB::sizeInBytes() const
+bool DEFB::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
 {
-    return 1;
+    outSize = 1;
+    return true;
 }
 
 bool DEFB::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
@@ -42,9 +43,10 @@ DEFB_STRING::~DEFB_STRING()
 {
 }
 
-size_t DEFB_STRING::sizeInBytes() const
+bool DEFB_STRING::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
 {
-    return mLength;
+    outSize = mLength;
+    return true;
 }
 
 bool DEFB_STRING::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const
@@ -66,9 +68,10 @@ DEFW::~DEFW()
 {
 }
 
-size_t DEFW::sizeInBytes() const
+bool DEFW::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
 {
-    return 2;
+    outSize = 2;
+    return true;
 }
 
 bool DEFW::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
@@ -96,9 +99,10 @@ DEFD::~DEFD()
 {
 }
 
-size_t DEFD::sizeInBytes() const
+bool DEFD::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
 {
-    return 4;
+    outSize = 4;
+    return true;
 }
 
 bool DEFD::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
@@ -131,11 +135,13 @@ DEFS::~DEFS()
 {
 }
 
-size_t DEFS::sizeInBytes() const
+bool DEFS::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const
 {
-    if (!mSize)
-        mSize = mValue->evaluateUnsignedWord(nullptr);
-    return *mSize;
+    if (!mValue->canEvaluateValue(nullptr, resolveError))
+        return false;
+    mSize = mValue->evaluateUnsignedWord(nullptr);
+    outSize = *mSize;
+    return true;
 }
 
 bool DEFS::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const

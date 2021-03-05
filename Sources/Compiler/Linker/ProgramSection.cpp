@@ -3,6 +3,7 @@
 #include "Compiler/Linker/CodeEmitter.h"
 #include "Compiler/Assembler/Instruction.h"
 #include "Compiler/Assembler/Label.h"
+#include <sstream>
 
 ProgramSection::ProgramSection(std::string name)
     : mName(std::move(name))
@@ -14,15 +15,20 @@ ProgramSection::~ProgramSection()
 {
 }
 
-size_t ProgramSection::calculateSizeInBytes() const
+bool ProgramSection::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const
 {
-    size_t size = 0;
-    for (const auto& instruction : mInstructions)
-        size += instruction->sizeInBytes();
-    return size;
+    outSize = 0;
+    for (const auto& instruction : mInstructions) {
+        size_t size;
+        if (!instruction->calculateSizeInBytes(size, resolveError))
+            return false;
+        outSize += size;
+    }
+    mCalculatedSize = outSize;
+    return true;
 }
 
-void ProgramSection::resolveLabels(size_t address)
+bool ProgramSection::resolveLabels(size_t address, std::unique_ptr<CompilerError>& resolveError)
 {
     for (const auto& instruction : mInstructions) {
         if (address > 0xffff)
@@ -30,9 +36,14 @@ void ProgramSection::resolveLabels(size_t address)
 
         if (instruction->isLabel())
             static_cast<Label*>(instruction)->setAddress(address);
-        else
-            address += instruction->sizeInBytes();
+        else {
+            size_t size;
+            if (!instruction->calculateSizeInBytes(size, resolveError))
+                return false;
+            address += size;
+        }
     }
+    return true;
 }
 
 void ProgramSection::unresolveLabels()
@@ -65,6 +76,14 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
             resolveError = std::make_unique<CompilerError>(instruction->location(), "address is over 64K.");
             return false;
         }
+    }
+
+    if (mCalculatedSize && *mCalculatedSize != nextAddress - baseAddress) {
+        SourceLocation* location = (!mInstructions.empty() ? mInstructions.back()->location() : nullptr);
+        std::stringstream ss;
+        ss << "internal compiler error: mismatch of calculated and generated size for section \"" << mName << "\".";
+        resolveError = std::make_unique<CompilerError>(location, ss.str());
+        return false;
     }
 
     return true;

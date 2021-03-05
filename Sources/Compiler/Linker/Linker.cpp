@@ -37,10 +37,10 @@ namespace
         Expr* base;
         Expr* fileOffset;
         Expr* alignment;
-        size_t uncompressedSize;
         std::optional<size_t> resolvedSize;
         std::optional<size_t> resolvedBase;
         std::optional<size_t> resolvedFileOffset;
+        bool labelsResolved;
         bool autoFileOffset;
     };
 
@@ -63,11 +63,16 @@ namespace
             for (const auto& it : file->sections)
                 addSection(location, it.get());
 
-            // we can easily calculate size for all uncompressed sections
+            // try calculate size for all uncompressed sections
 
             for (auto section : mSections) {
                 if (section->compression == Compression::None) {
-                    section->resolvedSize = section->uncompressedSize;
+                    size_t size;
+                    std::unique_ptr<CompilerError> error;
+                    if (!section->programSection->calculateSizeInBytes(size, error))
+                        continue;
+
+                    section->resolvedSize = size;
                   #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                     { std::stringstream ss;
                     ss << "resolved size " << *section->resolvedSize << " for \"" << section->programSection->name()
@@ -87,14 +92,6 @@ namespace
                     { std::stringstream ss;
                     ss << "resolved base 0x" << std::hex << *section->resolvedBase
                         << " for \"" << section->programSection->name()
-                        << "\" in file \"" << file->name << "\".\n";
-                    OutputDebugStringA(ss.str().c_str()); }
-                  #endif
-
-                    section->programSection->resolveLabels(*section->resolvedBase);
-                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
-                    { std::stringstream ss;
-                    ss << "resolved labels in \"" << section->programSection->name()
                         << "\" in file \"" << file->name << "\".\n";
                     OutputDebugStringA(ss.str().c_str()); }
                   #endif
@@ -203,7 +200,7 @@ namespace
         LinkerSection* firstUnresolvedSection() const
         {
             for (auto section : mSections) {
-                if (!section->resolvedFileOffset || !section->resolvedSize || !section->code)
+                if (!section->resolvedFileOffset || !section->resolvedSize || !section->labelsResolved || !section->code)
                     return section;
             }
             return nullptr;
@@ -214,18 +211,54 @@ namespace
             if (mIsResolved)
                 return true;
 
+            bool hasUnresolved = false;
             didResolve = false;
+
+            // Try to resolve size and labels for sections
+
+            for (auto section : mSections) {
+                if (section->compression == Compression::None && !section->resolvedSize) {
+                    size_t size;
+                    if (!section->programSection->calculateSizeInBytes(size, resolveError)) {
+                        hasUnresolved = true;
+                        continue;
+                    }
+
+                    section->resolvedSize = size;
+                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                    { std::stringstream ss;
+                    ss << "resolved size " << *section->resolvedSize << " for \"" << section->programSection->name()
+                        << "\" in file \"" << file()->name << "\".\n";
+                    OutputDebugStringA(ss.str().c_str()); }
+                  #endif
+
+                    didResolve = true;
+                }
+
+                if (!section->labelsResolved && section->resolvedBase) {
+                    if (!section->programSection->resolveLabels(*section->resolvedBase, resolveError)) {
+                        section->programSection->unresolveLabels();
+                        hasUnresolved = true;
+                    } else {
+                        section->labelsResolved = true;
+                      #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                        { std::stringstream ss;
+                        ss << "resolved labels in \"" << section->programSection->name()
+                            << "\" in file \"" << file()->name << "\".\n";
+                        OutputDebugStringA(ss.str().c_str()); }
+                      #endif
+                        didResolve = true;
+                    }
+                }
+            }
 
             // Try to compress some sections
 
             for (auto section : mSections) {
-                if (section->resolvedSize || !section->resolvedBase)
+                if (section->compression == Compression::None)
                     continue;
-
-                if (section->compression == Compression::None) {
-                    throw CompilerError(mLocation,
-                        "internal compiler error: unexpected uncompressed section with unresolved size.");
-                }
+                if (section->resolvedSize || !section->resolvedBase || !section->labelsResolved)
+                    continue;
 
                 auto compressor = Compressor::create(mLocation, section->compression);
                 auto code = std::make_unique<CodeEmitterCompressed>(std::move(compressor));
@@ -255,11 +288,10 @@ namespace
 
             // Try to resolve still-unresolved sections
 
-            bool hasUnresolved = false;
             size_t n = mSections.size();
             for (size_t i = 0; i < n; i++) {
                 auto section = mSections[i];
-                if (!section->resolvedFileOffset) {
+                if (!section->resolvedFileOffset || !section->labelsResolved) {
                     hasUnresolved = true;
                     continue;
                 }
@@ -394,8 +426,18 @@ namespace
                     }
                 }
 
-                offset += section->resolvedSize.value();
+                size_t size = section->resolvedSize.value();
+                offset += size;
+
+                if (mFileUntil && size > 0 && offset > endAddress) {
+                    std::stringstream ss;
+                    ss << "section \"" << section->programSection->name()
+                        << "\" is out of bounds in file \"" << mFile->name << "\".";
+                    throw CompilerError(mLocation, ss.str());
+                }
             }
+
+            // FIXME: how system handles sections with wrong order in project file (regarding base address)?
 
             output->setLoadAddress(startAddress);
         }
@@ -428,9 +470,9 @@ namespace
             linkerSection->base = tryParseExpression(location, sectionInfo->base);
             linkerSection->fileOffset = (autoOffset ? nullptr : tryParseExpression(location, sectionInfo->fileOffset));
             linkerSection->alignment = tryParseExpression(location, sectionInfo->alignment);
-            linkerSection->uncompressedSize = section->calculateSizeInBytes();
             linkerSection->attachment = sectionInfo->attachment;
             linkerSection->compression = sectionInfo->compression;
+            linkerSection->labelsResolved = false;
             linkerSection->autoFileOffset = autoOffset;
             mSections.emplace_back(linkerSection);
 
@@ -480,14 +522,6 @@ namespace
                     { std::stringstream ss;
                     ss << "resolved base 0x" << std::hex << *section->resolvedBase
                         << " for \"" << section->programSection->name() << "\" in file \"" << file()->name << "\".\n";
-                    OutputDebugStringA(ss.str().c_str()); }
-                  #endif
-
-                    section->programSection->resolveLabels(address);
-                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
-                    { std::stringstream ss;
-                    ss << "resolved labels in \"" << section->programSection->name()
-                        << "\" in file \"" << file()->name << "\".\n";
                     OutputDebugStringA(ss.str().c_str()); }
                   #endif
                 }
@@ -541,14 +575,6 @@ namespace
                     { std::stringstream ss;
                     ss << "resolved base 0x" << std::hex << *section->resolvedBase
                         << " for \"" << section->programSection->name()
-                        << "\" in file \"" << file()->name << "\".\n";
-                    OutputDebugStringA(ss.str().c_str()); }
-                  #endif
-
-                    section->programSection->resolveLabels(address);
-                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
-                    { std::stringstream ss;
-                    ss << "resolved labels in \"" << section->programSection->name()
                         << "\" in file \"" << file()->name << "\".\n";
                     OutputDebugStringA(ss.str().c_str()); }
                   #endif
