@@ -25,6 +25,10 @@ add(Compiler
         Assembler/Instructions.Z80.hh
         Assembler/Label.cpp
         Assembler/Label.h
+        Assembler/MacroIf.cpp
+        Assembler/MacroIf.h
+        Assembler/MacroRepeat.cpp
+        Assembler/MacroRepeat.h
         Compression/Compression.h
         Compression/Compressor.cpp
         Compression/Compressor.h

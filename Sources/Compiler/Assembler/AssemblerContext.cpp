@@ -82,7 +82,7 @@ void AssemblerContext::addLabel(SymbolTable* symbolTable, SourceLocation* locati
         ss << "duplicate identifier \"" << label->name() << "\".";
         throw CompilerError(location, ss.str());
     }
-    mSection->addInstruction(label);
+    addInstruction(label);
 }
 
 Label* AssemblerContext::addEphemeralLabel(SourceLocation* location)
@@ -90,10 +90,14 @@ Label* AssemblerContext::addEphemeralLabel(SourceLocation* location)
     if (!mSection)
         throw CompilerError(location, "current address is not available outside of a section.");
 
+    AssemblerContext* rootContext = this;
+    while (rootContext->mPrev)
+        rootContext = rootContext->mPrev;
+
     std::stringstream ss;
-    ss << '$' << mEphemeralLabelCounter++;
+    ss << '$' << rootContext->mEphemeralLabelCounter++;
     auto label = new (heap()) Label(location, ss.str());
-    mSection->addInstruction(label);
+    addInstruction(label);
 
     return label;
 }

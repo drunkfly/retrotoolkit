@@ -31,27 +31,16 @@ bool ProgramSection::calculateSizeInBytes(size_t& outSize, std::unique_ptr<Compi
 bool ProgramSection::resolveLabels(size_t address, std::unique_ptr<CompilerError>& resolveError)
 {
     for (const auto& instruction : mInstructions) {
-        if (address > 0xffff)
-            throw CompilerError(instruction->location(), "address is over 64K.");
-
-        if (instruction->isLabel())
-            static_cast<Label*>(instruction)->setAddress(address);
-        else {
-            size_t size;
-            if (!instruction->calculateSizeInBytes(size, resolveError))
-                return false;
-            address += size;
-        }
+        if (!instruction->resolveLabel(address, resolveError))
+            return false;
     }
     return true;
 }
 
 void ProgramSection::unresolveLabels()
 {
-    for (const auto& instruction : mInstructions) {
-        if (instruction->isLabel())
-            static_cast<Label*>(instruction)->unsetAddress();
-    }
+    for (const auto& instruction : mInstructions)
+        instruction->unresolveLabel();
 }
 
 void ProgramSection::addInstruction(Instruction* instruction)

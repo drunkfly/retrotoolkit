@@ -350,7 +350,7 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                 }
                 #define KEYWORD(NAME, KW) \
                     if (len == sizeof(NAME)-1 && !memcmp(start, NAME, len)) { \
-                        keyword(KW, "'" NAME "'", #NAME); \
+                        keyword(KW, "'" NAME "'", NAME); \
                         continue; \
                     }
                 switch (*start) {

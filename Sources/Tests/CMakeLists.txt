@@ -20,6 +20,7 @@ add(Tests
         EquTests.cpp
         ErrorTests.cpp
         ExprTests.cpp
+        IfTests.cpp
         LabelTests.cpp
         OpcodeTests.cpp
         main.cpp

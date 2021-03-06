@@ -248,8 +248,6 @@ void AssemblerParser::parseRepeatDecl()
 
 void AssemblerParser::parseEndRepeatDecl()
 {
-    expectNotEol();
-
     if (!mContext->isRepeat())
         throw CompilerError(mToken->location(), "mismatched 'endrepeat'.");
 
@@ -261,15 +259,13 @@ void AssemblerParser::parseEndRepeatDecl()
 
 void AssemblerParser::parseIfDecl()
 {
-    /*
-    Token token = lastToken();
+    const Token* token = mToken;
 
-    auto cond = parseExpression(nextToken(), true);
-    auto parentCodeEmitter = mContext->codeEmitter();
+    mToken = mToken->next();
+    expectNotEol();
 
-    auto context = pushContext<AssemblerContextIf>(token);
-    parentCodeEmitter->emit<IfMacro>(token, std::move(cond), context->thenCodeEmitter(), context->elseCodeEmitter());
-    */
+    Expr* e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+    pushContext<AssemblerContextIf>(token, e);
 
     expectEol();
 }
@@ -279,7 +275,8 @@ void AssemblerParser::parseElseDecl()
     if (!mContext->isIf() || mContext->hasElse())
         throw CompilerError(mToken->location(), "unexpected 'else'.");
 
-    //mContext->beginElse(lastToken());
+    mContext->beginElse(mToken);
+    mToken = mToken->next();
 
     expectEol();
 }
@@ -290,6 +287,7 @@ void AssemblerParser::parseEndIfDecl()
         throw CompilerError(mToken->location(), "mismatched 'endif'.");
 
     popContext();
+    mToken = mToken->next();
 
     expectEol();
 }

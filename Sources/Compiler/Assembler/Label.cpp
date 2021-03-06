@@ -90,9 +90,9 @@ Label::~Label()
 {
 }
 
-bool Label::isLabel() const
+Instruction::Type Label::type() const
 {
-    return true;
+    return Type::Label;
 }
 
 bool Label::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const

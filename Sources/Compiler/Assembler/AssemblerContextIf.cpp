@@ -1,15 +1,22 @@
 #include "AssemblerContextIf.h"
+#include "Compiler/Assembler/MacroIf.h"
+#include "Compiler/Linker/ProgramSection.h"
 #include "Compiler/Token.h"
 #include "Compiler/CompilerError.h"
 
-AssemblerContextIf::AssemblerContextIf(AssemblerContext* prev, const Token* token)
+AssemblerContextIf::AssemblerContextIf(AssemblerContext* prev, const Token* token, Expr* condition)
     : AssemblerContext(prev)
-    //, mThenCodeEmitter(compiler->allocCodeEmitter<CodeEmitter>())
-    //, mElseCodeEmitter(compiler->allocCodeEmitter<CodeEmitter>())
+    , mCondition(condition)
     , mIfToken(token)
     , mHasElse(false)
 {
     AssemblerContext::setCurrentSection(prev->currentSection());
+
+    if (!currentSection())
+        throw CompilerError(token->location(), "code or data not in a section.");
+
+    mMacro = new (heap()) MacroIf(token->location(), condition);
+    prev->addInstruction(mMacro);
 }
 
 bool AssemblerContextIf::isIf() const
@@ -30,7 +37,25 @@ void AssemblerContextIf::beginElse(const Token* token)
     mElseToken = token;
 }
 
+const std::string& AssemblerContextIf::localLabelsPrefix() const
+{
+    return prev()->localLabelsPrefix();
+}
+
+void AssemblerContextIf::setLocalLabelsPrefix(SourceLocation* location, std::string)
+{
+    throw CompilerError(location, "global labels are not allowed at this point.");
+}
+
 bool AssemblerContextIf::setCurrentSection(ProgramSection*)
 {
     return false;
+}
+
+void AssemblerContextIf::addInstruction(Instruction* instruction)
+{
+    if (mHasElse)
+        mMacro->addElseInstruction(instruction);
+    else
+        mMacro->addThenInstruction(instruction);
 }

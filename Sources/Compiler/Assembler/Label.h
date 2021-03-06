@@ -11,7 +11,7 @@ public:
     Label(SourceLocation* location, std::string name);
     ~Label() override;
 
-    bool isLabel() const final override;
+    Type type() const final override;
 
     const std::string& name() const { return mName; }
 
