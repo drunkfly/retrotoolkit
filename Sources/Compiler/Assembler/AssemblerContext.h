@@ -4,6 +4,7 @@
 #include "Common/GC.h"
 #include <string>
 
+class Expr;
 class ProgramSection;
 class Instruction;
 class SymbolTable;
@@ -26,15 +27,21 @@ public:
     virtual bool isRepeat() const;
     virtual bool hasVariable(const std::string& name) const;
 
+    virtual void validateAtPop(SourceLocation* location);
+
     virtual const std::string& localLabelsPrefix() const;
     virtual void setLocalLabelsPrefix(SourceLocation* location, std::string prefix);
+
+    virtual Expr* condition() const;
 
     ProgramSection* currentSection() const { return mSection; }
     virtual bool setCurrentSection(ProgramSection* section);
 
     virtual void addInstruction(Instruction* instruction);
-    virtual void addLabel(SymbolTable* symbolTable, SourceLocation* location, std::string name);
+    virtual void addConstant(SymbolTable* symbolTable, SourceLocation* location, const char* name, Expr* value);
+    virtual void addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name);
     virtual Label* addEphemeralLabel(SourceLocation* location);
+    int allocEphemeralLabelCounter();
 
 private:
     AssemblerContext* mPrev;

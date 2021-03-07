@@ -8,12 +8,12 @@ class Label : public Instruction
 public:
     class Address;
 
-    Label(SourceLocation* location, std::string name);
+    Label(SourceLocation* location, const char* name);
     ~Label() override;
 
     Type type() const final override;
 
-    const std::string& name() const { return mName; }
+    const char* name() const { return mName; }
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
@@ -29,7 +29,7 @@ public:
 private:
     class SimpleAddress;
 
-    std::string mName;
+    const char* mName;
     Address* mAddress;
 
     DISABLE_COPY(Label);

@@ -13,6 +13,7 @@ public:
         : Instruction(location)
         , mCondition(condition)
     {
+        registerFinalizer();
     }
 
     Type type() const final override;

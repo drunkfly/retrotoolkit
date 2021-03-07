@@ -86,7 +86,13 @@ template <typename T, typename... ARGS> T* AssemblerParser::pushContext(ARGS&&..
 
 void AssemblerParser::popContext()
 {
+    if (!mContext)
+        throw CompilerError(mToken->location(), "internal compiler error: context stack is empty.");
+
+    mContext->validateAtPop(mToken->location());
+
     mContext = mContext->prev();
+
     if (!mContext)
         throw CompilerError(mToken->location(), "internal compiler error: context stack is empty.");
 }
@@ -113,13 +119,8 @@ void AssemblerParser::parseLine()
 
     // read label, if any
     if (mToken->id() == TOK_LABEL_GLOBAL || mToken->id() == TOK_LABEL_FULL || mToken->id() == TOK_LABEL_LOCAL) {
-        /*
-        if (mToken->id != TOK_LABEL_LOCAL && !mContext->areGlobalLabelsAllowed())
-            error(tr("global labels are not allowed in this context."));
-        */
-
         std::string name = readLabelName();
-        mContext->addLabel(mSymbolTable, mToken->location(), std::move(name));
+        mContext->addLabel(mSymbolTable, mToken->location(), mHeap->allocString(name.c_str(), name.length()));
         mToken = mToken->next();
 
         // skip label-only lines
@@ -164,12 +165,7 @@ void AssemblerParser::parseLine()
     if (mToken->id() >= TOK_IDENTIFIER && (iter = mDataDirectives.find(lower)) != mDataDirectives.end()) {
         expectNotEol();
 
-        /*
-        if (nameToken->id() != TOK_LABEL_LOCAL_NAME && !mContext->areGlobalLabelsAllowed())
-            error(tr("global labels are not allowed in this context."));
-        */
-
-        mContext->addLabel(mSymbolTable, nameToken->location(), std::move(name));
+        mContext->addLabel(mSymbolTable, nameToken->location(), mHeap->allocString(name.c_str(), name.length()));
         if (nameToken->id() >= TOK_IDENTIFIER)
             mContext->setLocalLabelsPrefix(nameToken->location(), nameToken->text());
 
@@ -185,12 +181,7 @@ void AssemblerParser::parseLine()
 
         expr->replaceCurrentAddressWithLabel(mContext);
 
-        auto symbol = new (mHeap) ConstantSymbol(nameToken->location(), rawName, expr);
-        if (!mSymbolTable->addSymbol(symbol)) {
-            std::stringstream ss;
-            ss << "duplicate identifier \"" << symbol->name() << "\".";
-            throw CompilerError(symbol->location(), ss.str());
-        }
+        mContext->addConstant(mSymbolTable, nameToken->location(), rawName, expr);
     } else {
         if (nameToken->id() >= TOK_IDENTIFIER) {
             std::stringstream ss;

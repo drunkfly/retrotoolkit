@@ -3,11 +3,14 @@
 
 #include "Common/GC.h"
 #include <string>
+#include <vector>
+#include <memory>
 
 class Expr;
 class SourceLocation;
 class Label;
 class Value;
+class CompilerError;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -18,6 +21,8 @@ public:
     {
         Constant,
         Label,
+        ConditionalConstant,
+        ConditionalLabel,
         RepeatVariable,
     };
 
@@ -62,6 +67,36 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class ConditionalConstantSymbol : public Symbol
+{
+public:
+    ConditionalConstantSymbol(SourceLocation* location, const char* name)
+        : Symbol(location, name)
+    {
+        registerFinalizer();
+    }
+
+    Type type() const final override;
+
+    void addValue(Expr* condition, Expr* value);
+
+    bool canEvaluateValue(const int64_t* currentAddress, std::unique_ptr<CompilerError>& resolveError) const;
+    Expr* expr(SourceLocation* location, const int64_t* currentAddress) const;
+
+private:
+    struct Entry
+    {
+        Expr* condition;
+        Expr* value;
+    };
+
+    std::vector<Entry> mEntries;
+
+    DISABLE_COPY(ConditionalConstantSymbol);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class LabelSymbol : public Symbol
 {
 public:
@@ -75,6 +110,36 @@ private:
     ::Label* mLabel;
 
     DISABLE_COPY(LabelSymbol);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ConditionalLabelSymbol : public Symbol
+{
+public:
+    ConditionalLabelSymbol(SourceLocation* location, const char* name)
+        : Symbol(location, name)
+    {
+        registerFinalizer();
+    }
+
+    Type type() const final override;
+
+    void addLabel(Expr* condition, ::Label* label);
+
+    bool canEvaluateValue(const int64_t* currentAddress, std::unique_ptr<CompilerError>& resolveError) const;
+    ::Label* label(SourceLocation* location, const int64_t* currentAddress) const;
+
+private:
+    struct Entry
+    {
+        Expr* condition;
+        ::Label* label;
+    };
+
+    std::vector<Entry> mEntries;
+
+    DISABLE_COPY(ConditionalLabelSymbol);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

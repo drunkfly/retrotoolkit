@@ -78,9 +78,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Label::Label(SourceLocation* location, std::string name)
+Label::Label(SourceLocation* location, const char* name)
     : Instruction(location)
-    , mName(std::move(name))
+    , mName(name)
     , mAddress(new (heap()) SimpleAddress())
 {
     registerFinalizer();

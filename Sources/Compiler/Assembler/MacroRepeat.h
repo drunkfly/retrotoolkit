@@ -10,6 +10,7 @@ public:
     explicit MacroRepeat(SourceLocation* location)
         : Instruction(location)
     {
+        registerFinalizer();
     }
 
     Type type() const final override;

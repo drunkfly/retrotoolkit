@@ -219,20 +219,18 @@ namespace
             for (auto section : mSections) {
                 if (section->compression == Compression::None && !section->resolvedSize) {
                     size_t size;
-                    if (!section->programSection->calculateSizeInBytes(size, resolveError)) {
+                    if (!section->programSection->calculateSizeInBytes(size, resolveError))
                         hasUnresolved = true;
-                        continue;
+                    else {
+                        section->resolvedSize = size;
+                      #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                        { std::stringstream ss;
+                        ss << "resolved size " << *section->resolvedSize << " for \"" << section->programSection->name()
+                            << "\" in file \"" << file()->name << "\".\n";
+                        OutputDebugStringA(ss.str().c_str()); }
+                      #endif
+                        didResolve = true;
                     }
-
-                    section->resolvedSize = size;
-                  #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
-                    { std::stringstream ss;
-                    ss << "resolved size " << *section->resolvedSize << " for \"" << section->programSection->name()
-                        << "\" in file \"" << file()->name << "\".\n";
-                    OutputDebugStringA(ss.str().c_str()); }
-                  #endif
-
-                    didResolve = true;
                 }
 
                 if (!section->labelsResolved && section->resolvedBase) {
@@ -688,9 +686,25 @@ CompiledOutput* Linker::link(Program* program)
                 }
                 break;
 
+            case Symbol::ConditionalLabel: {
+                int64_t addr = 0;
+                if (!static_cast<ConditionalLabelSymbol*>(symbol)->label(symbol->location(), &addr)->hasAddress()) {
+                    std::stringstream ss;
+                    ss << "unable to resolve address for label \"" << symbol->name() << "\".";
+                    throw CompilerError(symbol->location(), ss.str());
+                }
+                break;
+            }
+
             case Symbol::Constant: {
                 int64_t addr = 0;
                 static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(&addr);
+                break;
+            }
+
+            case Symbol::ConditionalConstant: {
+                int64_t addr = 0;
+                static_cast<ConditionalConstantSymbol*>(symbol)->expr(symbol->location(), &addr)->evaluateValue(&addr);
                 break;
             }
         }

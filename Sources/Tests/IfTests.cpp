@@ -1,6 +1,8 @@
 #include <catch.hpp>
 #include "Tests/Util/TestUtil.h"
 
+// FIXME: test with global labels in non-nested and nested ifs: one name in one block, one name in multiple blocks
+
 TEST_CASE("if", "[if]")
 {
     static const char source[] =
@@ -65,21 +67,20 @@ TEST_CASE("if", "[if]")
     REQUIRE(!actual.hasFiles());
 }
 
-/* FIXME
 TEST_CASE("equ in if", "[if]")
 {
     static const char source[] =
-        "section main [base 0x100]\n"
-        "if 1\n"
+        "#if 1\n"
         "x equ 0xaa\n"
-        "else\n"
+        "#else\n"
         "x equ 0xcc\n"
-        "endif\n"
-        "if 0\n"
+        "#endif\n"
+        "#if 0\n"
         "y equ 0xbb\n"
-        "else\n"
+        "#else\n"
         "y equ 0xdd\n"
-        "endif\n"
+        "#endif\n"
+        "#section main_0x100\n"
         "db x,y\n"
         ;
 
@@ -91,12 +92,10 @@ TEST_CASE("equ in if", "[if]")
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
     DataBlob expected(binary, sizeof(binary));
-    REQUIRE(errorConsumer.lastErrorMessage() == "");
-    REQUIRE(errorConsumer.errorCount() == 0);
+    REQUIRE(errorConsumer.errorMessage() == "");
     REQUIRE(actual == expected);
     REQUIRE(!actual.hasFiles());
 }
-*/
 
 TEST_CASE("equ with label in if 1", "[if]")
 {
@@ -135,7 +134,6 @@ TEST_CASE("equ with label in if 1", "[if]")
     REQUIRE(!actual.hasFiles());
 }
 
-// FIXME
 TEST_CASE("equ with label in if 2", "[if]")
 {
     static const char source[] =
@@ -226,23 +224,23 @@ TEST_CASE("equ with label in if 4", "[if]")
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    REQUIRE(errorConsumer.errorMessage() == "value for 'label2' is not available in this context");
+    REQUIRE(errorConsumer.errorMessage() == "source:3: unable to resolve address for label \"label2\".");
 }
 
-/* FIXME
 TEST_CASE("equ with local label in if 1", "[if]")
 {
     static const char source[] =
-        "section main [base 0x1234]\n"
-        "if 1\n"
+        "#section main\n"
+        "label:\n"
+        "#if 1\n"
         "x equ @@1\n"
         "db 0xaa,0xbb\n"
         "@@1 dw x\n"
-        "else\n"
+        "#else\n"
         "db 0xcc\n"
         "x equ @@1\n"
         "@@1 dw x\n"
-        "endif\n"
+        "#endif\n"
         "db 0xdd\n"
         "dw x\n"
         ;
@@ -260,8 +258,7 @@ TEST_CASE("equ with local label in if 1", "[if]")
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
     DataBlob expected(binary, sizeof(binary));
-    REQUIRE(errorConsumer.lastErrorMessage() == "");
-    REQUIRE(errorConsumer.errorCount() == 0);
+    REQUIRE(errorConsumer.errorMessage() == "");
     REQUIRE(actual == expected);
     REQUIRE(!actual.hasFiles());
 }
@@ -269,16 +266,17 @@ TEST_CASE("equ with local label in if 1", "[if]")
 TEST_CASE("equ with local label in if 2", "[if]")
 {
     static const char source[] =
-        "section main [base 0x1234]\n"
-        "if 0\n"
+        "#section main\n"
+        "label:\n"
+        "#if 0\n"
         "x equ @@1\n"
         "db 0xaa,0xbb\n"
         "@@1 dw x\n"
-        "else\n"
+        "#else\n"
         "db 0xcc\n"
         "x equ @@1\n"
         "@@1 dw x\n"
-        "endif\n"
+        "#endif\n"
         "db 0xdd\n"
         "dw x\n"
         ;
@@ -295,12 +293,10 @@ TEST_CASE("equ with local label in if 2", "[if]")
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
     DataBlob expected(binary, sizeof(binary));
-    REQUIRE(errorConsumer.lastErrorMessage() == "");
-    REQUIRE(errorConsumer.errorCount() == 0);
+    REQUIRE(errorConsumer.errorMessage() == "");
     REQUIRE(actual == expected);
     REQUIRE(!actual.hasFiles());
 }
-*/
 
 TEST_CASE("expression as condition", "[if]")
 {
@@ -343,7 +339,7 @@ TEST_CASE("missing endif", "[if]")
     REQUIRE(errorConsumer.errorMessage() == "source:3: missing 'endif'.");
 }
 
-TEST_CASE("local labels in if", "[if]")
+TEST_CASE("local labels in if 1", "[if]")
 {
     static const char source[] =
         "#section main_0xff00\n"
@@ -390,26 +386,39 @@ TEST_CASE("local labels in if", "[if]")
     REQUIRE(!actual.hasFiles());
 }
 
-TEST_CASE("local labels context affinity in if 1", "[if]")
+TEST_CASE("local labels in if 2", "[if]")
 {
     static const char source[] =
         "#section main_0x100\n"
         "label:\n"
         "#if 1\n"
-        "@@1: db 0\n"
+        "@@1: db 0xaa\n"
         "#endif\n"
         "@@2:\n"
-        "jp label\n"
-        "jp label@@2\n"
-        "jp label@@1\n"
+        "dw label\n"
+        "dw label@@1\n"
+        "dw label@@2\n"
         ;
+
+    static const unsigned char binary[] = {
+        0xaa,
+        0x00,
+        0x01,
+        0x00,
+        0x01,
+        0x01,
+        0x01,
+    };
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    REQUIRE(errorConsumer.errorMessage() == "use of undeclared identifier 'label@@1'");
+    DataBlob expected(binary, sizeof(binary));
+    REQUIRE(errorConsumer.errorMessage() == "");
+    REQUIRE(actual == expected);
+    REQUIRE(!actual.hasFiles());
 }
 
-TEST_CASE("local labels context affinity in if 2", "[if]")
+TEST_CASE("local labels in if 3", "[if]")
 {
     static const char source[] =
         "#section main\n"
@@ -444,13 +453,10 @@ TEST_CASE("local labels context affinity in if 2", "[if]")
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    DataBlob expected(binary, sizeof(binary));
-    REQUIRE(errorConsumer.errorMessage() == "");
-    REQUIRE(actual == expected);
-    REQUIRE(!actual.hasFiles());
+    REQUIRE(errorConsumer.errorMessage() == "source:5: duplicate identifier \"label@@1\".");
 }
 
-TEST_CASE("local labels context affinity in if 3", "[if]")
+TEST_CASE("local labels in if 4", "[if]")
 {
     static const char source[] =
         "#section main\n"
@@ -465,8 +471,8 @@ TEST_CASE("local labels context affinity in if 3", "[if]")
         "@@1:\n"
         "db 0x33\n"
         "#if 1\n"
-        "@@1: db 0\n"
-        "jp @@1\n"
+        "@@1a: db 0\n"
+        "jp @@1a\n"
         "jp @@2\n"
         "jp @@3\n"
         "@@11: db 0\n"
@@ -477,14 +483,14 @@ TEST_CASE("local labels context affinity in if 3", "[if]")
         "@@2:\n"
         "db 0x55\n"
         "#if 1\n"
-        "jp @@1\n"
+        "jp @@1b\n"
         "jp @@2\n"
         "jp @@3\n"
-        "@@1: db 1\n"
-        "jp @@11\n"
+        "@@1b: db 1\n"
+        "jp @@11b\n"
         "jp @@2\n"
         "jp @@3\n"
-        "@@11: db 1\n"
+        "@@11b: db 1\n"
         "#endif\n"
         "@@3:\n"
         "db 0x77\n"
@@ -593,32 +599,80 @@ TEST_CASE("local labels context affinity in if 3", "[if]")
     REQUIRE(!actual.hasFiles());
 }
 
-TEST_CASE("disallow global labels in if 1", "[if]")
+TEST_CASE("global labels in if 1", "[if]")
 {
     static const char source[] =
         "#section main_0x100\n"
         "#if 1\n"
         "label:\n"
         "#endif\n"
+        "dw label\n"
         ;
+
+    static const unsigned char binary[] = {
+        0x00,
+        0x01,
+        };
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    REQUIRE(errorConsumer.errorMessage() == "source:3: global labels are not allowed at this point.");
+    DataBlob expected(binary, sizeof(binary));
+    REQUIRE(errorConsumer.errorMessage() == "");
+    REQUIRE(actual == expected);
+    REQUIRE(!actual.hasFiles());
 }
 
-TEST_CASE("disallow global labels in if 2", "[if]")
+TEST_CASE("global labels in if 2", "[if]")
 {
     static const char source[] =
         "#section main_0x100\n"
         "#if 1\n"
         "label@@1:\n"
         "#endif\n"
+        "dw label@@1\n"
+        ;
+
+    static const unsigned char binary[] = {
+        0x00,
+        0x01,
+    };
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    DataBlob expected(binary, sizeof(binary));
+    REQUIRE(errorConsumer.errorMessage() == "");
+    REQUIRE(actual == expected);
+    REQUIRE(!actual.hasFiles());
+}
+
+TEST_CASE("global labels in if 3", "[if]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "#if 0\n"
+        "label:\n"
+        "#endif\n"
+        "dw label\n"
         ;
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    REQUIRE(errorConsumer.errorMessage() == "source:3: global labels are not allowed at this point.");
+    REQUIRE(errorConsumer.errorMessage() == "source:5: unable to resolve label \"label\".");
+}
+
+TEST_CASE("global labels in if 4", "[if]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "#if 0\n"
+        "label@@1:\n"
+        "#endif\n"
+        "dw label@@1\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:5: unable to resolve label \"label@@1\".");
 }
 
 TEST_CASE("if/repeat nesting 1", "[if]")

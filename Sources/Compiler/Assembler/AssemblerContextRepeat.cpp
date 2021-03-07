@@ -10,6 +10,7 @@ AssemblerContextRepeat::AssemblerContextRepeat(AssemblerContext* prev, const Tok
     , mCount(count)
     , mToken(token)
 {
+    registerFinalizer();
     AssemblerContext::setCurrentSection(prev->currentSection());
 
     if (!currentSection())
@@ -34,9 +35,9 @@ const std::string& AssemblerContextRepeat::localLabelsPrefix() const
     return prev()->localLabelsPrefix();
 }
 
-void AssemblerContextRepeat::setLocalLabelsPrefix(SourceLocation* location, std::string)
+void AssemblerContextRepeat::setLocalLabelsPrefix(SourceLocation* location, std::string prefix)
 {
-    throw CompilerError(location, "global labels are not allowed at this point.");
+    prev()->setLocalLabelsPrefix(location, prefix);
 }
 
 bool AssemblerContextRepeat::setCurrentSection(ProgramSection*)
