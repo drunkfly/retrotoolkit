@@ -175,7 +175,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                     mListener->compilerProgress(count++, total, "Generating TRD and SCL...");
                 TRDOSWriter writer;
                 if (nBasic > 0) {
-                    std::string name = (output->basicFileName ? *output->basicFileName : "BOOT");
+                    std::string name = (output->basicFileName ? *output->basicFileName : "boot");
                     int line = output->basicStartLine ? *output->basicStartLine : -1;
                     writer.addBasicFile(std::move(name), basicCompiler.compiledData(), line);
                 }

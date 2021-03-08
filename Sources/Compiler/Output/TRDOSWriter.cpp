@@ -54,8 +54,14 @@ public:
 
     void writeData(std::stringstream& ss)
     {
-        mData.resize(sizeInSectors() * SectorSize);
-        ss.write(mData.data(), mData.size());
+        size_t dataSize = mData.size();
+        size_t fullSize = sizeInSectors() * SectorSize;
+
+        std::unique_ptr<char[]> buf{new char[fullSize]};
+        memcpy(buf.get(), mData.data(), dataSize);
+        memset(buf.get() + dataSize, 0, fullSize - dataSize);
+
+        ss.write(buf.get(), fullSize);
     }
 
 protected:
