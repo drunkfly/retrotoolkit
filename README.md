@@ -1,15 +1,14 @@
 Retro Toolkit
 =============
 
-**NOTE: this software is of alpha quality. Expect bugs and make frequent backups of your projects! If you find
-any bugs please report them through the GitHub issue system.**
+**NOTE: this software is currently being developed and have not reached even alpha quality. Expect bugs
+and make frequent backups of your projects! If you find any problems, please report them through the
+GitHub issue system.**
 
 Known Issues
 ------------
 
 * Compressed data does not contain proper source location information.
-
-* Size of DEFS can't have deferred calculation
 
 * Generation of output files in `_out/files` can't be disabled
 
