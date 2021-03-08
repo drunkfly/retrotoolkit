@@ -2,9 +2,10 @@
 #define COMPILER_COMPILER_H
 
 #include "Common/Common.h"
-#include "Common/GC.h"
 #include <filesystem>
 
+class GCHeap;
+class CompiledOutput;
 struct SourceFile;
 enum class FileType;
 
@@ -19,14 +20,17 @@ public:
 class Compiler
 {
 public:
-    explicit Compiler(ICompilerListener* listener = nullptr);
+    explicit Compiler(GCHeap* heap, ICompilerListener* listener = nullptr);
     ~Compiler();
+
+    CompiledOutput* linkerOutput() const { return mLinkerOutput; }
 
     void buildProject(const std::filesystem::path& projectFile, const std::string& projectConfiguration);
 
 private:
+    GCHeap* mHeap;
     ICompilerListener* mListener;
-    GCHeap mHeap;
+    CompiledOutput* mLinkerOutput;
     std::filesystem::path mProjectPath;
     std::filesystem::path mOutputPath;
 

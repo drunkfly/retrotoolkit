@@ -2,6 +2,7 @@
 #define COMPILER_LINKER_CODEEMITTERCOMPRESSED_H
 
 #include "Compiler/Linker/CodeEmitter.h"
+#include "Compiler/Linker/DebugInformation.h"
 #include <vector>
 #include <memory>
 
@@ -18,6 +19,9 @@ public:
 
     void clear();
 
+    void addSectionDebugInfo(std::string name, int64_t start,
+        Compression compression, int64_t uncompressedSize, std::optional<int64_t> compressedSize) override;
+
     void emitByte(SourceLocation* location, uint8_t byte) override;
     void emitBytes(SourceLocation* location, const uint8_t* bytes, size_t count) override;
     void emitBytes(const Byte* bytes, size_t count) override;
@@ -29,6 +33,7 @@ public:
 private:
     SourceLocation* mLocation;
     std::unique_ptr<Compressor> mCompressor;
+    std::unique_ptr<DebugInformation::Section> mSection;
     std::vector<uint8_t> mCompressedBytes;
     std::vector<uint8_t> mUncompressedBytes;
     bool mCompressed;

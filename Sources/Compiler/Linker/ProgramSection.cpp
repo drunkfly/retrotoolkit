@@ -52,6 +52,8 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
     std::unique_ptr<CompilerError>& resolveError) const
 {
     int64_t nextAddress = int64_t(baseAddress);
+    int64_t startAddress = nextAddress;
+
     for (const auto& instruction : mInstructions) {
         if (nextAddress > 0xffff) {
             resolveError = std::make_unique<CompilerError>(instruction->location(), "address is over 64K.");
@@ -75,5 +77,6 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
         return false;
     }
 
+    emitter->addSectionDebugInfo(mName, startAddress, Compression::None, *mCalculatedSize, {});
     return true;
 }

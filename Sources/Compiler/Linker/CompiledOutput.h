@@ -1,35 +1,14 @@
 #ifndef COMPILER_LINKER_COMPILEDOUTPUT_H
 #define COMPILER_LINKER_COMPILEDOUTPUT_H
 
-#include "Common/Common.h"
-#include "Common/GC.h"
-#include "Compiler/Linker/CodeEmitterUncompressed.h"
+#include "Compiler/Linker/CompiledFile.h"
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
-class CompiledFile : public GCObject, public CodeEmitterUncompressed
-{
-public:
-    explicit CompiledFile(std::string name);
-    ~CompiledFile() override;
+class SourceLocation;
 
-    const std::string& name() const { return mName; }
-
-    size_t loadAddress() const { return mLoadAddress; }
-    void setLoadAddress(size_t address) { mLoadAddress = address; }
-
-    bool isUsedByBasic() const { return mUsedByBasic; }
-    void setUsedByBasic() { mUsedByBasic = true; }
-
-private:
-    std::string mName;
-    size_t mLoadAddress;
-    bool mUsedByBasic;
-
-    DISABLE_COPY(CompiledFile);
-};
-
-class CompiledOutput : public GCObject
+class CompiledOutput final : public GCObject
 {
 public:
     CompiledOutput();
@@ -38,7 +17,8 @@ public:
     const std::vector<CompiledFile*>& files() const { return mFileList; }
 
     CompiledFile* getFile(const std::string& name);
-    CompiledFile* getOrAddFile(const std::string& name);
+    CompiledFile* addFile(SourceLocation* location,
+        const std::string& name, std::unique_ptr<DebugInformation> debugInfo);
 
 private:
     std::unordered_map<std::string, CompiledFile*> mFiles;

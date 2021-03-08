@@ -20,6 +20,8 @@ add(RetroToolkit
         Widgets/BuildStatusLabel.h
         Widgets/LogWidget.cpp
         Widgets/LogWidget.h
+        Widgets/MemoryMapWidget.cpp
+        Widgets/MemoryMapWidget.h
         AboutDialog.cpp
         AboutDialog.h
         AboutDialog.ui

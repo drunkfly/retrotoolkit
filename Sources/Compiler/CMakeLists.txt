@@ -42,8 +42,12 @@ add(Compiler
         Linker/CodeEmitterCompressed.h
         Linker/CodeEmitterUncompressed.cpp
         Linker/CodeEmitterUncompressed.h
+        Linker/CompiledFile.cpp
+        Linker/CompiledFile.h
         Linker/CompiledOutput.cpp
         Linker/CompiledOutput.h
+        Linker/DebugInformation.cpp
+        Linker/DebugInformation.h
         Linker/Linker.cpp
         Linker/Linker.h
         Linker/Program.cpp

@@ -1,18 +1,7 @@
 #include "CompiledOutput.h"
-
-CompiledFile::CompiledFile(std::string name)
-    : mName(std::move(name))
-    , mLoadAddress(0)
-    , mUsedByBasic(false)
-{
-    registerFinalizer();
-}
-
-CompiledFile::~CompiledFile()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "Compiler/Linker/DebugInformation.h"
+#include "Compiler/CompilerError.h"
+#include <sstream>
 
 CompiledOutput::CompiledOutput()
 {
@@ -29,13 +18,17 @@ CompiledFile* CompiledOutput::getFile(const std::string& name)
     return (it != mFiles.end() ? it->second : nullptr);
 }
 
-CompiledFile* CompiledOutput::getOrAddFile(const std::string& name)
+CompiledFile* CompiledOutput::addFile(SourceLocation* location,
+    const std::string& name, std::unique_ptr<DebugInformation> debugInfo)
 {
     auto it = mFiles.find(name);
-    if (it != mFiles.end())
-        return it->second;
+    if (it != mFiles.end()) {
+        std::stringstream ss;
+        ss << "File name is not unique: \"" << name << "\".";
+        throw CompilerError(location, ss.str());
+    }
 
-    CompiledFile* file = new (heap()) CompiledFile(name);
+    CompiledFile* file = new (heap()) CompiledFile(name, std::move(debugInfo));
     mFiles[name] = file;
     mFileList.emplace_back(file);
 

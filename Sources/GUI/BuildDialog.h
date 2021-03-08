@@ -2,11 +2,13 @@
 #define GUI_BUILDDIALOG_H
 
 #include "Common/Common.h"
+#include "Common/GC.h"
 #include "Compiler/Compiler.h"
 #include <QDialog>
 #include <memory>
 
 class QThread;
+class CompiledOutput;
 class SourceLocation;
 class Ui_BuildDialog;
 
@@ -15,8 +17,10 @@ class BuildThread : public QObject, public ICompilerListener
     Q_OBJECT
 
 public:
-    explicit BuildThread(const QString& projectFile, std::string projectConfiguration, QObject* parent = nullptr);
+    BuildThread(GCHeap* heap, const QString& projectFile, std::string projectConfiguration, QObject* parent = nullptr);
     ~BuildThread() override;
+
+    CompiledOutput* linkerOutput() const { return mLinkerOutput; }
 
     void compile();
 
@@ -33,9 +37,11 @@ protected:
     void checkCancelation() const override;
 
 private:
+    GCHeap* mHeap;
     QAtomicInt mCancelRequested;
     QString mProjectFile;
     std::string mProjectConfiguration;
+    CompiledOutput* mLinkerOutput;
 
     void compilerProgress(int current, int total, const std::string& message) override;
 
@@ -50,6 +56,8 @@ public:
     explicit BuildDialog(const QString& projectFile, std::string projectConfiguration, QWidget* parent = nullptr);
     ~BuildDialog() override;
 
+    CompiledOutput* linkerOutput() const { return mLinkerOutput; }
+
 signals:
     void success();
     void failure(QString file, int line, QString message);
@@ -63,7 +71,9 @@ private:
     class Thread;
 
     std::unique_ptr<Ui_BuildDialog> mUi;
+    GCHeap mHeap;
     QString mProjectFile;
+    CompiledOutput* mLinkerOutput;
     QThread* mThread;
 
     Q_SIGNAL void cancelRequested();

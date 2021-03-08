@@ -2,9 +2,12 @@
 #define COMPILER_LINKER_CODEEMITTER_H
 
 #include "Common/Common.h"
+#include <string>
+#include <optional>
 #include <stdint.h>
 
 class SourceLocation;
+enum class Compression;
 
 class CodeEmitter
 {
@@ -17,6 +20,9 @@ public:
 
     CodeEmitter();
     virtual ~CodeEmitter();
+
+    virtual void addSectionDebugInfo(std::string name, int64_t start,
+        Compression compression, int64_t uncompressedSize, std::optional<int64_t> compressedSize) = 0;
 
     virtual void emitByte(SourceLocation* location, uint8_t byte) = 0;
     virtual void emitBytes(SourceLocation* location, const uint8_t* bytes, size_t count) = 0;

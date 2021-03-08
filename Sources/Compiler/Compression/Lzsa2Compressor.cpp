@@ -66,6 +66,11 @@ Lzsa2Compressor::~Lzsa2Compressor()
 {
 }
 
+Compression Lzsa2Compressor::compression() const
+{
+    return Compression::Lzsa2;
+}
+
 void Lzsa2Compressor::compress(SourceLocation* location, std::vector<uint8_t> src, std::vector<uint8_t>& dst)
 {
     if (src.empty())

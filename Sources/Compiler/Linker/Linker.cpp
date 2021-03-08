@@ -8,6 +8,7 @@
 #include "Compiler/Linker/CodeEmitterCompressed.h"
 #include "Compiler/Linker/ProgramSection.h"
 #include "Compiler/Linker/Program.h"
+#include "Compiler/Linker/DebugInformation.h"
 #include "Compiler/Assembler/Label.h"
 #include "Compiler/Compression/Compressor.h"
 #include "Compiler/Project.h"
@@ -52,6 +53,7 @@ namespace
             , mProgram(program)
             , mProjectVariables(projectVariables)
             , mFile(file)
+            , mDebugInfo(new DebugInformation())
             , mIsResolved(false)
         {
             registerFinalizer();
@@ -196,6 +198,13 @@ namespace
         }
 
         const Project::File* file() const { return mFile; }
+        SourceLocation* location() const { return mLocation; }
+
+        std::unique_ptr<DebugInformation> takeDebugInfo()
+        {
+            std::unique_ptr<DebugInformation> info{std::move(mDebugInfo)};
+            return info;
+        }
 
         LinkerSection* firstUnresolvedSection() const
         {
@@ -445,6 +454,7 @@ namespace
         Program* mProgram;
         SymbolTable* mProjectVariables;
         const Project::File* mFile;
+        std::unique_ptr<DebugInformation> mDebugInfo;
         std::unordered_set<ProgramSection*> mSectionSet;
         std::vector<LinkerSection*> mSections;
         Expr* mFileStart;
@@ -627,6 +637,8 @@ CompiledOutput* Linker::link(Program* program)
     auto fileID = new (mHeap) FileID(mProject->path().filename(), mProject->path());
     auto location = new (mHeap) SourceLocation(fileID, 1);
 
+    auto output = new (mHeap) CompiledOutput();
+
     std::unordered_set<std::string> fileNames;
     std::vector<LinkerFile*> files;
 
@@ -671,9 +683,8 @@ CompiledOutput* Linker::link(Program* program)
         }
     }
 
-    auto output = new (mHeap) CompiledOutput();
-    for (const auto& file : files)
-        file->generateCode(output->getOrAddFile(file->file()->name));
+    for (auto& file : files)
+        file->generateCode(output->addFile(file->location(), file->file()->name, file->takeDebugInfo()));
 
     for (const auto& it : mProgram->globals()->symbols()) {
         Symbol* symbol = it.second;

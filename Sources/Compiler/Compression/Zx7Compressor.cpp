@@ -13,6 +13,11 @@ Zx7Compressor::~Zx7Compressor()
 {
 }
 
+Compression Zx7Compressor::compression() const
+{
+    return Compression::Zx7;
+}
+
 void Zx7Compressor::compress(SourceLocation* location, std::vector<uint8_t> src, std::vector<uint8_t>& dst)
 {
     Optimal* optimal = nullptr;

@@ -17,6 +17,7 @@ MainWindow::MainWindow()
     : mUi(new Ui_MainWindow)
 {
     mUi->setupUi(this);
+
     mUi->menuView->addAction(mUi->outputDockWidget->toggleViewAction());
     mUi->outputDockWidget->hide();
 
@@ -84,7 +85,11 @@ bool MainWindow::buildProject()
             mUi->outputDockWidget->raise();
         });
 
-    return (dlg.exec() == QDialog::Accepted);
+    if (dlg.exec() != QDialog::Accepted)
+        return false;
+
+    mUi->memoryMapWidget->setData(dlg.linkerOutput());
+    return true;
 }
 
 void MainWindow::updateUi()

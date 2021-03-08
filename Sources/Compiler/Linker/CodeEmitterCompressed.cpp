@@ -34,6 +34,27 @@ void CodeEmitterCompressed::clear()
     mCompressed = false;
 }
 
+void CodeEmitterCompressed::addSectionDebugInfo(std::string name, int64_t start,
+    Compression compression, int64_t uncompressedSize, std::optional<int64_t> compressedSize)
+{
+    if (mSection) {
+        throw CompilerError(mLocation,
+            "internal compiler error: only one section is allowed in compressed code emitter.");
+    }
+
+    if (compression != Compression::None || compressedSize.has_value()) {
+        throw CompilerError(mLocation,
+            "internal compiler error: attempted to write already compressed data to compressed code emitter.");
+    }
+
+    mSection = std::make_unique<DebugInformation::Section>();
+    mSection->name = std::move(name);
+    mSection->startAddress = start;
+    mSection->compression = compression;
+    mSection->uncompressedSize = uncompressedSize;
+    mSection->compressedSize = compressedSize;
+}
+
 void CodeEmitterCompressed::emitByte(SourceLocation* location, uint8_t byte)
 {
     if (mCompressed)
@@ -101,4 +122,9 @@ void CodeEmitterCompressed::copyTo(CodeEmitter* target) const
         throw CompilerError(mLocation, "internal compiler error: compressed data is not available at this point.");
 
     target->emitBytes(mLocation, mCompressedBytes.data(), mCompressedBytes.size());
+
+    if (mSection) {
+        target->addSectionDebugInfo(mSection->name, mSection->startAddress,
+            mCompressor->compression(), mSection->uncompressedSize, mCompressedBytes.size());
+    }
 }

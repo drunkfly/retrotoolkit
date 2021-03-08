@@ -13,7 +13,35 @@
   <property name="windowTitle">
    <string>8-Bit Toolkit</string>
   </property>
-  <widget class="QWidget" name="centralWidget"/>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="MemoryMapWidget" name="memoryMapWidget">
+      <property name="frameShape">
+       <enum>QFrame::WinPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
@@ -96,6 +124,12 @@
    <class>LogWidget</class>
    <extends>QWidget</extends>
    <header>GUI/Widgets/LogWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MemoryMapWidget</class>
+   <extends>QFrame</extends>
+   <header>GUI/Widgets/MemoryMapWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
