@@ -31,10 +31,12 @@
     </Files>
 
     <OutputTAP enabled="!TRDOS">
+        <File basic="boot" />
         <File ref="LOADER" />
     </OutputTAP>
 
     <OutputTRD enabled="TRDOS">
+        <File basic="boot" />
         <File ref="LOADER" />
     </OutputTRD>
 

@@ -171,6 +171,26 @@ void TRDOSWriter::addCodeFile(std::string name, const CodeEmitter::Byte* data, s
     mFiles.emplace_back(std::move(codeFile));
 }
 
+void TRDOSWriter::setWriteSclFile(std::filesystem::path path)
+{
+    mSclFile = std::move(path);
+}
+
+void TRDOSWriter::setWriteTrdFile(std::filesystem::path path, std::string volumeName)
+{
+    mTrdFile = std::move(path);
+    mVolumeName = std::move(volumeName);
+}
+
+void TRDOSWriter::writeOutput()
+{
+    if (mSclFile)
+        writeSclFile(*mSclFile);
+
+    if (mTrdFile)
+        writeTrdFile(*mTrdFile, mVolumeName.value());
+}
+
 void TRDOSWriter::writeSclFile(const std::filesystem::path& path)
 {
     std::stringstream ss;

@@ -11,6 +11,7 @@
 
 class Expr;
 class SymbolTable;
+class SourceLocation;
 class GCHeap;
 
 class Project
@@ -69,7 +70,9 @@ public:
 
         struct File
         {
+            SourceLocation* location;
             std::optional<std::string> ref;
+            std::optional<std::string> basic;
         };
 
         Type type;

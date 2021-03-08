@@ -149,10 +149,15 @@ void Project::load(std::filesystem::path path)
 
         FOR_EACH(File, OutputTAP) {
             Output::File outputFile = {};
+            outputFile.location = nullptr; // FIXME
 
             auto ref = OPT_STRING(ref, File);
-            if (ref)
+            auto basic = OPT_STRING(basic, File);
+
+            if (ref && !basic)
                 outputFile.ref = std::move(ref);
+            else if (basic && !ref)
+                outputFile.basic = std::move(basic);
             else {
                 std::stringstream ss;
                 ss << "Invalid <" << "File" << "> element in <"
@@ -175,8 +180,12 @@ void Project::load(std::filesystem::path path)
             Output::File outputFile = {};
 
             auto ref = OPT_STRING(ref, File);
-            if (ref)
+            auto basic = OPT_STRING(basic, File);
+
+            if (ref && !basic)
                 outputFile.ref = std::move(ref);
+            else if (basic && !ref)
+                outputFile.basic = std::move(basic);
             else {
                 std::stringstream ss;
                 ss << "Invalid <" << "File" << "> element in <"
@@ -240,6 +249,9 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
         if (file.ref) {
             ss << " ref=";
             xmlEncodeInQuotes(ss, *file.ref);
+        } else if (file.basic) {
+            ss << " basic=";
+            xmlEncodeInQuotes(ss, *file.basic);
         }
         ss << " />\n";
     }

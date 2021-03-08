@@ -2,22 +2,24 @@
 #define COMPILER_OUTPUT_TRDOSWRITER_H
 
 #include "Common/Common.h"
-#include "Compiler/Linker/CodeEmitter.h"
-#include <string>
+#include "Compiler/Output/IOutputWriter.h"
 #include <memory>
 #include <filesystem>
+#include <optional>
 
-class TRDOSWriter
+class TRDOSWriter final : public IOutputWriter
 {
 public:
     TRDOSWriter();
     ~TRDOSWriter();
 
-    void addBasicFile(std::string name, const std::string& data, int startLine = -1);
-    void addCodeFile(std::string name, const CodeEmitter::Byte* data, size_t size, size_t startAddress);
+    void addBasicFile(std::string name, const std::string& data, int startLine = -1) override;
+    void addCodeFile(std::string name, const CodeEmitter::Byte* data, size_t size, size_t startAddress) override;
 
-    void writeSclFile(const std::filesystem::path& path);
-    void writeTrdFile(const std::filesystem::path& path, std::string volumeName);
+    void setWriteSclFile(std::filesystem::path path);
+    void setWriteTrdFile(std::filesystem::path path, std::string volumeName);
+
+    void writeOutput() override;
 
 private:
     class DiskFile;
@@ -25,6 +27,12 @@ private:
     class CodeFile;
 
     std::vector<std::unique_ptr<DiskFile>> mFiles;
+    std::optional<std::filesystem::path> mSclFile;
+    std::optional<std::filesystem::path> mTrdFile;
+    std::optional<std::string> mVolumeName;
+
+    void writeSclFile(const std::filesystem::path& path);
+    void writeTrdFile(const std::filesystem::path& path, std::string volumeName);
 
     DISABLE_COPY(TRDOSWriter);
 };
