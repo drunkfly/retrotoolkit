@@ -145,8 +145,6 @@ void Project::load(std::filesystem::path path)
     IF_HAS(OutputTAP, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTAP;
-        output->basicFileName = OPT_STRING(basicFileName, OutputTAP);
-        output->basicStartLine = OPT_INT(basicStartLine, OutputTAP);
         output->enabled = OPT_STRING(enabled, OutputTAP);
 
         FOR_EACH(File, OutputTAP) {
@@ -171,8 +169,6 @@ void Project::load(std::filesystem::path path)
     IF_HAS(OutputTRD, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTRD;
-        output->basicFileName = OPT_STRING(basicFileName, OutputTRD);
-        output->basicStartLine = OPT_INT(basicStartLine, OutputTRD);
         output->enabled = OPT_STRING(enabled, OutputTRD);
 
         FOR_EACH(File, OutputTRD) {
@@ -237,12 +233,6 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
         ss << " enabled=";
         xmlEncodeInQuotes(ss, *output.enabled);
     }
-    if (output.basicFileName) {
-        ss << " basicFileName=";
-        xmlEncodeInQuotes(ss, *output.basicFileName);
-    }
-    if (output.basicStartLine)
-        ss << " basicStartLine=\"" << *output.basicStartLine << "\"";
     ss << ">\n";
 
     for (const auto& file : output.files) {

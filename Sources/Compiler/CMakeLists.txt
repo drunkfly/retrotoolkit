@@ -61,8 +61,6 @@ add(Compiler
         Tree/SymbolTable.h
         Tree/Value.cpp
         Tree/Value.h
-        BasicCompiler.cpp
-        BasicCompiler.h
         Compiler.cpp
         Compiler.h
         CompilerError.cpp
@@ -78,6 +76,8 @@ add(Compiler
         Project.cpp
         Project.h
         SourceFile.h
+        SpectrumBasicCompiler.cpp
+        SpectrumBasicCompiler.h
         Token.cpp
         Token.h
     )

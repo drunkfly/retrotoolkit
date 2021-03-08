@@ -5,6 +5,9 @@
 #include "Common/GC.h"
 #include <filesystem>
 
+struct SourceFile;
+enum class FileType;
+
 class ICompilerListener
 {
 public:
@@ -24,6 +27,10 @@ public:
 private:
     ICompilerListener* mListener;
     GCHeap mHeap;
+    std::filesystem::path mProjectPath;
+    std::filesystem::path mOutputPath;
+
+    bool initSourceFile(SourceFile& sourceFile, FileType fileType, const std::filesystem::path& filePath);
 
     DISABLE_COPY(Compiler);
 };

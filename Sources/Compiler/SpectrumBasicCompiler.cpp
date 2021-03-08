@@ -1,6 +1,7 @@
-#include "BasicCompiler.h"
+#include "SpectrumBasicCompiler.h"
 #include "Compiler/SourceFile.h"
 #include "Compiler/CompilerError.h"
+#include "Compiler/LexerUtils.h"
 #include "Linker/CompiledOutput.h"
 #include "Common/IO.h"
 #include <assert.h>
@@ -18,11 +19,15 @@
     for (const char* str = (STR); *str; ++str) \
         APPEND(*str)
 
-static BasicCompiler* instance;
+static SpectrumBasicCompiler* instance;
 
-BasicCompiler::BasicCompiler(GCHeap* heap, CompiledOutput* output)
+SpectrumBasicCompiler::SpectrumBasicCompiler(GCHeap* heap, CompiledOutput* output)
     : mHeap(heap)
     , mOutput(output)
+    , mBasicFile(nullptr)
+    , mSourceLocation(nullptr)
+    , mStartLineLocation(nullptr)
+    , mBasicFileLine(0)
 {
     assert(instance == nullptr);
     instance = this;
@@ -34,14 +39,17 @@ BasicCompiler::BasicCompiler(GCHeap* heap, CompiledOutput* output)
     bas2tap_reset();
 }
 
-BasicCompiler::~BasicCompiler()
+SpectrumBasicCompiler::~SpectrumBasicCompiler()
 {
     assert(instance == this);
     instance = nullptr;
 }
 
-void BasicCompiler::addFile(SourceFile* source)
+void SpectrumBasicCompiler::addFile(const SourceFile* source)
 {
+    if (!mSourceLocation)
+        mSourceLocation = new (mHeap) SourceLocation(source->fileID, 1);
+
     std::string fileData = loadFile(source->fileID->path());
 
     const char* p = fileData.c_str();
@@ -52,8 +60,10 @@ void BasicCompiler::addFile(SourceFile* source)
         mBasicFile = source;
         mBasicFileLine = line;
 
-        if (!*p)
-            throw CompilerError(new (mHeap) SourceLocation(source->fileID, line), "unexpected NUL byte in source file.");
+        if (!*p) {
+            throw CompilerError(
+                new (mHeap) SourceLocation(source->fileID, line), "unexpected NUL byte in source file.");
+        }
 
         char lineIn[MAXLINELENGTH + 1];
         int d = 0;
@@ -99,6 +109,35 @@ void BasicCompiler::addFile(SourceFile* source)
                         }
                         p = pend + 1;
                         continue;
+                    } else if (n > 10 && !strncmp(p + 1, "autostart:", 10)) {
+                        mStartLineLocation = new (mHeap) SourceLocation(source->fileID, line);
+                        p += 11;
+
+                        if (p == pend)
+                            throw CompilerError(mStartLineLocation, "missing line number.");
+
+                        uint64_t number = 0;
+                        while (p < pend) {
+                            if (!isDigit(*p))
+                                throw CompilerError(mStartLineLocation, "syntax error in number.");
+                            number *= 10;
+                            number += charToInt(*p++);
+                            if (number >= 10000)
+                                break;
+                        }
+
+                        if (number == 0 || number >= 10000)
+                            throw CompilerError(mStartLineLocation, "autostart line number is out of range.");
+
+                        if (mStartLine && mStartLine.value() != number) {
+                            throw CompilerError(mStartLineLocation,
+                                "conflicting line numbers in \"autostart\" directives.");
+                        }
+
+                        mStartLine = int(number);
+                        p = pend + 1;
+
+                        continue;
                     }
 
                     std::stringstream ss;
@@ -137,16 +176,25 @@ void BasicCompiler::addFile(SourceFile* source)
     }
 }
 
-void BasicCompiler::compile()
+void SpectrumBasicCompiler::compile()
 {
     mLinesIter = mLines.cbegin();
     mBasicFile = nullptr;
     mBasicFileLine = 0;
     if (bas2tap_main() != 0)
-        throw CompilerError(nullptr, "BASIC compilation failed.");
+        throw CompilerError(mSourceLocation, "BASIC compilation failed.");
+
+    if (mStartLine) {
+        auto it = mLines.find(*mStartLine);
+        if (it == mLines.end()) {
+            std::stringstream ss;
+            ss << "line " << *mStartLine << " does not exist.";
+            throw CompilerError(mStartLineLocation, ss.str());
+        }
+    }
 }
 
-void BasicCompiler::bas2tapError(int line, int stmt, const char* fmt, ...)
+void SpectrumBasicCompiler::bas2tapError(int line, int stmt, const char* fmt, ...)
 {
     char buf[1024];
     va_list args;
@@ -159,7 +207,7 @@ void BasicCompiler::bas2tapError(int line, int stmt, const char* fmt, ...)
     throw CompilerError(new (instance->mHeap) SourceLocation(file, instance->mBasicFileLine), buf);
 }
 
-int BasicCompiler::bas2tapFGets(char** basicIndex, int* basicLineNo)
+int SpectrumBasicCompiler::bas2tapFGets(char** basicIndex, int* basicLineNo)
 {
     if (instance->mLinesIter == instance->mLines.end())
         return 0;
@@ -177,7 +225,7 @@ int BasicCompiler::bas2tapFGets(char** basicIndex, int* basicLineNo)
     return 1;
 }
 
-void BasicCompiler::bas2tapOutput(const void* dst, size_t length)
+void SpectrumBasicCompiler::bas2tapOutput(const void* dst, size_t length)
 {
     instance->mCompiledBasicStream.write(reinterpret_cast<const char*>(dst), int(length));
 }

@@ -74,8 +74,6 @@ public:
 
         Type type;
         std::optional<std::string> enabled;
-        std::optional<std::string> basicFileName;
-        std::optional<int> basicStartLine;
         std::vector<File> files;
     };
 

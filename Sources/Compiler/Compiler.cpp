@@ -7,13 +7,24 @@
 #include "Compiler/Assembler/AssemblerParser.h"
 #include "Compiler/Output/TRDOSWriter.h"
 #include "Compiler/SourceFile.h"
-#include "Compiler/BasicCompiler.h"
+#include "Compiler/SpectrumBasicCompiler.h"
 #include "Compiler/Lexer.h"
 #include "Compiler/Project.h"
 #include "Common/IO.h"
 #include <vector>
 #include <algorithm>
+#include <map>
 #include <sstream>
+
+namespace
+{
+    struct BasicFile
+    {
+        std::string name;
+        std::string data;
+        int startLine;
+    };
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,59 +49,50 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
     std::string projectName = projectFile.stem().string();
 
-    std::filesystem::path projectPath = projectFile;
-    projectPath.remove_filename();
+    mProjectPath = projectFile;
+    mProjectPath.remove_filename();
 
-    std::filesystem::path outputPath;
     if (project.outputDirectory)
-        outputPath = projectPath / pathFromUtf8(*project.outputDirectory);
+        mOutputPath = mProjectPath / pathFromUtf8(*project.outputDirectory);
     else
-        outputPath = projectPath / Project::DefaultOutputDirectory;
-    outputPath = outputPath.lexically_normal();
+        mOutputPath = mProjectPath / Project::DefaultOutputDirectory;
+    mOutputPath = mOutputPath.lexically_normal();
 
     // Collect list of source files
 
     if (mListener)
         mListener->compilerProgress(0, 0, "Scanning directories...");
 
+    std::map<std::string, std::vector<SourceFile>> basicFiles;
     std::vector<SourceFile> sourceFiles;
-    std::vector<SourceFile> basicFiles;
+    int nBasic = 0;
 
-    for (const auto& it : std::filesystem::recursive_directory_iterator(projectPath)) {
+    SourceFile sourceFile;
+    for (const auto& it : std::filesystem::recursive_directory_iterator(mProjectPath)) {
         if (it.is_directory())
             continue;
 
-        auto currentPath = it.path().lexically_normal();
-        auto rootEnd = std::mismatch(outputPath.begin(), outputPath.end(), currentPath.begin()).first;
-        if (rootEnd == outputPath.end())
-            continue;
-
-        FileType fileType;
-        std::vector<SourceFile>* list;
-
-        auto ext = currentPath.extension();
+        auto ext = it.path().extension();
         if (ext == ".asm") {
-            fileType = FileType::Asm;
-            list = &sourceFiles;
+            if (initSourceFile(sourceFile, FileType::Asm, it.path()))
+                sourceFiles.emplace_back(sourceFile);
         } else if (ext == ".bas") {
-            fileType = FileType::Basic;
-            list = &basicFiles;
-        } else
-            continue;
-
-        auto name = currentPath.lexically_relative(projectPath);
-        list->emplace_back(SourceFile{ fileType, new (&mHeap) FileID(name, it.path()) });
+            if (initSourceFile(sourceFile, FileType::Basic, it.path())) {
+                ++nBasic;
+                basicFiles[it.path().stem().string()].emplace_back(sourceFile);
+            }
+        }
     }
 
     std::sort(sourceFiles.begin(), sourceFiles.end());
-
-    if (mListener)
-        mListener->compilerProgress(0, 0, "Compiling...");
+    for (auto& it : basicFiles) {
+        if (it.second.size() > 1)
+            std::sort(it.second.begin(), it.second.end());
+    }
 
     int n = int(sourceFiles.size());
-    int nBasic = int(basicFiles.size());
+    int total = n + 1 + nBasic + project.outputs.size();
     int count = 0;
-    int total = n + nBasic + project.outputs.size() + 2;
 
     auto program = new (&mHeap) Program();
 
@@ -115,41 +117,36 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     // Link program
 
     if (mListener)
-        mListener->compilerProgress(count++, total, "Linking...");
+        mListener->compilerProgress(count++, total, "Linking binaries...");
 
     Linker linker(&mHeap, &project, projectConfiguration);
     auto linkerOutput = linker.link(program);
 
     // Compile basic files
 
-    BasicCompiler basicCompiler(&mHeap, linkerOutput);
+    std::vector<BasicFile> compiledBasicFiles;
 
-    for (int i = 0; i < nBasic; i++) {
-        auto& file = basicFiles[i];
-        if (mListener)
-            mListener->compilerProgress(count++, total, file.fileID->name().string());
+    for (const auto& it : basicFiles) {
+        SpectrumBasicCompiler compiler(&mHeap, linkerOutput);
 
-        switch (file.fileType) {
-            case FileType::Basic: {
-                basicCompiler.addFile(&file);
-                break;
-            }
+        for (const auto& file : it.second) {
+            if (mListener)
+                mListener->compilerProgress(count++, total, file.fileID->name().string());
+            compiler.addFile(&file);
         }
+
+        compiler.compile();
+
+        int startLine = -1;
+        if (compiler.hasStartLine())
+            startLine = compiler.startLine();
+
+        compiledBasicFiles.emplace_back(BasicFile{ it.first, compiler.compiledData(), startLine });
     }
 
-    // Produce code for files
+    // Generate separate files
 
-    if (mListener)
-        mListener->compilerProgress(count++, total, "Processing BASIC code...");
-
-    basicCompiler.compile();
-
-    // Generate standard outputs
-
-    std::filesystem::path individualFilesPath = outputPath / "files";
-
-    if (nBasic > 0)
-        writeFile(individualFilesPath / "boot.bas", basicCompiler.compiledData());
+    std::filesystem::path individualFilesPath = mOutputPath / "files";
 
     for (const auto& file : linkerOutput->files()) {
         size_t n = file->size();
@@ -161,6 +158,9 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
         writeFile(individualFilesPath / file->name(), bytes.get(), n);
     }
+
+    for (const auto& it : compiledBasicFiles)
+        writeFile(individualFilesPath / (it.name + ".B"), it.data);
 
     // Generate outputs configured in the project
 
@@ -174,15 +174,12 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 if (mListener)
                     mListener->compilerProgress(count++, total, "Generating TRD and SCL...");
                 TRDOSWriter writer;
-                if (nBasic > 0) {
-                    std::string name = (output->basicFileName ? *output->basicFileName : "boot");
-                    int line = output->basicStartLine ? *output->basicStartLine : -1;
-                    writer.addBasicFile(std::move(name), basicCompiler.compiledData(), line);
-                }
+                for (const auto& it : compiledBasicFiles)
+                    writer.addBasicFile(it.name, it.data, it.startLine);
                 for (const auto& file : linkerOutput->files())
                     writer.addCodeFile(file->name(), file->data(), file->size(), file->loadAddress());
-                writer.writeSclFile(outputPath / (projectName + ".scl"));
-                writer.writeTrdFile(outputPath / (projectName + ".trd"), projectName);
+                writer.writeSclFile(mOutputPath / (projectName + ".scl"));
+                writer.writeTrdFile(mOutputPath / (projectName + ".trd"), projectName);
                 break;
             }
 
@@ -195,4 +192,17 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
     if (mListener)
         mListener->compilerProgress(count, total, "Done");
+}
+
+bool Compiler::initSourceFile(SourceFile& sourceFile, FileType fileType, const std::filesystem::path& filePath)
+{
+    auto currentPath = filePath.lexically_normal();
+    auto rootEnd = std::mismatch(mOutputPath.begin(), mOutputPath.end(), currentPath.begin()).first;
+    if (rootEnd == mOutputPath.end())
+        return false;
+
+    auto name = currentPath.lexically_relative(mProjectPath);
+    sourceFile.fileID = new (&mHeap) FileID(name, filePath);
+    sourceFile.fileType = fileType;
+    return true;
 }
