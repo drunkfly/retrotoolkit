@@ -48,6 +48,16 @@ void ProgramSection::addInstruction(Instruction* instruction)
     mInstructions.emplace_back(instruction);
 }
 
+bool ProgramSection::canEmitCodeWithoutBaseAddress() const
+{
+    for (const auto& instruction : mInstructions) {
+        if (!instruction->canEmitCodeWithoutBaseAddress())
+            return false;
+    }
+
+    return true;
+}
+
 bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
     std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -69,7 +79,7 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
         }
     }
 
-    if (mCalculatedSize && *mCalculatedSize != nextAddress - baseAddress) {
+    if (mCalculatedSize && *mCalculatedSize != nextAddress - startAddress) {
         SourceLocation* location = (!mInstructions.empty() ? mInstructions.back()->location() : nullptr);
         std::stringstream ss;
         ss << "internal compiler error: mismatch of calculated and generated size for section \"" << mName << "\".";
@@ -77,6 +87,6 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
         return false;
     }
 
-    emitter->addSectionDebugInfo(mName, startAddress, Compression::None, *mCalculatedSize, {});
+    emitter->addSectionDebugInfo(mName, startAddress, Compression::None, (nextAddress - startAddress), {});
     return true;
 }

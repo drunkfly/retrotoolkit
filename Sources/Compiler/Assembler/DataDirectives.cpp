@@ -1,4 +1,5 @@
 #include "DataDirectives.h"
+#include "Compiler/CompilerError.h"
 #include "Compiler/Linker/CodeEmitter.h"
 #include "Compiler/Tree/Expr.h"
 #include <string.h>
@@ -19,6 +20,12 @@ bool DEFB::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&
 {
     outSize = 1;
     return true;
+}
+
+bool DEFB::canEmitCodeWithoutBaseAddress() const
+{
+    std::unique_ptr<CompilerError> resolveError;
+    return mValue->canEvaluateValue(nullptr, resolveError);
 }
 
 bool DEFB::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
@@ -49,6 +56,11 @@ bool DEFB_STRING::calculateSizeInBytes(size_t& outSize, std::unique_ptr<Compiler
     return true;
 }
 
+bool DEFB_STRING::canEmitCodeWithoutBaseAddress() const
+{
+    return true;
+}
+
 bool DEFB_STRING::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const
 {
     emitter->emitBytes(location(), reinterpret_cast<const uint8_t*>(mText), mLength);
@@ -72,6 +84,12 @@ bool DEFW::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&
 {
     outSize = 2;
     return true;
+}
+
+bool DEFW::canEmitCodeWithoutBaseAddress() const
+{
+    std::unique_ptr<CompilerError> resolveError;
+    return mValue->canEvaluateValue(nullptr, resolveError);
 }
 
 bool DEFW::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
@@ -103,6 +121,12 @@ bool DEFD::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&
 {
     outSize = 4;
     return true;
+}
+
+bool DEFD::canEmitCodeWithoutBaseAddress() const
+{
+    std::unique_ptr<CompilerError> resolveError;
+    return mValue->canEvaluateValue(nullptr, resolveError);
 }
 
 bool DEFD::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
@@ -142,6 +166,12 @@ bool DEFS::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&
     mSize = mValue->evaluateUnsignedWord(nullptr);
     outSize = *mSize;
     return true;
+}
+
+bool DEFS::canEmitCodeWithoutBaseAddress() const
+{
+    std::unique_ptr<CompilerError> resolveError;
+    return mSize.has_value() || mValue->canEvaluateValue(nullptr, resolveError);
 }
 
 bool DEFS::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const

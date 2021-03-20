@@ -107,6 +107,12 @@ void CodeEmitterCompressed::emitBytes(const Byte* bytes, size_t count)
         mUncompressedBytes.emplace_back((*bytes++).value);
 }
 
+void CodeEmitterCompressed::setSectionBase(int64_t base)
+{
+    if (mSection)
+        mSection->startAddress = base;
+}
+
 void CodeEmitterCompressed::compress()
 {
     if (mCompressed)

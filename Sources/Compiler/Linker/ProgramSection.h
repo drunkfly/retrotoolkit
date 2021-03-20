@@ -28,6 +28,7 @@ public:
 
     void addInstruction(Instruction* instruction);
 
+    bool canEmitCodeWithoutBaseAddress() const;
     bool emitCode(CodeEmitter* emitter, size_t baseAddress, std::unique_ptr<CompilerError>& resolveError) const;
 
 private:

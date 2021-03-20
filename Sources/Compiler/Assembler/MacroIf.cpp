@@ -1,4 +1,5 @@
 #include "MacroIf.h"
+#include "Compiler/CompilerError.h"
 #include "Compiler/Tree/Expr.h"
 
 Instruction::Type MacroIf::type() const
@@ -54,6 +55,23 @@ bool MacroIf::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerErro
         if (!instruction->calculateSizeInBytes(size, resolveError))
             return false;
         outSize += size;
+    }
+
+    return true;
+}
+
+bool MacroIf::canEmitCodeWithoutBaseAddress() const
+{
+    std::unique_ptr<CompilerError> resolveError;
+    if (!mCondition->canEvaluateValue(nullptr, resolveError))
+        return false;
+
+    auto result = mCondition->evaluateValue(nullptr).number;
+    const std::vector<Instruction*>& instructions = (result ? mThenInstructions : mElseInstructions);
+
+    for (const auto& instruction : instructions) {
+        if (!instruction->canEmitCodeWithoutBaseAddress())
+            return false;
     }
 
     return true;

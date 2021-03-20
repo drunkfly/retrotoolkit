@@ -35,6 +35,7 @@ namespace
         Project::Section::Attachment attachment;
         Compression compression;
         std::unique_ptr<CodeEmitter> code;
+        CodeEmitterCompressed* compressedCode;
         Expr* base;
         Expr* fileOffset;
         Expr* alignment;
@@ -264,13 +265,22 @@ namespace
             for (auto section : mSections) {
                 if (section->compression == Compression::None)
                     continue;
-                if (section->resolvedSize || !section->resolvedBase || !section->labelsResolved)
+                if (section->resolvedSize)
                     continue;
+
+                int64_t baseAddress;
+                if (section->resolvedBase)
+                    baseAddress = *section->resolvedBase;
+                else {
+                    if (!section->programSection->canEmitCodeWithoutBaseAddress())
+                        continue;
+                    baseAddress = 0;
+                }
 
                 auto compressor = Compressor::create(mLocation, section->compression);
                 auto code = std::make_unique<CodeEmitterCompressed>(std::move(compressor));
 
-                if (section->programSection->emitCode(code.get(), section->resolvedBase.value(), resolveError)) {
+                if (section->programSection->emitCode(code.get(), baseAddress, resolveError)) {
                   #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                     { std::stringstream ss;
                     ss << "generated code for section \"" << section->programSection->name()
@@ -288,6 +298,7 @@ namespace
                     OutputDebugStringA(ss.str().c_str()); }
                   #endif
 
+                    section->compressedCode = code.get();
                     section->code = std::move(code);
                     didResolve = true;
                 }
@@ -305,10 +316,9 @@ namespace
 
                 if (!section->code && section->compression == Compression::None) {
                     auto code = std::make_unique<CodeEmitterUncompressed>();
-                    if (!section->programSection->emitCode(code.get(), section->resolvedBase.value(), resolveError)) {
+                    if (!section->programSection->emitCode(code.get(), section->resolvedBase.value(), resolveError))
                         hasUnresolved = true;
-                        continue;
-                    } else {
+                    else {
                       #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                         { std::stringstream ss;
                         ss << "generated code for section \"" << section->programSection->name()
@@ -415,7 +425,7 @@ namespace
                     }
 
                     std::unique_ptr<CompilerError> resolveError;
-                    if (!section->programSection->emitCode(output, offset, resolveError)) {
+                    if (section->programSection->emitCode(output, offset, resolveError)) {
                       #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                         { std::stringstream ss;
                         ss << "generated code for section \"" << section->programSection->name()
@@ -476,6 +486,7 @@ namespace
             auto linkerSection = new (heap()) LinkerSection();
             linkerSection->programSection = section;
             linkerSection->base = tryParseExpression(location, sectionInfo->base);
+            linkerSection->compressedCode = nullptr;
             linkerSection->fileOffset = (autoOffset ? nullptr : tryParseExpression(location, sectionInfo->fileOffset));
             linkerSection->alignment = tryParseExpression(location, sectionInfo->alignment);
             linkerSection->attachment = sectionInfo->attachment;
@@ -534,6 +545,9 @@ namespace
                   #endif
                 }
 
+                if (section->compressedCode)
+                    section->compressedCode->setSectionBase(address);
+
                 if (!section->resolvedSize)
                     break;
 
@@ -587,6 +601,9 @@ namespace
                     OutputDebugStringA(ss.str().c_str()); }
                   #endif
                 }
+
+                if (section->compressedCode)
+                    section->compressedCode->setSectionBase(address);
             }
 
             return resolvedSomething;

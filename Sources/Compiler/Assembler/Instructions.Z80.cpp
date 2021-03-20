@@ -461,6 +461,10 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         outSize = OP##_bytes.size(); \
         return true; \
     } \
+    bool Z80::OP::canEmitCodeWithoutBaseAddress() const \
+    { \
+        return true; \
+    } \
     bool Z80::OP::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high;\
@@ -483,6 +487,11 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         int64_t nextAddress = 0; (void)nextAddress; \
         outSize = decltype(arrayType BYTES)::Size; \
         return true; \
+    } \
+    bool Z80::OP##_##OP1::canEmitCodeWithoutBaseAddress() const \
+    { \
+        std::unique_ptr<CompilerError> resolveError; \
+        return mOp1.canEvaluate(nullptr, resolveError); \
     } \
     bool Z80::OP##_##OP1::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
         std::unique_ptr<CompilerError>& resolveError) const \
@@ -510,6 +519,11 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         int64_t nextAddress = 0; (void)nextAddress; \
         outSize = decltype(arrayType BYTES)::Size; \
         return true; \
+    } \
+    bool Z80::OP##_##OP1##_##OP2::canEmitCodeWithoutBaseAddress() const \
+    { \
+        std::unique_ptr<CompilerError> resolveError; \
+        return mOp1.canEvaluate(nullptr, resolveError) && mOp2.canEvaluate(nullptr, resolveError); \
     } \
     bool Z80::OP##_##OP1##_##OP2::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
         std::unique_ptr<CompilerError>& resolveError) const \

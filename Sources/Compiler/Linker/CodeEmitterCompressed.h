@@ -26,6 +26,8 @@ public:
     void emitBytes(SourceLocation* location, const uint8_t* bytes, size_t count) override;
     void emitBytes(const Byte* bytes, size_t count) override;
 
+    void setSectionBase(int64_t base);
+
     void compress();
 
     void copyTo(CodeEmitter* target) const override;

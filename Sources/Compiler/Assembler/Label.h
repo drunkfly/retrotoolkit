@@ -16,6 +16,7 @@ public:
     const char* name() const { return mName; }
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
+    bool canEmitCodeWithoutBaseAddress() const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
