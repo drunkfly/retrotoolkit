@@ -99,6 +99,18 @@ void AssemblerParser::popContext()
 
 void AssemblerParser::parseLine()
 {
+    // read label, if any
+    if (mToken->id() == TOK_LABEL_GLOBAL || mToken->id() == TOK_LABEL_FULL || mToken->id() == TOK_LABEL_LOCAL) {
+        std::string name = readLabelName();
+        mContext->addLabel(mSymbolTable, mToken->location(), mHeap->allocString(name.c_str(), name.length()));
+        mToken = mToken->next();
+
+        // skip label-only lines
+        if (matchEol())
+            return;
+    }
+
+    // read #directive
     if (mToken->id() == TOK_HASH) {
         mToken = mToken->next();
         expectNotEol();
@@ -115,17 +127,6 @@ void AssemblerParser::parseLine()
         std::stringstream ss;
         ss << "unexpected " << mToken->name() << '.';
         throw CompilerError(mToken->location(), ss.str());
-    }
-
-    // read label, if any
-    if (mToken->id() == TOK_LABEL_GLOBAL || mToken->id() == TOK_LABEL_FULL || mToken->id() == TOK_LABEL_LOCAL) {
-        std::string name = readLabelName();
-        mContext->addLabel(mSymbolTable, mToken->location(), mHeap->allocString(name.c_str(), name.length()));
-        mToken = mToken->next();
-
-        // skip label-only lines
-        if (matchEol())
-            return;
     }
 
     // read directive / instruction
