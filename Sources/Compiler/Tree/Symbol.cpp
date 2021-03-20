@@ -32,8 +32,12 @@ bool ConditionalConstantSymbol::canEvaluateValue(const int64_t* currentAddress,
     for (const auto& it : mEntries) {
         if (!it.condition->canEvaluateValue(currentAddress, resolveError))
             return false;
-        if (!it.value->canEvaluateValue(currentAddress, resolveError))
-            return false;
+
+        bool isThis = it.condition->evaluateValue(currentAddress).number != 0;
+        if (isThis) {
+            if (!it.value->canEvaluateValue(currentAddress, resolveError))
+                return false;
+        }
     }
     return true;
 }
