@@ -289,7 +289,14 @@ bool ExprIdentifier::canEvaluate(std::unique_ptr<CompilerError>& resolveError) c
             auto labelSymbol = static_cast<ConditionalLabelSymbol*>(symbol);
             if (!labelSymbol->canEvaluateValue(mCurrentAddress, resolveError))
                 return false;
-            if (!labelSymbol->label(location(), mCurrentAddress)->hasAddress()) {
+            Label* label = labelSymbol->label(location(), mCurrentAddress);
+            if (!label) {
+                std::stringstream ss;
+                ss << "unable to resolve label \"" << labelSymbol->name() << "\".";
+                resolveError = std::make_unique<CompilerError>(location(), ss.str());
+                return false;
+            }
+            if (!label->hasAddress()) {
                 std::stringstream ss;
                 ss << "unable to resolve address for label \"" << labelSymbol->name() << "\".";
                 resolveError = std::make_unique<CompilerError>(location(), ss.str());
@@ -315,9 +322,15 @@ Value ExprIdentifier::evaluate() const
         case Symbol::Constant:
             return static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(mCurrentAddress);
 
-        case Symbol::ConditionalConstant:
-            return static_cast<ConditionalConstantSymbol*>(symbol)
-                ->expr(location(), mCurrentAddress)->evaluateValue(mCurrentAddress);
+        case Symbol::ConditionalConstant: {
+            Expr* expr = static_cast<ConditionalConstantSymbol*>(symbol)->expr(location(), mCurrentAddress);
+            if (!expr) {
+                std::stringstream ss;
+                ss << "unable to resolve symbol \"" << symbol->name() << "\".";
+                throw CompilerError(location(), ss.str());
+            }
+            return expr->evaluateValue(mCurrentAddress);
+        }
 
         case Symbol::Label: {
             auto label = static_cast<LabelSymbol*>(symbol)->label();
@@ -331,6 +344,11 @@ Value ExprIdentifier::evaluate() const
 
         case Symbol::ConditionalLabel: {
             auto label = static_cast<ConditionalLabelSymbol*>(symbol)->label(location(), mCurrentAddress);
+            if (!label) {
+                std::stringstream ss;
+                ss << "unable to resolve label \"" << symbol->name() << "\".";
+                throw CompilerError(location(), ss.str());
+            }
             if (!label->hasAddress()) {
                 std::stringstream ss;
                 ss << "value for label \"" << label->name() << "\" is not available in this context.";

@@ -12,7 +12,7 @@ class CompiledOutput;
 class Linker
 {
 public:
-    Linker(GCHeap* heap, const Project* project, std::string projectConfiguration);
+    Linker(GCHeap* heap, const Project* project);
     ~Linker();
 
     CompiledOutput* link(Program* program);
@@ -21,7 +21,6 @@ private:
     GCHeap* mHeap;
     const Project* mProject;
     Program* mProgram;
-    std::string mProjectConfiguration;
 
     DISABLE_COPY(Linker);
 };

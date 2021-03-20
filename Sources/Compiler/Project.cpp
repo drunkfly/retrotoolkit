@@ -114,7 +114,7 @@ void Project::load(std::filesystem::path path)
         constants.emplace_back(std::move(constant));
     }
 
-    IF_HAS(Configuration, RetroProject) {
+    FOR_EACH(Configuration, RetroProject) {
         auto config = std::make_unique<Configuration>();
         config->name = REQ_STRING(name, Configuration);
 

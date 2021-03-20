@@ -49,10 +49,9 @@ namespace
     class LinkerFile : public GCObject
     {
     public:
-        LinkerFile(SourceLocation* location, const Project::File* file, Program* program, SymbolTable* projectVariables)
+        LinkerFile(SourceLocation* location, const Project::File* file, Program* program)
             : mLocation(location)
             , mProgram(program)
-            , mProjectVariables(projectVariables)
             , mFile(file)
             , mDebugInfo(new DebugInformation())
             , mIsResolved(false)
@@ -462,7 +461,6 @@ namespace
     private:
         SourceLocation* mLocation;
         Program* mProgram;
-        SymbolTable* mProjectVariables;
         const Project::File* mFile;
         std::unique_ptr<DebugInformation> mDebugInfo;
         std::unordered_set<ProgramSection*> mSectionSet;
@@ -612,7 +610,7 @@ namespace
         Expr* parseExpression(SourceLocation* location, const std::string& str)
         {
             ExpressionParser parser(heap(), nullptr, nullptr, nullptr);
-            Expr* expr = parser.tryParseExpression(location, str.c_str(), mProjectVariables);
+            Expr* expr = parser.tryParseExpression(location, str.c_str(), mProgram->projectVariables());
             if (!expr) {
                 std::stringstream ss;
                 ss << "unable to parse expression \"" << str << "\": " << parser.error();
@@ -632,11 +630,10 @@ namespace
     };
 }
 
-Linker::Linker(GCHeap* heap, const Project* project, std::string projectConfiguration)
+Linker::Linker(GCHeap* heap, const Project* project)
     : mHeap(heap)
     , mProject(project)
     , mProgram(nullptr)
-    , mProjectConfiguration(std::move(projectConfiguration))
 {
 }
 
@@ -647,9 +644,6 @@ Linker::~Linker()
 CompiledOutput* Linker::link(Program* program)
 {
     mProgram = program;
-
-    auto projectVariables = new (mHeap) SymbolTable(nullptr);
-    mProject->setVariables(projectVariables, mProjectConfiguration);
 
     auto fileID = new (mHeap) FileID(mProject->path().filename(), mProject->path());
     auto location = new (mHeap) SourceLocation(fileID, 1);
@@ -666,7 +660,7 @@ CompiledOutput* Linker::link(Program* program)
             ss << "duplicate file name \"" << file->name << "\".";
             throw CompilerError(location, ss.str());
         }
-        files.emplace_back(new (mHeap) LinkerFile(location, file.get(), mProgram, projectVariables));
+        files.emplace_back(new (mHeap) LinkerFile(location, file.get(), mProgram));
     }
 
     for (;;) {
@@ -716,7 +710,8 @@ CompiledOutput* Linker::link(Program* program)
 
             case Symbol::ConditionalLabel: {
                 int64_t addr = 0;
-                if (!static_cast<ConditionalLabelSymbol*>(symbol)->label(symbol->location(), &addr)->hasAddress()) {
+                Label* label = static_cast<ConditionalLabelSymbol*>(symbol)->label(symbol->location(), &addr);
+                if (label && !label->hasAddress()) {
                     std::stringstream ss;
                     ss << "unable to resolve address for label \"" << symbol->name() << "\".";
                     throw CompilerError(symbol->location(), ss.str());
@@ -732,7 +727,9 @@ CompiledOutput* Linker::link(Program* program)
 
             case Symbol::ConditionalConstant: {
                 int64_t addr = 0;
-                static_cast<ConditionalConstantSymbol*>(symbol)->expr(symbol->location(), &addr)->evaluateValue(&addr);
+                Expr* expr = static_cast<ConditionalConstantSymbol*>(symbol)->expr(symbol->location(), &addr);
+                if (expr)
+                    expr->evaluateValue(&addr);
                 break;
             }
         }

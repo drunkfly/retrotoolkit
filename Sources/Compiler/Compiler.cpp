@@ -101,6 +101,9 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
     // Compile source files
 
+    auto projectVariables = new (mHeap) SymbolTable(nullptr);
+    project.setVariables(program->projectVariables(), projectConfiguration);
+
     for (int i = 0; i < n; i++) {
         const auto& file = sourceFiles[i];
         if (mListener)
@@ -122,7 +125,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     if (mListener)
         mListener->compilerProgress(count++, total, "Linking binaries...");
 
-    Linker linker(mHeap, &project, projectConfiguration);
+    Linker linker(mHeap, &project);
     mLinkerOutput = linker.link(program);
 
     // Compile basic files

@@ -5,7 +5,8 @@
 Program::Program()
 {
     registerFinalizer();
-    mGlobals = new (heap()) SymbolTable(nullptr);
+    mProjectVariables = new (heap()) SymbolTable(nullptr);
+    mGlobals = new (heap()) SymbolTable(mProjectVariables);
 }
 
 Program::~Program()

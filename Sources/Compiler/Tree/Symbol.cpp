@@ -53,12 +53,6 @@ Expr* ConditionalConstantSymbol::expr(SourceLocation* location, const int64_t* c
         }
     }
 
-    if (!value) {
-        std::stringstream ss;
-        ss << "unable to resolve symbol \"" << name() << "\".";
-        throw CompilerError(location, ss.str());
-    }
-
     return value;
 }
 
@@ -120,12 +114,6 @@ Label* ConditionalLabelSymbol::label(SourceLocation* location, const int64_t* cu
             }
             label = it.label;
         }
-    }
-
-    if (!label) {
-        std::stringstream ss;
-        ss << "unable to resolve label \"" << name() << "\".";
-        throw CompilerError(location, ss.str());
     }
 
     return label;

@@ -25,7 +25,7 @@ static void assemble(Program* program, const char* name, const char* source)
 
 static DataBlob link(const std::unique_ptr<Project>& project, Program* program)
 {
-    Linker linker(&heap, project.get(), "Default");
+    Linker linker(&heap, project.get());
     auto output = linker.link(program);
 
     auto mainFile = output->getFile("MAIN");
