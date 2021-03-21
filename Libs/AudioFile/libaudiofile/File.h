@@ -32,6 +32,7 @@
 
 #include "Shared.h"
 #include <sys/types.h>
+#include <stddef.h>
 
 typedef struct _AFvirtualfile AFvirtualfile;
 

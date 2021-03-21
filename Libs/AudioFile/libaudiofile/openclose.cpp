@@ -75,6 +75,7 @@ int _af_identify (File *f, int *implemented)
 	return AF_FILE_UNKNOWN;
 }
 
+#ifndef _WIN32
 int afIdentifyFD (int fd)
 {
 	/*
@@ -114,6 +115,7 @@ int afIdentifyNamedFD (int fd, const char *filename, int *implemented)
 
 	return result;
 }
+#endif
 
 AFfilehandle afOpenFD (int fd, const char *mode, AFfilesetup setup)
 {

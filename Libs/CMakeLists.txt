@@ -1,4 +1,5 @@
 
+add_subdirectory(AudioFile)
 add_subdirectory(Bas2Tap)
 add_subdirectory(Catch)
 add_subdirectory(LibSpectrum)

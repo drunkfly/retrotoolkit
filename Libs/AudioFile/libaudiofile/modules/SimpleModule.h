@@ -116,6 +116,13 @@ struct IntTypes<kInt24> { typedef int32_t SignedType; typedef uint32_t UnsignedT
 template <>
 struct IntTypes<kInt32> { typedef int32_t SignedType; typedef uint32_t UnsignedType; };
 
+template <typename ArgumentType, typename ResultType>
+struct my_unary_function
+{
+	using argument_type = ArgumentType;
+	using result_type = ResultType;
+};
+
 template <FormatCode Format>
 struct signConverter
 {
@@ -126,12 +133,12 @@ struct signConverter
 	static const int kMaxSignedValue = (((1 << (kScaleBits - 1)) - 1) << 1) + 1;
 	static const int kMinSignedValue = -kMaxSignedValue - 1;
 
-	struct signedToUnsigned : public std::unary_function<SignedType, UnsignedType>
+	struct signedToUnsigned : public my_unary_function<SignedType, UnsignedType>
 	{
 		UnsignedType operator()(SignedType x) { return x - kMinSignedValue; }
 	};
 
-	struct unsignedToSigned : public std::unary_function<SignedType, UnsignedType>
+	struct unsignedToSigned : public my_unary_function<SignedType, UnsignedType>
 	{
 		SignedType operator()(UnsignedType x) { return x + kMinSignedValue; }
 	};
@@ -324,7 +331,7 @@ private:
 };
 
 template <typename Arg, typename Result>
-struct intToFloat : public std::unary_function<Arg, Result>
+struct intToFloat : public my_unary_function<Arg, Result>
 {
 	Result operator()(Arg x) const { return x; }
 };
@@ -390,13 +397,13 @@ private:
 };
 
 template <typename Arg, typename Result, unsigned shift>
-struct lshift : public std::unary_function<Arg, Result>
+struct lshift : public my_unary_function<Arg, Result>
 {
 	Result operator()(const Arg &x) const { return x << shift; }
 };
 
 template <typename Arg, typename Result, unsigned shift>
-struct rshift : public std::unary_function<Arg, Result>
+struct rshift : public my_unary_function<Arg, Result>
 {
 	Result operator()(const Arg &x) const { return x >> shift; }
 };
@@ -492,7 +499,7 @@ private:
 };
 
 template <typename Arg, typename Result>
-struct floatToFloat : public std::unary_function<Arg, Result>
+struct floatToFloat : public my_unary_function<Arg, Result>
 {
 	Result operator()(Arg x) const { return x; }
 };

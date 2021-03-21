@@ -45,7 +45,7 @@ check_c_source_compiles("
 
 set(HAVE_GCRYPT_H FALSE)
 set(HAVE_LIBBZ2 FALSE)
-set(HAVE_LIB_AUDIOFILE FALSE)
+set(HAVE_LIB_AUDIOFILE TRUE)
 set(HAVE_ZLIB_H FALSE)
 
 set(VERSION "1.5.0")
@@ -102,6 +102,8 @@ add(LibSpectrum
         "Libs"
     INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}"
+    LIBS
+        AudioFile
     SOURCES
         "${config_h}"
         "${config_h_cmakein}"
