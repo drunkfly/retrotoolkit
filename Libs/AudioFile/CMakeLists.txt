@@ -3,6 +3,10 @@ if(MSVC)
     add_definitions(
         /wd4805         # '==': unsafe mix of type 'uint8_t' and type 'bool' in operation
         )
+else()
+    add_definitions(
+        -Wno-multichar
+        )
 endif()
 
 include_directories(

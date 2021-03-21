@@ -231,7 +231,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 writer->addBasicFile(it->first, it->second.data, it->second.startLine);
             }
             else
-                throw CompilerError(file.location, "internal compiler error: unsupported output file.");
+                throw CompilerError(file.location, "Internal compiler error: unsupported output file.");
         }
 
         writer->writeOutput();
