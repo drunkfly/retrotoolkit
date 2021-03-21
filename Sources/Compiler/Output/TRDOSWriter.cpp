@@ -52,7 +52,7 @@ public:
         writeByte(ss, sizeInSectors());
     }
 
-    void writeData(std::stringstream& ss)
+    void writeData(std::stringstream& ss) const
     {
         size_t dataSize = mData.size();
         size_t fullSize = sizeInSectors() * SectorSize;

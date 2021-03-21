@@ -6,6 +6,7 @@
 #include "Compiler/Linker/CompiledOutput.h"
 #include "Compiler/Assembler/AssemblerParser.h"
 #include "Compiler/Output/TRDOSWriter.h"
+#include "Compiler/Output/SpectrumTapeWriter.h"
 #include "Compiler/SourceFile.h"
 #include "Compiler/SpectrumBasicCompiler.h"
 #include "Compiler/CompilerError.h"
@@ -177,12 +178,17 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             continue;
 
         switch (output->type) {
-            case Project::Output::ZXSpectrumTAP:
+            case Project::Output::ZXSpectrumTAP: {
                 if (mListener)
                     mListener->compilerProgress(count++, total, "Generating TAP...");
-                // FIXME
-                throw CompilerError(nullptr, "Not implemented");
-                continue;
+
+                auto tapeWriter = std::make_unique<SpectrumTapeWriter>();
+                tapeWriter->setWriteTapFile(mOutputPath / (projectName + ".tap"));
+                tapeWriter->setWriteWavFile(mOutputPath / (projectName + ".wav"));
+
+                writer = std::move(tapeWriter);
+                break;
+            }
 
             case Project::Output::ZXSpectrumTRD: {
                 if (mListener)

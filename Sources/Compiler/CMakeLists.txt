@@ -5,6 +5,7 @@ add(Compiler
         Common
         RapidXML
         Bas2Tap
+        AudioFile
         LibSpectrum
         ZX7
         LZSA
@@ -55,7 +56,19 @@ add(Compiler
         Linker/Program.h
         Linker/ProgramSection.cpp
         Linker/ProgramSection.h
+        Output/LibSpectrum/LibSpectrum.cpp
+        Output/LibSpectrum/LibSpectrum.h
+        Output/LibSpectrum/LibSpectrumBuffer.cpp
+        Output/LibSpectrum/LibSpectrumBuffer.h
+        Output/LibSpectrum/LibSpectrumTape.cpp
+        Output/LibSpectrum/LibSpectrumTape.h
+        Output/LibSpectrum/LibSpectrumTapeBlock.cpp
+        Output/LibSpectrum/LibSpectrumTapeBlock.h
+        Output/LibSpectrum/VirtualFile.cpp
+        Output/LibSpectrum/VirtualFile.h
         Output/IOutputWriter.h
+        Output/SpectrumTapeWriter.cpp
+        Output/SpectrumTapeWriter.h
         Output/TRDOSWriter.cpp
         Output/TRDOSWriter.h
         Tree/Expr.cpp
