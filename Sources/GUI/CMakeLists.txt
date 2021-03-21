@@ -4,6 +4,7 @@ add(RetroToolkit
     USES
         Core
         Gui
+        Multimedia
         Widgets
     LIBS
         Common
@@ -33,6 +34,9 @@ add(RetroToolkit
         MainWindow.cpp
         MainWindow.h
         MainWindow.ui
+        PlayAudioDialog.cpp
+        PlayAudioDialog.h
+        PlayAudioDialog.ui
         Settings.cpp
         Settings.h
         ThirdPartyDialog.cpp

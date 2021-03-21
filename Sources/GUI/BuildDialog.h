@@ -21,6 +21,9 @@ public:
     ~BuildThread() override;
 
     CompiledOutput* linkerOutput() const { return mLinkerOutput; }
+    const std::optional<std::filesystem::path>& generatedWavFile() const { return mGeneratedWavFile; }
+
+    void setEnableWav(bool flag) { mEnableWav = flag; }
 
     void compile();
 
@@ -41,7 +44,9 @@ private:
     QAtomicInt mCancelRequested;
     QString mProjectFile;
     std::string mProjectConfiguration;
+    std::optional<std::filesystem::path> mGeneratedWavFile;
     CompiledOutput* mLinkerOutput;
+    bool mEnableWav;
 
     void compilerProgress(int current, int total, const std::string& message) override;
 
@@ -57,6 +62,11 @@ public:
     ~BuildDialog() override;
 
     CompiledOutput* linkerOutput() const { return mLinkerOutput; }
+    const std::optional<std::filesystem::path>& generatedWavFile() const { return mGeneratedWavFile; }
+
+    void setEnableWav(bool flag) { mEnableWav = flag; }
+
+    int exec() override;
 
 signals:
     void success();
@@ -74,7 +84,9 @@ private:
     GCHeap mHeap;
     QString mProjectFile;
     CompiledOutput* mLinkerOutput;
+    std::optional<std::filesystem::path> mGeneratedWavFile;
     QThread* mThread;
+    bool mEnableWav;
 
     Q_SIGNAL void cancelRequested();
 

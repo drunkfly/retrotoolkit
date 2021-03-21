@@ -20,6 +20,7 @@ BuildThread::BuildThread(GCHeap* heap, const QString& projectFile, std::string p
     , mProjectFile(projectFile)
     , mProjectConfiguration(std::move(projectConfiguration))
     , mLinkerOutput(nullptr)
+    , mEnableWav(false)
 {
 }
 
@@ -32,8 +33,10 @@ void BuildThread::compile()
     try {
         Compiler compiler(mHeap, this);
         try {
+            compiler.setEnableWav(mEnableWav);
             compiler.buildProject(toPath(mProjectFile), mProjectConfiguration);
             mLinkerOutput = compiler.linkerOutput();
+            mGeneratedWavFile = compiler.generatedWavFile();
         } catch (const Canceled&) {
             emit canceled();
             return;
@@ -74,6 +77,7 @@ BuildDialog::BuildDialog(const QString& projectFile, std::string projectConfigur
     : QDialog(parent)
     , mUi(new Ui_BuildDialog)
     , mLinkerOutput(nullptr)
+    , mEnableWav(false)
 {
     mUi->setupUi(this);
     mUi->progressBar->setRange(0, 0);
@@ -81,6 +85,7 @@ BuildDialog::BuildDialog(const QString& projectFile, std::string projectConfigur
 
     mThread = QThread::create([this, projectFile, configuration = std::move(projectConfiguration)]() mutable {
             BuildThread thread(&mHeap, projectFile, std::move(configuration));
+            thread.setEnableWav(mEnableWav);
 
             connect(this, &BuildDialog::cancelRequested, &thread, &BuildThread::requestCancel, Qt::DirectConnection);
 
@@ -103,14 +108,19 @@ BuildDialog::BuildDialog(const QString& projectFile, std::string projectConfigur
             thread.compile();
 
             mLinkerOutput = thread.linkerOutput();
+            mGeneratedWavFile = thread.generatedWavFile();
         });
-
-    mThread->start();
 }
 
 BuildDialog::~BuildDialog()
 {
     mThread->wait();
+}
+
+int BuildDialog::exec()
+{
+    mThread->start();
+    return QDialog::exec();
 }
 
 void BuildDialog::done(int result)

@@ -2,6 +2,7 @@
 #define COMPILER_COMPILER_H
 
 #include "Common/Common.h"
+#include <optional>
 #include <filesystem>
 
 class GCHeap;
@@ -24,6 +25,9 @@ public:
     ~Compiler();
 
     CompiledOutput* linkerOutput() const { return mLinkerOutput; }
+    const std::optional<std::filesystem::path>& generatedWavFile() const { return mGeneratedWavFile; }
+
+    void setEnableWav(bool flag) { mEnableWav = flag; }
 
     void buildProject(const std::filesystem::path& projectFile, const std::string& projectConfiguration);
 
@@ -33,6 +37,8 @@ private:
     CompiledOutput* mLinkerOutput;
     std::filesystem::path mProjectPath;
     std::filesystem::path mOutputPath;
+    std::optional<std::filesystem::path> mGeneratedWavFile;
+    bool mEnableWav;
 
     bool initSourceFile(SourceFile& sourceFile, FileType fileType, const std::filesystem::path& filePath);
 

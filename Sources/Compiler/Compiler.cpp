@@ -34,6 +34,7 @@ Compiler::Compiler(GCHeap* heap, ICompilerListener* listener)
     : mHeap(heap)
     , mListener(listener)
     , mLinkerOutput(nullptr)
+    , mEnableWav(false)
 {
 }
 
@@ -184,7 +185,10 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
                 auto tapeWriter = std::make_unique<SpectrumTapeWriter>();
                 tapeWriter->setWriteTapFile(mOutputPath / (projectName + ".tap"));
-                tapeWriter->setWriteWavFile(mOutputPath / (projectName + ".wav"));
+                if (mEnableWav) {
+                    mGeneratedWavFile = mOutputPath / (projectName + ".wav");
+                    tapeWriter->setWriteWavFile(*mGeneratedWavFile);
+                }
 
                 writer = std::move(tapeWriter);
                 break;

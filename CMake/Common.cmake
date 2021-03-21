@@ -108,9 +108,9 @@ macro(qt_install_library config targetDir lib)
         qt_install_win32_plugins("${suffix}" "${config}" "${targetDir}" "${file}"
             audio/qtaudio_wasapi
             audio/qtaudio_windows
-            mediaservice/dsengine.dll
-            mediaservice/qtmedia_audioengine.dll
-            mediaservice/wmfengine.dll
+            mediaservice/dsengine
+            mediaservice/qtmedia_audioengine
+            mediaservice/wmfengine
             )
     endif()
 endmacro()

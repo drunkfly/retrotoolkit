@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 #include "GUI/AboutDialog.h"
 #include "GUI/BuildDialog.h"
+#include "GUI/PlayAudioDialog.h"
 #include "GUI/Settings.h"
 #include "GUI/Widgets/BuildStatusLabel.h"
 #include "GUI/Util/Exception.h"
@@ -77,12 +78,13 @@ void MainWindow::setProject(const QString& file, std::unique_ptr<Project> projec
     }
 }
 
-bool MainWindow::buildProject()
+bool MainWindow::buildProject(bool generateWav)
 {
     mUi->outputWidget->clear();
     mStatusLabel->setBuildStatus(tr("Building..."));
 
     BuildDialog dlg(*mProjectFile, comboSelectedItem(mConfigCombo).toByteArray().toStdString(), this);
+    dlg.setEnableWav(generateWav);
     connect(&dlg, &BuildDialog::success, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::canceled, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::failure, mStatusLabel, &BuildStatusLabel::setBuildError);
@@ -96,12 +98,24 @@ bool MainWindow::buildProject()
         return false;
 
     mUi->memoryMapWidget->setData(dlg.linkerOutput());
+
+    if (generateWav && !dlg.generatedWavFile().has_value()) {
+        QMessageBox::critical(this, tr("Error"), QStringLiteral("%1\n\n%2")
+            .arg(tr("Compiler did not produce a TAP file."))
+            .arg(tr("Did you configure TAP file output in project settings?")));
+        return false;
+    }
+
+    mGeneratedWavFile = dlg.generatedWavFile();
+
     return true;
 }
 
 void MainWindow::updateUi()
 {
     mUi->actionBuild->setEnabled(mProjectFile != nullptr);
+    mUi->actionGenerateWAVFile->setEnabled(mProjectFile != nullptr);
+    mUi->actionPlayWAVFile->setEnabled(mProjectFile != nullptr);
     mConfigCombo->setEnabled(mProjectFile != nullptr);
 }
 
@@ -153,7 +167,21 @@ void MainWindow::on_actionOpenProject_triggered()
 
 void MainWindow::on_actionBuild_triggered()
 {
-    buildProject();
+    buildProject(false);
+}
+
+void MainWindow::on_actionGenerateWAVFile_triggered()
+{
+    buildProject(true);
+}
+
+void MainWindow::on_actionPlayWAVFile_triggered()
+{
+    if (!buildProject(true))
+        return;
+
+    PlayAudioDialog dlg(mGeneratedWavFile.value(), this);
+    dlg.exec();
 }
 
 void MainWindow::on_actionAbout_triggered()

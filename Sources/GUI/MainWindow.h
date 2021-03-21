@@ -4,6 +4,8 @@
 #include "Common/Common.h"
 #include <QMainWindow>
 #include <memory>
+#include <filesystem>
+#include <optional>
 
 class QComboBox;
 class Project;
@@ -25,18 +27,22 @@ private:
     std::unique_ptr<Ui_MainWindow> mUi;
     std::unique_ptr<QString> mProjectFile;
     std::unique_ptr<Project> mProject;
+    std::optional<std::filesystem::path> mGeneratedWavFile;
     QComboBox* mConfigCombo;
     BuildStatusLabel* mStatusLabel;
 
     void setProject(const QString& file, std::unique_ptr<Project> project);
-    bool buildProject();
+    bool buildProject(bool generateWav);
 
     void updateUi();
     void updateConfigCombo();
 
     Q_SLOT void on_actionNewProject_triggered();
     Q_SLOT void on_actionOpenProject_triggered();
+
     Q_SLOT void on_actionBuild_triggered();
+    Q_SLOT void on_actionGenerateWAVFile_triggered();
+    Q_SLOT void on_actionPlayWAVFile_triggered();
 
     Q_SLOT void on_actionAbout_triggered();
 
