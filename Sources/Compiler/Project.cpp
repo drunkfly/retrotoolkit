@@ -1,4 +1,5 @@
 #include "Project.h"
+#include "Compiler/Tree/Expr.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
@@ -146,6 +147,7 @@ void Project::load(std::filesystem::path path)
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTAP;
         output->enabled = OPT_STRING(enabled, OutputTAP);
+        output->location = nullptr; // FIXME
 
         FOR_EACH(File, OutputTAP) {
             Output::File outputFile = {};
@@ -175,9 +177,11 @@ void Project::load(std::filesystem::path path)
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTRD;
         output->enabled = OPT_STRING(enabled, OutputTRD);
+        output->location = nullptr; // FIXME
 
         FOR_EACH(File, OutputTRD) {
             Output::File outputFile = {};
+            outputFile.location = nullptr; // FIXME
 
             auto ref = OPT_STRING(ref, File);
             auto basic = OPT_STRING(basic, File);
@@ -337,4 +341,23 @@ void Project::save(std::filesystem::path path, bool createNew)
         ss << "/_out\n";
         writeFile(projectPath / ".gitignore", ss.str());
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool Project::Output::isEnabled(SymbolTable* symbolTable) const
+{
+    if (!enabled.has_value())
+        return true;
+
+    auto heap = symbolTable->heap();
+    ExpressionParser parser(heap, nullptr, nullptr, nullptr);
+    Expr* value = parser.tryParseExpression(location, enabled.value().c_str(), symbolTable);
+    if (!value) {
+        std::stringstream ss;
+        ss << "unable to parse value for attribute \"enabled\": " << parser.error();
+        throw CompilerError(parser.errorLocation(), ss.str());
+    }
+
+    return value->evaluateValue(nullptr).number != 0;
 }

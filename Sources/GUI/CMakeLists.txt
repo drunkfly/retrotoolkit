@@ -10,6 +10,8 @@ add(RetroToolkit
         Compiler
         RunTests
     SOURCES
+        Util/ComboBox.cpp
+        Util/ComboBox.h
         Util/Conversion.cpp
         Util/Conversion.h
         Util/Exception.cpp

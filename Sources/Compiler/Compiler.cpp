@@ -173,11 +173,15 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     for (const auto& output : project.outputs) {
         std::unique_ptr<IOutputWriter> writer;
 
+        if (!output->isEnabled(program->projectVariables()))
+            continue;
+
         switch (output->type) {
             case Project::Output::ZXSpectrumTAP:
                 if (mListener)
                     mListener->compilerProgress(count++, total, "Generating TAP...");
                 // FIXME
+                throw CompilerError(nullptr, "Not implemented");
                 continue;
 
             case Project::Output::ZXSpectrumTRD: {

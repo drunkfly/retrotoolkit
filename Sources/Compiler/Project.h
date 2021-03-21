@@ -78,6 +78,9 @@ public:
         Type type;
         std::optional<std::string> enabled;
         std::vector<File> files;
+        SourceLocation* location;
+
+        bool isEnabled(SymbolTable* symbolTable) const;
     };
 
     std::vector<Constant> constants;

@@ -24,7 +24,7 @@ ExpressionParser::~ExpressionParser()
 Expr* ExpressionParser::tryParseExpression(SourceLocation* location, const char* str, SymbolTable* variables)
 {
     Lexer lexer(mHeap, Lexer::Mode::SingleLineExpression);
-    lexer.scan(location->file(), str, location->line());
+    lexer.scan((location ? location->file() : nullptr), str, (location ? location->line() : 1));
 
     if (!variables)
         variables = new (mHeap) SymbolTable(nullptr);

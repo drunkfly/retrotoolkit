@@ -19,7 +19,7 @@
 #include <vector>
 #include <algorithm>
 
-#define DEBUG_LINKER 1
+//#define DEBUG_LINKER 1
 
 #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
 #define NOMINMAX
