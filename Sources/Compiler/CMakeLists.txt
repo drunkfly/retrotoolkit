@@ -6,6 +6,7 @@ add(Compiler
         RapidXML
         Bas2Tap
         AudioFile
+        FuseUtils
         LibSpectrum
         ZX7
         LZSA

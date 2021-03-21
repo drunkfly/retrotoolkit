@@ -6,7 +6,7 @@
 #include "Compiler/CompilerError.h"
 
 extern "C" {
-//int write_tape(AFvirtualfile* vf, libspectrum_tape* tape, int sample_rate); // tape2wav
+int write_tape(AFvirtualfile* vf, libspectrum_tape* tape, int sample_rate); // tape2wav
 }
 
 LibSpectrumTape::LibSpectrumTape(LibSpectrum& lib)
@@ -64,10 +64,10 @@ void LibSpectrumTape::writeFile(libspectrum_id_t type, const std::filesystem::pa
 void LibSpectrumTape::writeWavFile(const std::filesystem::path& path)
 {
     VirtualFile vf;
-    //auto result1 = write_tape(vf, mTape, 44100);
+    auto result = write_tape(vf, mTape, 44100);
     mLibSpectrum.throwIfError();
-    //if (result1 != 0)
-    //    throw CompilerError(nullptr, "Unable to write tape data.");
+    if (result != 0)
+        throw CompilerError(nullptr, "Unable to write tape data.");
 
     ::writeFile(path, vf.data(), vf.length(), 0);
 }

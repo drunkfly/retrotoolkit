@@ -22,14 +22,18 @@
 
 */
 
-#include <config.h>
+/*#include <config.h>*/
 
 #include <errno.h>
 #include <fcntl.h>
-#include <getopt.h>
+/*#include <getopt.h>*/
 #include <stdio.h>
 #include <string.h>
+#ifdef WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <libspectrum.h>
 
@@ -37,6 +41,7 @@
 
 #include "utils.h"
 
+#if 0
 #define PROGRAM_NAME "tape2wav"
 
 static void show_help( void );
@@ -166,9 +171,10 @@ read_tape( char *filename, libspectrum_tape **tape )
 
   return 0;
 }
+#endif
 
-static int
-write_tape( char *filename, libspectrum_tape *tape )
+/*static*/ int
+write_tape( /*char *filename*/AFvirtualfile* vf, libspectrum_tape *tape, int sample_rate )
 {
   libspectrum_byte *buffer, *ptr; size_t length;
   size_t tape_length = 0;
@@ -188,8 +194,8 @@ write_tape( char *filename, libspectrum_tape *tape )
   buffer = malloc( length );
 
   if( !buffer ) {
-    fprintf( stderr, "%s: unable to allocate memory for conversion buffer\n",
-             progname );
+    /*fprintf( stderr, "%s: unable to allocate memory for conversion buffer\n",
+             progname );*/
     return 1;
   }
 
@@ -242,8 +248,8 @@ write_tape( char *filename, libspectrum_tape *tape )
       buffer = realloc( buffer, length );
       if( !buffer ) {
         free( ptr );
-        fprintf( stderr, "%s: unable to allocate memory for conversion buffer\n",
-                 progname );
+        /*fprintf( stderr, "%s: unable to allocate memory for conversion buffer\n",
+                 progname );*/
         return 1;
       }
     }
@@ -258,6 +264,7 @@ write_tape( char *filename, libspectrum_tape *tape )
   afInitSampleFormat( setup, AF_DEFAULT_TRACK, AF_SAMPFMT_UNSIGNED, 8 );
   afInitRate( setup, AF_DEFAULT_TRACK, sample_rate );
 
+#if 0
   if( strncmp( filename, "-", 1 ) == 0 ) {
     int fd = fileno( stdout );
     if( isatty( fd ) ) {
@@ -276,9 +283,11 @@ write_tape( char *filename, libspectrum_tape *tape )
   } else {
     file = afOpenFile( filename, "w", setup );
   }
+#endif
+  file = afOpenVirtualFile(vf, "w", setup);
   if( file == AF_NULL_FILEHANDLE ) {
-    fprintf( stderr, "%s: unable to open file '%s' for writing\n", progname,
-             filename );
+    /*fprintf( stderr, "%s: unable to open file '%s' for writing\n", progname,
+             filename );*/
     free( buffer );
     afFreeFileSetup( setup );
     return 1;
@@ -286,17 +295,17 @@ write_tape( char *filename, libspectrum_tape *tape )
 
   framesWritten = afWriteFrames( file, AF_DEFAULT_TRACK, buffer, tape_length );
   if(framesWritten != tape_length ) {
-    fprintf( stderr,
+    /*fprintf( stderr,
              "%s: number of frames written does not match number of frames"
              " requested\n",
-             progname );
+             progname );*/
     free( buffer );
     afFreeFileSetup( setup );
     return 1;
   }
 
   if( afCloseFile( file ) ) {
-    fprintf( stderr, "%s: error closing wav file\n", progname );
+    /*fprintf( stderr, "%s: error closing wav file\n", progname );*/
     free( buffer );
     afFreeFileSetup( setup );
     return 1;

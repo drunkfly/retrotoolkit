@@ -175,4 +175,6 @@ void SpectrumTapeWriter::writeOutput()
 
     if (mWavFile)
         tape.writeWavFile(*mWavFile);
+
+    lib.throwIfError();
 }
