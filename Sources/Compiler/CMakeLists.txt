@@ -5,6 +5,7 @@ add(Compiler
         Common
         RapidXML
         Bas2Tap
+        LibSpectrum
         ZX7
         LZSA
     SOURCES
