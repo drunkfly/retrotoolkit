@@ -85,10 +85,23 @@
     <addaction name="actionGenerateWAVFile"/>
     <addaction name="actionPlayWAVFile"/>
    </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>&amp;Tools</string>
+    </property>
+    <addaction name="actionSettings"/>
+   </widget>
    <addaction name="menuProject"/>
+   <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuBuild"/>
    <addaction name="menuDebug"/>
+   <addaction name="menuTools"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QDockWidget" name="outputDockWidget">
@@ -146,6 +159,11 @@
   <action name="actionPlayWAVFile">
    <property name="text">
     <string>&amp;Play WAV file</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>&amp;Settings...</string>
    </property>
   </action>
  </widget>

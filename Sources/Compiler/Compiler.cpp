@@ -1,6 +1,7 @@
 #include "Compiler.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/Java/JVM.h"
 #include "Compiler/Linker/Program.h"
 #include "Compiler/Linker/Linker.h"
 #include "Compiler/Linker/CompiledOutput.h"
@@ -42,6 +43,11 @@ Compiler::~Compiler()
 {
 }
 
+void Compiler::setJvmDllPath(std::filesystem::path path)
+{
+    mJvmDllPath = std::move(path);
+}
+
 void Compiler::buildProject(const std::filesystem::path& projectFile, const std::string& projectConfiguration)
 {
     // Read project file
@@ -69,6 +75,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         mListener->compilerProgress(0, 0, "Scanning directories...");
 
     std::map<std::string, std::vector<SourceFile>> basicFiles;
+    std::vector<SourceFile> javaFiles;
     std::vector<SourceFile> sourceFiles;
     int nBasic = 0;
 
@@ -81,6 +88,9 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         if (ext == ".asm") {
             if (initSourceFile(sourceFile, FileType::Asm, it.path()))
                 sourceFiles.emplace_back(sourceFile);
+        } else if (ext == ".java") {
+            if (initSourceFile(sourceFile, FileType::Java, it.path()))
+                javaFiles.emplace_back(sourceFile);
         } else if (ext == ".bas") {
             if (initSourceFile(sourceFile, FileType::Basic, it.path())) {
                 ++nBasic;
@@ -89,6 +99,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         }
     }
 
+    std::sort(javaFiles.begin(), javaFiles.end());
     std::sort(sourceFiles.begin(), sourceFiles.end());
     for (auto& it : basicFiles) {
         if (it.second.size() > 1)
@@ -96,15 +107,36 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     }
 
     int n = int(sourceFiles.size());
-    int total = n + 1 + nBasic + project.outputs.size();
+    int total = n + 1 + nBasic + javaFiles.size() + (javaFiles.empty() ? 0 : 1) + project.outputs.size();
     int count = 0;
 
     auto program = new (mHeap) Program();
 
-    // Compile source files
-
     auto projectVariables = new (mHeap) SymbolTable(nullptr);
     project.setVariables(program->projectVariables(), projectConfiguration);
+
+    // Compile java files
+
+    if (!javaFiles.empty()) {
+        if (!JVM::isLoaded()) {
+            if (mListener)
+                mListener->compilerProgress(count++, total, "Initializing Java Virtual Machine...");
+
+            if (!mJvmDllPath.has_value())
+                throw CompilerError(nullptr, "JDK path was not specified.");
+
+            JVM::load(*mJvmDllPath);
+        }
+
+        for (const auto& file : javaFiles) {
+            if (mListener)
+                mListener->compilerProgress(count++, total, file.fileID->name().string());
+
+            // FIXME
+        }
+    }
+
+    // Compile source files
 
     for (int i = 0; i < n; i++) {
         const auto& file = sourceFiles[i];

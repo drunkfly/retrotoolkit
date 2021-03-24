@@ -5,6 +5,7 @@ add(RetroToolkit
         Core
         Gui
         Multimedia
+        Network
         Widgets
     LIBS
         Common
@@ -39,6 +40,9 @@ add(RetroToolkit
         PlayAudioDialog.ui
         Settings.cpp
         Settings.h
+        SettingsDialog.cpp
+        SettingsDialog.h
+        SettingsDialog.ui
         ThirdPartyDialog.cpp
         ThirdPartyDialog.h
         ThirdPartyDialog.ui

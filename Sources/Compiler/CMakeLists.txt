@@ -39,6 +39,9 @@ add(Compiler
         Compression/Lzsa2Compressor.h
         Compression/Zx7Compressor.cpp
         Compression/Zx7Compressor.h
+        Java/JNI.h
+        Java/JVM.cpp
+        Java/JVM.h
         Linker/CodeEmitter.cpp
         Linker/CodeEmitter.h
         Linker/CodeEmitterCompressed.cpp

@@ -2,6 +2,7 @@
 #include "GUI/AboutDialog.h"
 #include "GUI/BuildDialog.h"
 #include "GUI/PlayAudioDialog.h"
+#include "GUI/SettingsDialog.h"
 #include "GUI/Settings.h"
 #include "GUI/Widgets/BuildStatusLabel.h"
 #include "GUI/Util/Exception.h"
@@ -181,6 +182,12 @@ void MainWindow::on_actionPlayWAVFile_triggered()
         return;
 
     PlayAudioDialog dlg(mGeneratedWavFile.value(), this);
+    dlg.exec();
+}
+
+void MainWindow::on_actionSettings_triggered()
+{
+    SettingsDialog dlg(this);
     dlg.exec();
 }
 

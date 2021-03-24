@@ -1,5 +1,7 @@
 #include "BuildDialog.h"
+#include "Compiler/Java/JVM.h"
 #include "Compiler/CompilerError.h"
+#include "GUI/Settings.h"
 #include "GUI/Util/Conversion.h"
 #include "ui_BuildDialog.h"
 #include <QThread>
@@ -33,6 +35,10 @@ void BuildThread::compile()
     try {
         Compiler compiler(mHeap, this);
         try {
+            Settings settings;
+            QString jdkPath = settings.jdkPath;
+            if (!jdkPath.isEmpty())
+                compiler.setJvmDllPath(JVM::findJvmDll(toPath(jdkPath)));
             compiler.setEnableWav(mEnableWav);
             compiler.buildProject(toPath(mProjectFile), mProjectConfiguration);
             mLinkerOutput = compiler.linkerOutput();

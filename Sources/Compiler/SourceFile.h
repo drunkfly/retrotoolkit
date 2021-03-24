@@ -6,6 +6,7 @@
 enum class FileType
 {
     Asm,
+    Java,
     Basic,
 };
 

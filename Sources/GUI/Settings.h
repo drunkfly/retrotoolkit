@@ -33,6 +33,8 @@ public:
     PROPERTY(bool, loadLastProjectOnStart, true);
     PROPERTY(QString, lastProjectFile, QString());
 
+    PROPERTY(QString, jdkPath, QString());
+
     Settings();
     ~Settings();
 

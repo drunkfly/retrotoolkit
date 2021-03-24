@@ -44,6 +44,8 @@ private:
     Q_SLOT void on_actionGenerateWAVFile_triggered();
     Q_SLOT void on_actionPlayWAVFile_triggered();
 
+    Q_SLOT void on_actionSettings_triggered();
+
     Q_SLOT void on_actionAbout_triggered();
 
     DISABLE_COPY(MainWindow);
