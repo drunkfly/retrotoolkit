@@ -2,6 +2,7 @@
 #define JNI_H
 
 #include <stdarg.h>
+#include <stdint.h>
 
 typedef uint8_t jboolean;
 typedef uint16_t jchar;

@@ -1,5 +1,5 @@
 #include "JVM.h"
-#include "Compiler/Java/JNI.h"
+#include "Compiler/Java/JStringList.h"
 #include "Compiler/CompilerError.h"
 #include <vector>
 #include <sstream>
@@ -18,6 +18,9 @@
 static JavaVM* jvm;
 static JNIEnv* env;
 static std::filesystem::path loadedDllPath;
+static jclass stringClassRef;
+static jclass compilerClassRef;
+static jmethodID compilerCompileMethodID;
 
 bool JVM::isLoaded()
 {
@@ -27,6 +30,11 @@ bool JVM::isLoaded()
 const std::filesystem::path& JVM::loadedDllPath()
 {
     return ::loadedDllPath;
+}
+
+JNIEnv* JVM::jniEnv()
+{
+    return env;
 }
 
 std::filesystem::path JVM::findJvmDll(const std::filesystem::path& jdkPath)
@@ -85,14 +93,14 @@ void JVM::load(std::filesystem::path dllPath)
             std::stringstream ss;
             ss << "Unable to load library \"" << dllPath.string()
                 << "\" (code 0x" << std::hex << std::setw(8) << std::setfill('0') << dwLastError << ").";
-            throw CompilerError(nullptr, ss.str().c_str());
+            throw CompilerError(nullptr, ss.str());
         }
       #else
         jvmDll = dlopen(dllPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
         if (!jvmDll) {
             std::stringstream ss;
             ss << "Unable to load library \"" << dllPath.string() << "\": " << dlerror();
-            throw CompilerError(nullptr, ss.str().c_str());
+            throw CompilerError(nullptr, ss.str());
         }
       #endif
         ::loadedDllPath = std::move(dllPath);
@@ -167,4 +175,226 @@ void JVM::destroy()
       #endif
         jvmDll = nullptr;
     }
+
+    stringClassRef = nullptr;
+    compilerClassRef = nullptr;
+    compilerCompileMethodID = nullptr;
+}
+
+void JVM::throwIfException()
+{
+    if (!env->vtbl->ExceptionCheck(env))
+        return;
+
+    jthrowable throwable = env->vtbl->ExceptionOccurred(env);
+    env->vtbl->ExceptionClear(env);
+    if (!throwable)
+        throw CompilerError(nullptr, "Unknown Java exception.");
+
+    jstring throwableClassName = className(throwable);
+    if (!throwableClassName) {
+        env->vtbl->DeleteLocalRef(env, throwable);
+        throw CompilerError(nullptr, "Unknown Java exception.");
+    }
+
+    std::string classNameString = toUtf8(throwableClassName);
+    env->vtbl->DeleteLocalRef(env, throwableClassName);
+
+    size_t index = classNameString.rfind('.');
+    if (index != std::string::npos)
+        classNameString = classNameString.substr(index + 1);
+
+    jclass throwableClass = env->vtbl->GetObjectClass(env, throwable);
+    if (!throwableClass) {
+        env->vtbl->DeleteLocalRef(env, throwable);
+        throw CompilerError(nullptr, "Unknown Java exception.");
+    }
+
+    jmethodID throwableGetMessageMethod =
+        env->vtbl->GetMethodID(env, throwableClass, "getMessage", "()Ljava/lang/String;");
+    env->vtbl->DeleteLocalRef(env, throwableClass);
+    if (!throwableGetMessageMethod) {
+        env->vtbl->DeleteLocalRef(env, throwable);
+        std::stringstream ss;
+        ss << "JVM: " << classNameString;
+        throw CompilerError(nullptr, ss.str());
+    }
+
+    jstring message = (jstring)env->vtbl->CallObjectMethod(env, throwable, throwableGetMessageMethod);
+    if (!message) {
+        env->vtbl->DeleteLocalRef(env, throwable);
+        std::stringstream ss;
+        ss << "JVM: " << classNameString;
+        throw CompilerError(nullptr, ss.str());
+    }
+
+    std::string messageString = toUtf8(message);
+    env->vtbl->DeleteLocalRef(env, message);
+    env->vtbl->DeleteLocalRef(env, throwable);
+
+    std::stringstream ss;
+    ss << "JVM: " << classNameString << ": " << messageString;
+    throw CompilerError(nullptr, ss.str());
+}
+
+jstring JVM::toJString(const std::string& utf8)
+{
+    return env->vtbl->NewStringUTF(env, utf8.c_str());
+}
+
+jstring JVM::toJString(const std::wstring& str)
+{
+    size_t n = str.length();
+    if constexpr (sizeof(jchar) == sizeof(wchar_t))
+        return env->vtbl->NewString(env, reinterpret_cast<const jchar*>(str.c_str()), jint(n));
+    else {
+        std::unique_ptr<jchar[]> buf{new (std::nothrow) jchar[n]};
+        if (!buf.get())
+            return nullptr;
+        for (size_t i = 0; i < n; i++)
+            buf[i] = str[i];
+        return env->vtbl->NewString(env, buf.get(), n);
+    }
+}
+
+jstring JVM::toJString(const std::filesystem::path& str)
+{
+    return toJString(str.native());
+}
+
+std::string JVM::toUtf8(jstring str)
+{
+    if (!str)
+        return std::string();
+
+    jint length = env->vtbl->GetStringUTFLength(env, str);
+    if (length <= 0)
+        return std::string();
+
+    const char* utf = env->vtbl->GetStringUTFChars(env, str, nullptr);
+    if (!utf)
+        return std::string();
+
+    std::string result(utf, size_t(length));
+    env->vtbl->ReleaseStringUTFChars(env, str, utf);
+
+    return result;
+}
+
+std::wstring JVM::toWString(jstring str)
+{
+    if (!str)
+        return std::wstring();
+
+    jint length = env->vtbl->GetStringLength(env, str);
+    if (length <= 0)
+        return std::wstring();
+
+    const jchar* chars = env->vtbl->GetStringChars(env, str, nullptr);
+    if (!chars)
+        return std::wstring();
+
+    if constexpr (sizeof(jchar) == sizeof(wchar_t)) {
+        std::wstring result(reinterpret_cast<const wchar_t*>(chars), size_t(length));
+        env->vtbl->ReleaseStringChars(env, str, chars);
+        return result;
+    } else {
+        std::wstring result((size_t)length, 0);
+        for (jint i = 0; i < length; i++)
+            result[i] = wchar_t(chars[i]);
+        env->vtbl->ReleaseStringChars(env, str, chars);
+        return result;
+    }
+}
+
+std::filesystem::path JVM::toPath(jstring str)
+{
+    if constexpr (sizeof(std::filesystem::path::value_type) == sizeof(char))
+        return toUtf8(str);
+    else
+        return toWString(str);
+}
+
+jstring JVM::className(jobject obj)
+{
+    if (!obj)
+        return nullptr;
+
+    jclass objectClass = env->vtbl->GetObjectClass(env, obj);
+    if (!objectClass)
+        return nullptr;
+
+    jmethodID getClassMethod = env->vtbl->GetMethodID(env, objectClass, "getClass", "()Ljava/lang/Class;");
+    env->vtbl->DeleteLocalRef(env, objectClass);
+    if (!getClassMethod)
+        return nullptr;
+
+    jobject classObject = env->vtbl->CallObjectMethod(env, obj, getClassMethod);
+    if (!classObject)
+        return nullptr;
+
+    jclass classClass = env->vtbl->GetObjectClass(env, classObject);
+    if (!classClass) {
+        env->vtbl->DeleteLocalRef(env, classObject);
+        return nullptr;
+    }
+
+    jmethodID getNameMethod = env->vtbl->GetMethodID(env, classClass, "getName", "()Ljava/lang/String;");
+    env->vtbl->DeleteLocalRef(env, classClass);
+    if (!getNameMethod) {
+        env->vtbl->DeleteLocalRef(env, classObject);
+        return nullptr;
+    }
+
+    jstring name = (jstring)env->vtbl->CallObjectMethod(env, classObject, getNameMethod);
+    env->vtbl->DeleteLocalRef(env, classObject);
+
+    return name;
+}
+
+jclass JVM::stringClass()
+{
+    if (!stringClassRef) {
+        stringClassRef = env->vtbl->FindClass(env, "java/lang/String");
+        if (stringClassRef)
+            stringClassRef = env->vtbl->NewGlobalRef(env, stringClassRef);
+    }
+    return stringClassRef;
+}
+
+jclass JVM::compilerClass()
+{
+    if (!compilerClassRef) {
+        compilerClassRef = env->vtbl->FindClass(env, "com/sun/tools/javac/Main");
+        if (compilerClassRef)
+            compilerClassRef = env->vtbl->NewGlobalRef(env, compilerClassRef);
+    }
+    return compilerClassRef;
+}
+
+jmethodID JVM::compilerCompileMethod()
+{
+    if (!compilerCompileMethodID)
+        compilerCompileMethodID = env->vtbl->GetStaticMethodID(env, compilerClass(), "compile", "([Ljava/lang/String;)I");
+    return compilerCompileMethodID;
+}
+
+bool JVM::compile(const JStringList& args)
+{
+    jclass compilerClassRef = compilerClass();
+    if (!compilerClassRef)
+        return false;
+
+    jmethodID compilerCompileMethodID = compilerCompileMethod();
+    if (!compilerCompileMethodID)
+        return false;
+
+    jobjectArray argList = args.toJavaArray();
+    if (!argList)
+        return false;
+
+    jint result = env->vtbl->CallStaticIntMethod(env, compilerClassRef, compilerCompileMethodID, argList);
+    env->vtbl->DeleteLocalRef(env, argList);
+
+    return (!env->vtbl->ExceptionCheck(env) && result == 0);
 }

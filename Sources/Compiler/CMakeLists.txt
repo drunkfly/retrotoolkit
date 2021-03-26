@@ -40,6 +40,8 @@ add(Compiler
         Compression/Zx7Compressor.cpp
         Compression/Zx7Compressor.h
         Java/JNI.h
+        Java/JStringList.cpp
+        Java/JStringList.h
         Java/JVM.cpp
         Java/JVM.h
         Linker/CodeEmitter.cpp

@@ -1,6 +1,7 @@
 #include "Compiler.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/Java/JStringList.h"
 #include "Compiler/Java/JVM.h"
 #include "Compiler/Linker/Program.h"
 #include "Compiler/Linker/Linker.h"
@@ -107,7 +108,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     }
 
     int n = int(sourceFiles.size());
-    int total = n + 1 + nBasic + javaFiles.size() + (javaFiles.empty() ? 0 : 1) + project.outputs.size();
+    int total = n + 1 + nBasic + (javaFiles.empty() ? 0 : 2) + project.outputs.size();
     int count = 0;
 
     auto program = new (mHeap) Program();
@@ -128,11 +129,26 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             JVM::load(*mJvmDllPath);
         }
 
-        for (const auto& file : javaFiles) {
-            if (mListener)
-                mListener->compilerProgress(count++, total, file.fileID->name().string());
+        if (mListener)
+            mListener->compilerProgress(count++, total, "Compiling Java sources...");
 
-            // FIXME
+        JStringList list;
+        list.reserve(javaFiles.size() + 7);
+        list.add("-verbose");
+        list.add("-Xlint:all");
+        list.add("-g");
+        //list.add("-bootclasspath");
+        //list.add();
+        list.add("-sourcepath");
+        list.add(mProjectPath);
+        list.add("-d");
+        list.add(mOutputPath / "java");
+        for (const auto& file : javaFiles)
+            list.add(file.fileID->name());
+
+        if (!JVM::compile(list)) {
+            JVM::throwIfException();
+            throw CompilerError(nullptr, "Java compilation failed.");
         }
     }
 
