@@ -150,10 +150,14 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             mListener->compilerProgress(count++, total, "Compiling Java sources...");
 
         JStringList list;
-        list.reserve(javaFiles.size() + 11);
+        list.reserve(javaFiles.size() + 15);
         list.add("-verbose");
         list.add("-Xlint:all");
         list.add("-g");
+        list.add("-source");
+        list.add("1.8");
+        list.add("-target");
+        list.add("1.8");
         list.add("-bootclasspath");
         list.add(mResourcesPath / "RetroEngine.jar");
         list.add("-classpath");
@@ -163,7 +167,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         list.add("-d");
         list.add(mOutputPath / "java");
         for (const auto& file : javaFiles)
-            list.add(file.fileID->name());
+            list.add(file.fileID->path());
 
         if (!JVM::compile(list, mListener)) {
             JVM::throwIfException();
