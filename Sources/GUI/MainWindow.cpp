@@ -33,6 +33,8 @@ MainWindow::MainWindow()
     connect(mStatusLabel, &BuildStatusLabel::doubleClicked, this, [](const QString& file, int line) {
             /* FIXME */
         });
+
+    updateUi();
 }
 
 MainWindow::~MainWindow()

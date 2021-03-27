@@ -26,5 +26,7 @@ apt-get install \
     build-essential \
     cmake \
     qtmultimedia5-dev \
-    qt5-default
+    qt5-default \
+    openjdk-15-dbg \
+    openjdk-15-jdk
 ```

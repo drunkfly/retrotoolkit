@@ -57,12 +57,38 @@ std::filesystem::path JVM::findJvmDll(const std::filesystem::path& jdkPath)
     jvmDllPath = jdkPath / "bin/server/jvm.dll";
     if (std::filesystem::exists(jvmDllPath) && std::filesystem::is_regular_file(jvmDllPath))
         return jvmDllPath;
+  #elif defined(__linux__)
+    if (sizeof(void*) == 4) {
+        jvmDllPath = jdkPath / "jre/lib/i386/client/libjvm.so";
+        if (std::filesystem::exists(jvmDllPath) && std::filesystem::is_regular_file(jvmDllPath))
+            return jvmDllPath;
+
+        jvmDllPath = jdkPath / "jre/lib/i386/server/libjvm.so";
+        if (std::filesystem::exists(jvmDllPath) && std::filesystem::is_regular_file(jvmDllPath))
+            return jvmDllPath;
+    } else if (sizeof(void*) == 8) {
+        jvmDllPath = jdkPath / "jre/lib/amd64/client/libjvm.so";
+        if (std::filesystem::exists(jvmDllPath) && std::filesystem::is_regular_file(jvmDllPath))
+            return jvmDllPath;
+
+        jvmDllPath = jdkPath / "jre/lib/amd64/server/libjvm.so";
+        if (std::filesystem::exists(jvmDllPath) && std::filesystem::is_regular_file(jvmDllPath))
+            return jvmDllPath;
+    }
+
+    jvmDllPath = jdkPath / "lib/client/libjvm.so";
+    if (std::filesystem::exists(jvmDllPath) && std::filesystem::is_regular_file(jvmDllPath))
+        return jvmDllPath;
+
+    jvmDllPath = jdkPath / "lib/server/libjvm.so";
+    if (std::filesystem::exists(jvmDllPath) && std::filesystem::is_regular_file(jvmDllPath))
+        return jvmDllPath;
   #endif
 
     // FIXME: Linux, MacOS
 
     std::stringstream ss;
-    ss << "Unable to find jvm.dll in \"" << jdkPath.string() << "\".";
+    ss << "Unable to find JVM shared library in \"" << jdkPath.string() << "\".";
     throw CompilerError(nullptr, ss.str());
 }
 
@@ -74,12 +100,16 @@ std::filesystem::path JVM::findJavaC(const std::filesystem::path& jdkPath)
     javacPath = jdkPath / "bin/javac.exe";
     if (std::filesystem::exists(javacPath) && std::filesystem::is_regular_file(javacPath))
         return javacPath;
+  #elif defined(__linux__)
+    javacPath = jdkPath / "bin/java";
+    if (std::filesystem::exists(javacPath) && std::filesystem::is_regular_file(javacPath))
+        return javacPath;
   #endif
 
     // FIXME: Linux, MacOS
 
     std::stringstream ss;
-    ss << "Unable to find javac.exe in \"" << jdkPath.string() << "\".";
+    ss << "Unable to find Java compiler executable in \"" << jdkPath.string() << "\".";
     throw CompilerError(nullptr, ss.str());
 }
 
