@@ -332,10 +332,10 @@ JNI_STRUCT_END()
 
 JNI_STRUCT_BEGIN(JavaVM, 3)
     jint            JNIFUNC(DestroyJavaVM)                  (JavaVM*);
-    jint            JNIFUNC(AttachCurrentThread)            (JavaVM*, void**, void*);
+    jint            JNIFUNC(AttachCurrentThread)            (JavaVM*, JNIEnv**, void*);
     jint            JNIFUNC(DetachCurrentThread)            (JavaVM*);
-    jint            JNIFUNC(GetEnv)                         (JavaVM*, void**, jint);
-    jint            JNIFUNC(AttachCurrentThreadAsDaemon)    (JavaVM*, void**, void*);
+    jint            JNIFUNC(GetEnv)                         (JavaVM*, JNIEnv**, jint);
+    jint            JNIFUNC(AttachCurrentThreadAsDaemon)    (JavaVM*, JNIEnv**, void*);
 JNI_STRUCT_END()
 
 #endif

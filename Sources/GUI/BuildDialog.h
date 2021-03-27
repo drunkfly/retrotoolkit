@@ -49,6 +49,7 @@ private:
     bool mEnableWav;
 
     void compilerProgress(int current, int total, const std::string& message) override;
+    void printMessage(const std::string& text) override;
 
     DISABLE_COPY(BuildThread);
 };

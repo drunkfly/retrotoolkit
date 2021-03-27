@@ -37,11 +37,21 @@ Compiler::Compiler(GCHeap* heap, ICompilerListener* listener)
     , mListener(listener)
     , mLinkerOutput(nullptr)
     , mEnableWav(false)
+    , mShouldDetachJVM(false)
 {
 }
 
 Compiler::~Compiler()
 {
+    if (mShouldDetachJVM) {
+        try {
+            JVM::detachCurrentThread();
+        } catch (const CompilerError& e) {
+            mListener->printMessage(e.message());
+        } catch (const std::exception& e) {
+            mListener->printMessage(e.what());
+        }
+    }
 }
 
 void Compiler::setJvmDllPath(std::filesystem::path path)
@@ -119,14 +129,20 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     // Compile java files
 
     if (!javaFiles.empty()) {
-        if (!JVM::isLoaded()) {
-            if (mListener)
-                mListener->compilerProgress(count++, total, "Initializing Java Virtual Machine...");
+        if (mListener)
+            mListener->compilerProgress(count++, total, "Initializing Java Virtual Machine...");
 
+        if (JVM::isLoaded()) {
+            if (!JVM::isAttached()) {
+                JVM::attachCurrentThread();
+                mShouldDetachJVM = true;
+            }
+        } else {
             if (!mJvmDllPath.has_value())
                 throw CompilerError(nullptr, "JDK path was not specified.");
 
             JVM::load(*mJvmDllPath);
+            mShouldDetachJVM = true;
         }
 
         if (mListener)

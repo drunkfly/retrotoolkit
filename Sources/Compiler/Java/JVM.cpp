@@ -20,6 +20,19 @@ static JNIEnv* env;
 static std::filesystem::path loadedDllPath;
 static jclass stringClassRef;
 
+static void printJniError(std::stringstream& ss, int r)
+{
+    switch (r) {
+        case JNI_ERR: ss << "JNI_ERR"; break;
+        case JNI_EDETACHED: ss << "JNI_EDETACHED"; break;
+        case JNI_EVERSION: ss << "JNI_EVERSION"; break;
+        case JNI_ENOMEM: ss << "JNI_ENOMEM"; break;
+        case JNI_EEXIST: ss << "JNI_EEXIST"; break;
+        case JNI_EINVAL: ss << "JNI_EINVAL"; break;
+        default: ss << "code " << r;
+    }
+}
+
 bool JVM::isLoaded()
 {
     return jvmDll || jvm || env;
@@ -99,7 +112,7 @@ std::filesystem::path JVM::findJavaC(const std::filesystem::path& jdkPath)
     if (std::filesystem::exists(javacPath) && std::filesystem::is_regular_file(javacPath))
         return javacPath;
   #elif defined(__linux__)
-    javacPath = jdkPath / "bin/java";
+    javacPath = jdkPath / "bin/javac";
     if (std::filesystem::exists(javacPath) && std::filesystem::is_regular_file(javacPath))
         return javacPath;
   #endif
@@ -173,15 +186,7 @@ void JVM::load(std::filesystem::path dllPath)
         if (r != JNI_OK) {
             std::stringstream ss;
             ss << "Unable to initialize Java Virtual Machine: ";
-            switch (r) {
-                case JNI_ERR: ss << "JNI_ERR"; break;
-                case JNI_EDETACHED: ss << "JNI_EDETACHED"; break;
-                case JNI_EVERSION: ss << "JNI_EVERSION"; break;
-                case JNI_ENOMEM: ss << "JNI_ENOMEM"; break;
-                case JNI_EEXIST: ss << "JNI_EEXIST"; break;
-                case JNI_EINVAL: ss << "JNI_EINVAL"; break;
-                default: ss << "code " << r;
-            }
+            printJniError(ss, r);
             throw CompilerError(nullptr, ss.str());
         }
     }
@@ -205,6 +210,40 @@ void JVM::destroy()
     }
 
     stringClassRef = nullptr;
+}
+
+bool JVM::isAttached()
+{
+    jint r = jvm->vtbl->GetEnv(jvm, &env, JNI_VERSION_1_4);
+    if (r != JNI_OK && r != JNI_EDETACHED) {
+        std::stringstream ss;
+        ss << "Unable to retrieve Java Virtual Machine environment: ";
+        printJniError(ss, r);
+        throw CompilerError(nullptr, ss.str());
+    }
+    return (r == JNI_OK);
+}
+
+void JVM::attachCurrentThread()
+{
+    jint r = jvm->vtbl->AttachCurrentThread(jvm, &env, nullptr);
+    if (r != JNI_OK) {
+        std::stringstream ss;
+        ss << "Unable to attach thread to Java Virtual Machine: ";
+        printJniError(ss, r);
+        throw CompilerError(nullptr, ss.str());
+    }
+}
+
+void JVM::detachCurrentThread()
+{
+    jint r = jvm->vtbl->DetachCurrentThread(jvm);
+    if (r != JNI_OK) {
+        std::stringstream ss;
+        ss << "Unable to detach thread from Java Virtual Machine: ";
+        printJniError(ss, r);
+        throw CompilerError(nullptr, ss.str());
+    }
 }
 
 void JVM::throwIfException()

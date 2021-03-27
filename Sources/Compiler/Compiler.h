@@ -16,6 +16,7 @@ public:
     virtual ~ICompilerListener() = default;
     virtual void checkCancelation() const = 0;
     virtual void compilerProgress(int current, int total, const std::string& message) = 0;
+    virtual void printMessage(const std::string& text) = 0;
 };
 
 class Compiler
@@ -42,6 +43,7 @@ private:
     std::filesystem::path mOutputPath;
     std::optional<std::filesystem::path> mGeneratedWavFile;
     bool mEnableWav;
+    bool mShouldDetachJVM;
 
     bool initSourceFile(SourceFile& sourceFile, FileType fileType, const std::filesystem::path& filePath);
 

@@ -21,6 +21,10 @@ public:
     static void load(std::filesystem::path dllPath);
     static void destroy();
 
+    static bool isAttached();
+    static void attachCurrentThread();
+    static void detachCurrentThread();
+
     static void throwIfException();
 
     static jstring toJString(const std::string& utf8);

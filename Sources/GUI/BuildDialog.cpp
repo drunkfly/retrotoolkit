@@ -77,6 +77,11 @@ void BuildThread::compilerProgress(int current, int total, const std::string& me
     emit progress(current, total, fromUtf8(message));
 }
 
+void BuildThread::printMessage(const std::string& text)
+{
+    emit message(fromUtf8(text));
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BuildDialog::BuildDialog(const QString& projectFile, std::string projectConfiguration, QWidget* parent)
