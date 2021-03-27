@@ -19,8 +19,6 @@ static JavaVM* jvm;
 static JNIEnv* env;
 static std::filesystem::path loadedDllPath;
 static jclass stringClassRef;
-static jclass compilerClassRef;
-static jmethodID compilerCompileMethodID;
 
 bool JVM::isLoaded()
 {
@@ -207,8 +205,6 @@ void JVM::destroy()
     }
 
     stringClassRef = nullptr;
-    compilerClassRef = nullptr;
-    compilerCompileMethodID = nullptr;
 }
 
 void JVM::throwIfException()
@@ -392,39 +388,28 @@ jclass JVM::stringClass()
     return stringClassRef;
 }
 
-jclass JVM::compilerClass()
-{
-    if (!compilerClassRef) {
-        compilerClassRef = env->vtbl->FindClass(env, "com/sun/tools/javac/Main");
-        if (compilerClassRef)
-            compilerClassRef = env->vtbl->NewGlobalRef(env, compilerClassRef);
-    }
-    return compilerClassRef;
-}
-
-jmethodID JVM::compilerCompileMethod()
-{
-    if (!compilerCompileMethodID)
-        compilerCompileMethodID = env->vtbl->GetStaticMethodID(env, compilerClass(), "compile", "([Ljava/lang/String;)I");
-    return compilerCompileMethodID;
-}
-
 bool JVM::compile(const JStringList& args)
 {
-    jclass compilerClassRef = compilerClass();
-    if (!compilerClassRef)
+    jclass compilerClass = env->vtbl->FindClass(env, "com/sun/tools/javac/Main");
+    if (!compilerClass)
         return false;
 
-    jmethodID compilerCompileMethodID = compilerCompileMethod();
-    if (!compilerCompileMethodID)
+    jmethodID compileMethodID = env->vtbl->GetStaticMethodID(env, compilerClass, "compile", "([Ljava/lang/String;)I");
+    if (!compileMethodID) {
+        env->vtbl->DeleteLocalRef(env, compilerClass);
         return false;
+    }
 
     jobjectArray argList = args.toJavaArray();
-    if (!argList)
+    if (!argList) {
+        env->vtbl->DeleteLocalRef(env, compilerClass);
         return false;
+    }
 
-    jint result = env->vtbl->CallStaticIntMethod(env, compilerClassRef, compilerCompileMethodID, argList);
+    jint result = env->vtbl->CallStaticIntMethod(env, compilerClass, compileMethodID, argList);
+
     env->vtbl->DeleteLocalRef(env, argList);
+    env->vtbl->DeleteLocalRef(env, compilerClass);
 
     return (!env->vtbl->ExceptionCheck(env) && result == 0);
 }

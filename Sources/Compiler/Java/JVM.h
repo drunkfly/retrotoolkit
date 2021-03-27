@@ -35,9 +35,6 @@ public:
 
     static jclass stringClass();
 
-    static jclass compilerClass();
-    static jmethodID compilerCompileMethod();
-
     static bool compile(const JStringList& args);
 
 private:
