@@ -55,7 +55,7 @@ void AssemblerContextIf::validateAtPop(SourceLocation* location)
 
     if (mThenPrefixLocation && mElsePrefixLocation) {
         std::stringstream ss;
-        ss << '$if' << allocEphemeralLabelCounter() << "$(" << mThenPrefix << "||" << mElsePrefix << ')';
+        ss << "$if" << allocEphemeralLabelCounter() << "$(" << mThenPrefix << "||" << mElsePrefix << ')';
         prev()->setLocalLabelsPrefix(location, ss.str());
     }
 

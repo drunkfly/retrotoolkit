@@ -339,7 +339,8 @@ TEST_CASE("deeper circular reference", "[equ]")
     DataBlob actual = assemble(errorConsumer, source);
     REQUIRE((errorConsumer.errorMessage() == "source:2: hit circular dependency while evaluating expression." ||
              errorConsumer.errorMessage() == "source:3: hit circular dependency while evaluating expression." ||
-             errorConsumer.errorMessage() == "source:4: hit circular dependency while evaluating expression."));
+             errorConsumer.errorMessage() == "source:4: hit circular dependency while evaluating expression." ||
+             errorConsumer.errorMessage() == "source:5: hit circular dependency while evaluating expression."));
 }
 
 TEST_CASE("'$' in equ", "[equ]")

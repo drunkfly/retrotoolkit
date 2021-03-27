@@ -4,6 +4,10 @@ if(MSVC)
         /wd4311         # 'type cast': pointer truncation
         /wd4804         # '-': unsafe use of type 'bool' in operation
         )
+else()
+    add_definitions(
+        -Wno-pointer-to-int-cast
+        )
 endif()
 
 include(CheckIncludeFile)

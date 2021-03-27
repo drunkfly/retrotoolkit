@@ -3,6 +3,7 @@
 
 #include "Common/Common.h"
 #include "Common/StringSet.h"
+#include <string>
 
 class GCHeap;
 class Token;

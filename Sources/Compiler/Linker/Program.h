@@ -3,6 +3,7 @@
 
 #include "Common/GC.h"
 #include <unordered_map>
+#include <string>
 
 class SymbolTable;
 class ProgramSection;

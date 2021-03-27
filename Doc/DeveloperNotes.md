@@ -17,3 +17,14 @@ after heap is destroyed.
 Also, beware that, by default, destructors for such objects are not called. If you need destructor to be called,
 call `registerFinalizer()` method from the constructor (it can safely be called multiple times, e.g. from
 constructors of both child and parent classes).
+
+Required packages for Linux build
+---------------------------------
+
+```
+apt-get install \
+    build-essential \
+    cmake \
+    qtmultimedia5-dev \
+    qt5-default
+```

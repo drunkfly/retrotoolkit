@@ -5,6 +5,7 @@
 #include "Compiler/Output/IOutputWriter.h"
 #include <memory>
 #include <filesystem>
+#include <vector>
 #include <optional>
 
 class TRDOSWriter final : public IOutputWriter

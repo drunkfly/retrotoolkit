@@ -279,6 +279,8 @@ macro(add target type)
         qt_install_libraries("${target}" "${ARG_OUTPUT_DIR}" ${ARG_USES})
     endif()
 
+    target_link_libraries("${target}" PUBLIC ${CMAKE_DL_LIBS})
+
     #########################################################################################################
     ## Source files
 
