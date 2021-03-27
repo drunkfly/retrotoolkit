@@ -1,0 +1,43 @@
+<project name="java" default="build" basedir=".">
+
+    <target name="build">
+        <mkdir dir="Build/Classpath" />
+        <mkdir dir="Build/Tools" />
+
+        <javac includeantruntime="false"
+               srcdir="Classpath"
+               destdir="Build/Classpath"
+               bootclasspath="Classpath"
+               debug="on"
+               source="1.7"
+               target="1.7"
+               >
+            <compilerarg value="-Xlint:all" />
+        </javac>
+        <javac includeantruntime="false"
+               srcdir="Tools"
+               destdir="Build/Tools"
+               debug="on"
+               source="1.7"
+               target="1.7"
+               >
+            <compilerarg value="-Xlint:all" />
+        </javac>
+
+        <jar destfile="Build/RetroEngine.jar"
+             basedir="Build/Classpath"
+             includes="**"
+            >
+        </jar>
+        <jar destfile="Build/RetroTools.jar"
+             basedir="Build/Tools"
+             includes="**"
+            >
+        </jar>
+    </target>
+
+    <target name="clean">
+        <delete dir="Build" />
+    </target>
+
+</project>

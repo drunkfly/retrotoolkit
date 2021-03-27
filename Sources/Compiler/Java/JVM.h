@@ -35,6 +35,8 @@ public:
     static std::wstring toWString(jstring str);
     static std::filesystem::path toPath(jstring str);
 
+    static jobject makeGlobalRef(jobject local);
+
     static jstring className(jobject obj);
 
     static jclass stringClass();
@@ -42,6 +44,8 @@ public:
     static bool compile(const JStringList& args);
 
 private:
+    static void ensureNecessaryClassesLoaded();
+
     DISABLE_COPY(JVM);
 };
 

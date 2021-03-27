@@ -32,10 +32,11 @@ namespace
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Compiler::Compiler(GCHeap* heap, ICompilerListener* listener)
+Compiler::Compiler(GCHeap* heap, std::filesystem::path resourcesPath, ICompilerListener* listener)
     : mHeap(heap)
     , mListener(listener)
     , mLinkerOutput(nullptr)
+    , mResourcesPath(std::move(resourcesPath))
     , mEnableWav(false)
     , mShouldDetachJVM(false)
 {
@@ -149,12 +150,14 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             mListener->compilerProgress(count++, total, "Compiling Java sources...");
 
         JStringList list;
-        list.reserve(javaFiles.size() + 7);
+        list.reserve(javaFiles.size() + 11);
         list.add("-verbose");
         list.add("-Xlint:all");
         list.add("-g");
-        //list.add("-bootclasspath");
-        //list.add();
+        list.add("-bootclasspath");
+        list.add(mResourcesPath / "RetroEngine.jar");
+        list.add("-classpath");
+        list.add(mResourcesPath / "RetroTools.jar");
         list.add("-sourcepath");
         list.add(mProjectPath);
         list.add("-d");

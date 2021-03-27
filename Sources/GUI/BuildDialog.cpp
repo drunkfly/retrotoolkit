@@ -33,7 +33,7 @@ BuildThread::~BuildThread()
 void BuildThread::compile()
 {
     try {
-        Compiler compiler(mHeap, this);
+        Compiler compiler(mHeap, toPath(QApplication::applicationDirPath()), this);
         try {
             Settings settings;
             QString jdkPath = settings.jdkPath;

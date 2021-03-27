@@ -8,8 +8,12 @@ add(Compiler
         AudioFile
         FuseUtils
         LibSpectrum
+        JavaOutputWriter
         ZX7
         LZSA
+    INSTALL_RESOURCES
+        ../Java/Build/RetroEngine.jar
+        ../Java/Build/RetroTools.jar
     SOURCES
         Assembler/AssemblerContext.cpp
         Assembler/AssemblerContext.h

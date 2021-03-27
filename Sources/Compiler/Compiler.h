@@ -22,7 +22,7 @@ public:
 class Compiler
 {
 public:
-    explicit Compiler(GCHeap* heap, ICompilerListener* listener = nullptr);
+    Compiler(GCHeap* heap, std::filesystem::path resourcesPath, ICompilerListener* listener = nullptr);
     ~Compiler();
 
     void setJvmDllPath(std::filesystem::path path);
@@ -41,6 +41,7 @@ private:
     std::optional<std::filesystem::path> mJvmDllPath;
     std::filesystem::path mProjectPath;
     std::filesystem::path mOutputPath;
+    std::filesystem::path mResourcesPath;
     std::optional<std::filesystem::path> mGeneratedWavFile;
     bool mEnableWav;
     bool mShouldDetachJVM;

@@ -131,6 +131,19 @@ macro(qt_install_libraries target outputDir)
     endforeach()
 endmacro()
 
+macro(install_resources target outputDir)
+    foreach(file ${ARGN})
+        get_filename_component(name "${file}" NAME)
+        if(MSVC)
+            foreach(config ${CMAKE_CONFIGURATION_TYPES})
+                configure_file("${file}" "${outputDir}/${config}/${name}" COPYONLY)
+            endforeach()
+        else()
+            configure_file("${file}" "${outputDir}/${name}" COPYONLY)
+        endif()
+    endforeach()
+endmacro()
+
 #######################################################################################################################
 
 macro(add target type)
@@ -151,6 +164,7 @@ macro(add target type)
         "DEFINES"
         "PRIVATE_INCLUDE_DIRS"
         "INCLUDE_DIRS"
+        "INSTALL_RESOURCES"
         )
 
     cmake_parse_arguments(ARG "${noValue}" "${oneValue}" "${multiValue}" ${ARGN})
@@ -280,6 +294,13 @@ macro(add target type)
     endif()
 
     target_link_libraries("${target}" PUBLIC ${CMAKE_DL_LIBS})
+
+    #########################################################################################################
+    ## Install files
+
+    if(ARG_INSTALL_RESOURCES)
+        install_resources("${target}" "${ARG_OUTPUT_DIR}" ${ARG_INSTALL_RESOURCES})
+    endif()
 
     #########################################################################################################
     ## Source files

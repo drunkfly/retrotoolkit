@@ -15,10 +15,19 @@
  static void* jvmDll;
 #endif
 
+extern const unsigned JavaOutputWriter_len;
+extern const unsigned char JavaOutputWriter[];
+
 static JavaVM* jvm;
 static JNIEnv* env;
 static std::filesystem::path loadedDllPath;
 static jclass stringClassRef;
+static jclass outputWriterClassRef;
+static jobject outputWriterRef;
+static jclass printWriterClassRef;
+static jobject printWriterRef;
+static jclass compilerClassRef;
+static jmethodID compilerMethodID;
 
 static void printJniError(std::stringstream& ss, int r)
 {
@@ -190,6 +199,8 @@ void JVM::load(std::filesystem::path dllPath)
             throw CompilerError(nullptr, ss.str());
         }
     }
+
+    ensureNecessaryClassesLoaded();
 }
 
 void JVM::destroy()
@@ -210,6 +221,12 @@ void JVM::destroy()
     }
 
     stringClassRef = nullptr;
+    outputWriterClassRef = nullptr;
+    outputWriterRef = nullptr;
+    printWriterClassRef = nullptr;
+    printWriterRef = nullptr;
+    compilerClassRef = nullptr;
+    compilerMethodID = nullptr;
 }
 
 bool JVM::isAttached()
@@ -232,6 +249,13 @@ void JVM::attachCurrentThread()
         ss << "Unable to attach thread to Java Virtual Machine: ";
         printJniError(ss, r);
         throw CompilerError(nullptr, ss.str());
+    }
+
+    try {
+        ensureNecessaryClassesLoaded();
+    } catch (...) {
+        detachCurrentThread();
+        throw;
     }
 }
 
@@ -380,6 +404,17 @@ std::filesystem::path JVM::toPath(jstring str)
         return toWString(str);
 }
 
+jobject JVM::makeGlobalRef(jobject local)
+{
+    if (!local)
+        return nullptr;
+
+    jobject global = env->vtbl->NewGlobalRef(env, local);
+    env->vtbl->DeleteLocalRef(env, local);
+
+    return global;
+}
+
 jstring JVM::className(jobject obj)
 {
     if (!obj)
@@ -419,36 +454,91 @@ jstring JVM::className(jobject obj)
 
 jclass JVM::stringClass()
 {
-    if (!stringClassRef) {
-        stringClassRef = env->vtbl->FindClass(env, "java/lang/String");
-        if (stringClassRef)
-            stringClassRef = env->vtbl->NewGlobalRef(env, stringClassRef);
-    }
     return stringClassRef;
 }
 
 bool JVM::compile(const JStringList& args)
 {
-    jclass compilerClass = env->vtbl->FindClass(env, "com/sun/tools/javac/Main");
-    if (!compilerClass)
-        return false;
-
-    jmethodID compileMethodID = env->vtbl->GetStaticMethodID(env, compilerClass, "compile", "([Ljava/lang/String;)I");
-    if (!compileMethodID) {
-        env->vtbl->DeleteLocalRef(env, compilerClass);
-        return false;
-    }
-
     jobjectArray argList = args.toJavaArray();
-    if (!argList) {
-        env->vtbl->DeleteLocalRef(env, compilerClass);
+    if (!argList)
         return false;
-    }
 
-    jint result = env->vtbl->CallStaticIntMethod(env, compilerClass, compileMethodID, argList);
-
+    jint result = env->vtbl->CallStaticIntMethod(env, compilerClassRef, compilerMethodID, argList, printWriterRef);
     env->vtbl->DeleteLocalRef(env, argList);
-    env->vtbl->DeleteLocalRef(env, compilerClass);
 
     return (!env->vtbl->ExceptionCheck(env) && result == 0);
+}
+
+void JVM::ensureNecessaryClassesLoaded()
+{
+    if (!stringClassRef) {
+        stringClassRef = makeGlobalRef(env->vtbl->FindClass(env, "java/lang/String"));
+        if (!stringClassRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve class \"java.lang.String\".");
+        }
+    }
+
+    if (!outputWriterClassRef) {
+        auto p = reinterpret_cast<const jbyte*>(JavaOutputWriter);
+        outputWriterClassRef =
+            makeGlobalRef(env->vtbl->DefineClass(env, "drunkfly/Output", nullptr, p, JavaOutputWriter_len));
+        if (!outputWriterClassRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.Output\".");
+        }
+    }
+
+    if (!outputWriterRef) {
+        jmethodID constructorID = env->vtbl->GetMethodID(env, outputWriterClassRef, "<init>", "()V");
+        if (!constructorID) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve constructor of class \"drunkfly.Output\".");
+        }
+
+        outputWriterRef = makeGlobalRef(env->vtbl->NewObject(env, outputWriterClassRef, constructorID));
+        if (!outputWriterRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to construct instance of class \"drunkfly.Output\".");
+        }
+    }
+
+    if (!printWriterClassRef) {
+        printWriterClassRef = makeGlobalRef(env->vtbl->FindClass(env, "java/io/PrintWriter"));
+        if (!printWriterClassRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve class \"java.io.PrintWriter\".");
+        }
+    }
+
+    if (!printWriterRef) {
+        jmethodID constructorID = env->vtbl->GetMethodID(env, printWriterClassRef, "<init>", "(Ljava/io/Writer;)V");
+        if (!constructorID) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve constructor of class \"java.io.PrintWriter\".");
+        }
+
+        printWriterRef = makeGlobalRef(env->vtbl->NewObject(env, printWriterClassRef, constructorID, outputWriterRef));
+        if (!printWriterRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to construct instance of class \"java.io.PrintWriter\".");
+        }
+    }
+
+    if (!compilerClassRef) {
+        compilerClassRef = env->vtbl->FindClass(env, "com/sun/tools/javac/Main");
+        if (!compilerClassRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve class \"com.sun.tools.javac.Main\".");
+        }
+    }
+
+    if (!compilerMethodID) {
+        compilerMethodID = env->vtbl->GetStaticMethodID(env,
+            compilerClassRef, "compile", "([Ljava/lang/String;Ljava/io/PrintWriter;)I");
+        if (!compilerMethodID) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to find method \"compile\" in class \"com.sun.tools.javac.Main\".");
+        }
+    }
 }
