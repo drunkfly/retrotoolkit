@@ -88,11 +88,24 @@ bool MainWindow::buildProject(bool generateWav)
 
     BuildDialog dlg(*mProjectFile, comboSelectedItem(mConfigCombo).toByteArray().toStdString(), this);
     dlg.setEnableWav(generateWav);
+
     connect(&dlg, &BuildDialog::success, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::canceled, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::failure, mStatusLabel, &BuildStatusLabel::setBuildError);
-    connect(&dlg, &BuildDialog::message, this, [this](const QString& message) {
-            mUi->outputWidget->print(message);
+
+    auto flush = [this]{
+            if (mUi->outputWidget->flush(false)) {
+                mUi->outputDockWidget->show();
+                mUi->outputDockWidget->raise();
+            }
+        };
+
+    connect(&dlg, &BuildDialog::success, this, flush);
+    connect(&dlg, &BuildDialog::canceled, this, flush);
+    connect(&dlg, &BuildDialog::failure, this, flush);
+
+    connect(&dlg, &BuildDialog::message, this, [this](std::string message) {
+            mUi->outputWidget->print(std::move(message));
             mUi->outputDockWidget->show();
             mUi->outputDockWidget->raise();
         });

@@ -165,7 +165,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         for (const auto& file : javaFiles)
             list.add(file.fileID->name());
 
-        if (!JVM::compile(list)) {
+        if (!JVM::compile(list, mListener)) {
             JVM::throwIfException();
             throw CompilerError(nullptr, "Java compilation failed.");
         }

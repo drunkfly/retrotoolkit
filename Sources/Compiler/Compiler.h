@@ -16,7 +16,7 @@ public:
     virtual ~ICompilerListener() = default;
     virtual void checkCancelation() const = 0;
     virtual void compilerProgress(int current, int total, const std::string& message) = 0;
-    virtual void printMessage(const std::string& text) = 0;
+    virtual void printMessage(std::string text) = 0;
 };
 
 class Compiler

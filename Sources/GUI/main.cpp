@@ -1,5 +1,8 @@
 #include "GUI/MainWindow.h"
+#include <string>
 #include <QApplication>
+
+Q_DECLARE_METATYPE(std::string);
 
 int main(int argc, char** argv)
 {
@@ -9,6 +12,8 @@ int main(int argc, char** argv)
     QApplication::setOrganizationDomain(QStringLiteral("drunkfly.team"));
     QApplication::setApplicationName(QStringLiteral("RetroToolkit"));
     QApplication::setApplicationVersion(QStringLiteral("1.0"));
+
+    qRegisterMetaType<std::string>();
 
     QApplication app(argc, argv);
     MainWindow mainWindow;

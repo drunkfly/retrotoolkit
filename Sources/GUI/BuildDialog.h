@@ -33,7 +33,7 @@ signals:
     void success();
     void failure(QString file, int line, QString message);
     void progress(int current, int total, QString message);
-    void message(QString message);
+    void message(std::string message);
     void canceled();
 
 protected:
@@ -49,7 +49,7 @@ private:
     bool mEnableWav;
 
     void compilerProgress(int current, int total, const std::string& message) override;
-    void printMessage(const std::string& text) override;
+    void printMessage(std::string text) override;
 
     DISABLE_COPY(BuildThread);
 };
@@ -72,7 +72,7 @@ public:
 signals:
     void success();
     void failure(QString file, int line, QString message);
-    void message(QString message);
+    void message(std::string message);
     void canceled();
 
 protected:

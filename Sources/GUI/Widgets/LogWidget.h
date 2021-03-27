@@ -3,6 +3,8 @@
 
 #include "Common/Common.h"
 #include <QPlainTextEdit>
+#include <string>
+#include <vector>
 
 class LogWidget : public QPlainTextEdit
 {
@@ -12,9 +14,15 @@ public:
     explicit LogWidget(QWidget* parent = nullptr);
     ~LogWidget() override;
 
-    void print(const char* message);
+    void clear();
+
     void print(const std::string& message);
-    void print(const QString& message);
+    bool flush(bool force = false);
+
+    void println(const QString& message);
+
+private:
+    std::vector<char> mBuffer;
 
     DISABLE_COPY(LogWidget);
 };

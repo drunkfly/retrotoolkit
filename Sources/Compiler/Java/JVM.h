@@ -6,6 +6,7 @@
 #include <filesystem>
 
 class JStringList;
+class ICompilerListener;
 
 class JVM
 {
@@ -41,9 +42,11 @@ public:
 
     static jclass stringClass();
 
-    static bool compile(const JStringList& args);
+    static bool compile(const JStringList& args, ICompilerListener* listener);
 
 private:
+    static void drunkfly_Output_print(JNIEnv* env, jclass, jstring message);
+
     static void ensureNecessaryClassesLoaded();
 
     DISABLE_COPY(JVM);

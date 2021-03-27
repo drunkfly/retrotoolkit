@@ -1,5 +1,6 @@
 #include "JVM.h"
 #include "Compiler/Java/JStringList.h"
+#include "Compiler/Compiler.h"
 #include "Compiler/CompilerError.h"
 #include <vector>
 #include <sstream>
@@ -23,11 +24,13 @@ static JNIEnv* env;
 static std::filesystem::path loadedDllPath;
 static jclass stringClassRef;
 static jclass outputWriterClassRef;
+static bool outputWriterMethodsRegistered;
 static jobject outputWriterRef;
 static jclass printWriterClassRef;
 static jobject printWriterRef;
 static jclass compilerClassRef;
 static jmethodID compilerMethodID;
+static ICompilerListener* compilerListener;
 
 static void printJniError(std::stringstream& ss, int r)
 {
@@ -222,6 +225,7 @@ void JVM::destroy()
 
     stringClassRef = nullptr;
     outputWriterClassRef = nullptr;
+    outputWriterMethodsRegistered = false;
     outputWriterRef = nullptr;
     printWriterClassRef = nullptr;
     printWriterRef = nullptr;
@@ -457,16 +461,26 @@ jclass JVM::stringClass()
     return stringClassRef;
 }
 
-bool JVM::compile(const JStringList& args)
+bool JVM::compile(const JStringList& args, ICompilerListener* listener)
 {
     jobjectArray argList = args.toJavaArray();
     if (!argList)
         return false;
 
+    compilerListener = listener;
     jint result = env->vtbl->CallStaticIntMethod(env, compilerClassRef, compilerMethodID, argList, printWriterRef);
+    compilerListener = nullptr;
+
     env->vtbl->DeleteLocalRef(env, argList);
 
     return (!env->vtbl->ExceptionCheck(env) && result == 0);
+}
+
+void JVM::drunkfly_Output_print(JNIEnv* env, jclass, jstring message)
+{
+    assert(compilerListener);
+    if (compilerListener)
+        compilerListener->printMessage(toUtf8(message));
 }
 
 void JVM::ensureNecessaryClassesLoaded()
@@ -487,6 +501,19 @@ void JVM::ensureNecessaryClassesLoaded()
             throwIfException();
             throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.Output\".");
         }
+    }
+
+    if (!outputWriterMethodsRegistered) {
+        const JNINativeMethod method = { "print", "(Ljava/lang/String;)V", drunkfly_Output_print };
+        jint r = env->vtbl->RegisterNatives(env, outputWriterClassRef, &method, 1);
+        if (r != JNI_OK) {
+            std::stringstream ss;
+            ss << "Unable to register method \"print\" for class \"drunkfly.Output\": ";
+            printJniError(ss, r);
+            throw CompilerError(nullptr, ss.str());
+        }
+
+        outputWriterMethodsRegistered = true;
     }
 
     if (!outputWriterRef) {
