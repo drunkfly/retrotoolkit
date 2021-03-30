@@ -1,12 +1,7 @@
 #ifndef COMPILER_OUTPUT_TRDOSWRITER_H
 #define COMPILER_OUTPUT_TRDOSWRITER_H
 
-#include "Common/Common.h"
 #include "Compiler/Output/IOutputWriter.h"
-#include <memory>
-#include <filesystem>
-#include <vector>
-#include <optional>
 
 class TRDOSWriter final : public IOutputWriter
 {

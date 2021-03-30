@@ -2,9 +2,6 @@
 #define COMPILER_TREE_SYMBOL_H
 
 #include "Common/GC.h"
-#include <string>
-#include <vector>
-#include <memory>
 
 class Expr;
 class SourceLocation;

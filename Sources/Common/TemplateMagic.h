@@ -1,10 +1,7 @@
 #ifndef COMMON_UINT8ARRAY_H
 #define COMMON_UINT8ARRAY_H
 
-#include <utility>
-#include <array>
-#include <stddef.h>
-#include <stdint.h>
+#include "Common/Common.h"
 
 template <typename T, size_t N> struct ArrayType { enum { Size = N }; };
 template <typename T, size_t N> constexpr ArrayType<T, N> arrayType(const T (&array)[N]) { return ArrayType<T, N>(); }

@@ -2,9 +2,6 @@
 #define COMPILER_LINKER_CODEEMITTER_H
 
 #include "Common/Common.h"
-#include <string>
-#include <optional>
-#include <stdint.h>
 
 class SourceLocation;
 enum class Compression;

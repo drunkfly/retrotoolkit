@@ -3,7 +3,6 @@
 
 #include "Compiler/Linker/CodeEmitter.h"
 #include "Compiler/Linker/DebugInformation.h"
-#include <vector>
 
 class CodeEmitterUncompressed : public CodeEmitter
 {

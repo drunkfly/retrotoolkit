@@ -1,6 +1,5 @@
 #include "Exception.h"
 #include "GUI/Util/Localization.h"
-#include <QMessageBox>
 
 Exception::Exception()
     : Exception(tr("Unhandled C++ exception (no additional information available)"))

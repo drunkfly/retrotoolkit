@@ -2,8 +2,6 @@
 #define COMPILER_COMPRESSION_COMPRESSOR_H
 
 #include "Compiler/Compression/Compression.h"
-#include <vector>
-#include <memory>
 
 class SourceLocation;
 

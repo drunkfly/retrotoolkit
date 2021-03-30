@@ -112,3 +112,7 @@ add(Compiler
         Token.cpp
         Token.h
     )
+
+target_precompile_headers(Compiler
+    REUSE_FROM Common
+    )

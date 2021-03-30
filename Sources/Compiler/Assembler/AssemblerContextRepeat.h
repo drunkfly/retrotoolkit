@@ -2,7 +2,6 @@
 #define COMPILER_ASSEMBLER_ASSEMBLERCONTEXTREPEAT_H
 
 #include "Compiler/Assembler/AssemblerContext.h"
-#include <vector>
 
 class Expr;
 class MacroRepeat;

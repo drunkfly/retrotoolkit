@@ -11,11 +11,6 @@
 #include "Compiler/Project.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "ui_MainWindow.h"
-#include <QProcess>
-#include <QMessageBox>
-#include <QFileInfo>
-#include <QFileDialog>
-#include <QComboBox>
 
 MainWindow::MainWindow()
     : mUi(new Ui_MainWindow)

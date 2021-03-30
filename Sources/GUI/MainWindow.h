@@ -1,11 +1,8 @@
 #ifndef GUI_MAINWINDOW_H
 #define GUI_MAINWINDOW_H
 
-#include "Common/Common.h"
+#include "GUI/Common.h"
 #include <QMainWindow>
-#include <memory>
-#include <filesystem>
-#include <optional>
 
 class QComboBox;
 class Project;

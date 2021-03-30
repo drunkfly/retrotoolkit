@@ -1,11 +1,8 @@
 #ifndef GUI_BUILDDIALOG_H
 #define GUI_BUILDDIALOG_H
 
-#include "Common/Common.h"
-#include "Common/GC.h"
+#include "GUI/Common.h"
 #include "Compiler/Compiler.h"
-#include <QDialog>
-#include <memory>
 
 class QThread;
 class CompiledOutput;

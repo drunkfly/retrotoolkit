@@ -1,10 +1,7 @@
 #ifndef GUI_WIDGETS_LOGWIDGET_H
 #define GUI_WIDGETS_LOGWIDGET_H
 
-#include "Common/Common.h"
-#include <QPlainTextEdit>
-#include <string>
-#include <vector>
+#include "GUI/Common.h"
 
 class LogWidget : public QPlainTextEdit
 {

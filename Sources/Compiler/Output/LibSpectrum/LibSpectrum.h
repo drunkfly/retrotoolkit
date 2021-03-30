@@ -2,9 +2,6 @@
 #define COMPILER_OUTPUT_LIBSPECTRUM_LIBSPECTRUM_H
 
 #include "Common/Common.h"
-#include <mutex>
-#include <vector>
-#include <string>
 
 extern "C" {
 #include <libspectrum.h>

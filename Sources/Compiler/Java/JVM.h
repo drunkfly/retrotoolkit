@@ -1,9 +1,7 @@
 #ifndef JVM_H
 #define JVM_H
 
-#include "Common/Common.h"
 #include "Compiler/Java/JNI.h"
-#include <filesystem>
 
 class JStringList;
 class ICompilerListener;

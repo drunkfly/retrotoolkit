@@ -2,7 +2,6 @@
 #define COMPILER_ASSEMBLER_DATADIRECTIVES_H
 
 #include "Compiler/Assembler/Instruction.h"
-#include <optional>
 
 class Expr;
 

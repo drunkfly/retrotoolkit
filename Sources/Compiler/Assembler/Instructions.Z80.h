@@ -6,8 +6,6 @@
 #include "Compiler/Assembler/Instruction.h"
 #include "Common/StringSet.h"
 #include "Common/TemplateMagic.h"
-#include <sstream>
-#include <stdint.h>
 
 namespace Z80
 {

@@ -1,13 +1,7 @@
 #ifndef COMPILER_PROJECT_H
 #define COMPILER_PROJECT_H
 
-#include "Common/Common.h"
 #include "Compiler/Compression/Compression.h"
-#include <string>
-#include <vector>
-#include <memory>
-#include <optional>
-#include <filesystem>
 
 class Expr;
 class SymbolTable;

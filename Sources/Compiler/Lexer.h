@@ -1,9 +1,7 @@
 #ifndef COMPILER_LEXER_H
 #define COMPILER_LEXER_H
 
-#include "Common/Common.h"
 #include "Compiler/Token.h"
-#include <filesystem>
 
 class FileID;
 

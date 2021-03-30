@@ -1,7 +1,7 @@
 #ifndef COMMON_STRINGS_H
 #define COMMON_STRINGS_H
 
-#include <string>
+#include "Common/Common.h"
 
 std::string toLower(std::string str);
 

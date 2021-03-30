@@ -32,6 +32,7 @@ add(RetroToolkit
         BuildDialog.cpp
         BuildDialog.h
         BuildDialog.ui
+        Common.h
         MainWindow.cpp
         MainWindow.h
         MainWindow.ui
@@ -47,4 +48,9 @@ add(RetroToolkit
         ThirdPartyDialog.h
         ThirdPartyDialog.ui
         main.cpp
+    )
+
+target_precompile_headers(RetroToolkit
+    PRIVATE
+        [["GUI/Common.h"]]
     )

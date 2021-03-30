@@ -1,9 +1,7 @@
 #ifndef GUI_UTIL_EXCEPTION_H
 #define GUI_UTIL_EXCEPTION_H
 
-#include <QString>
-#include <exception>
-#include <new>
+#include "GUI/Common.h"
 
 #define TRY \
     try { \

@@ -2,10 +2,6 @@
 #define COMPILER_SPECTRUMBASICCOMPILER_H
 
 #include "Common/Common.h"
-#include <map>
-#include <sstream>
-#include <string>
-#include <optional>
 
 class GCHeap;
 class CompiledOutput;

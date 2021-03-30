@@ -2,8 +2,6 @@
 #define COMPILER_TREE_SYMBOLTABLE_H
 
 #include "Common/GC.h"
-#include <string>
-#include <unordered_map>
 
 class Symbol;
 

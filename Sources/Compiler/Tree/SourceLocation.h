@@ -2,7 +2,6 @@
 #define COMPILER_TREE_SOURCELOCATION_H
 
 #include "Common/GC.h"
-#include <filesystem>
 
 class FileID : public GCObject
 {

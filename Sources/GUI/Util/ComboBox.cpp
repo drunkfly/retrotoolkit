@@ -1,6 +1,4 @@
 #include "ComboBox.h"
-#include <QComboBox>
-#include <QVariant>
 
 bool comboSelectItem(QComboBox* combo, const QVariant& value)
 {

@@ -1,10 +1,8 @@
 #ifndef COMPILER_ASSEMBLER_INSTRUCTION_H
 #define COMPILER_ASSEMBLER_INSTRUCTION_H
 
-#include "Common/Common.h"
 #include "Common/GC.h"
 #include "Compiler/Tree/SourceLocation.h"
-#include <memory>
 
 class CodeEmitter;
 class CompilerError;

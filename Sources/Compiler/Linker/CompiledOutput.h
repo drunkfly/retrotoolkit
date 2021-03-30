@@ -2,9 +2,6 @@
 #define COMPILER_LINKER_COMPILEDOUTPUT_H
 
 #include "Compiler/Linker/CompiledFile.h"
-#include <vector>
-#include <unordered_map>
-#include <memory>
 
 class SourceLocation;
 

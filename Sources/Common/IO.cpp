@@ -1,14 +1,5 @@
 #include "IO.h"
-#include "Common/Common.h"
 #include "Common/Strings.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sstream>
-#include <stdexcept>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 namespace
 {

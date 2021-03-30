@@ -879,8 +879,7 @@ operands8 = [ 0xAA, 0x55, 0x00, 0xFF ]
 operands16 = [ 0x1234, 0x4231, 0x0000, 0xFFFF ]
 
 src  = '// THIS IS A GENERATED FILE. DO NOT EDIT!\n'
-src += '#include <catch.hpp>\n'
-src += '#include "Tests/Util/TestUtil.h"\n'
+src += '#include "Tests/Common.h"\n'
 
 def formatOpcode(opcode, i):
     global asm1, str2

@@ -16,10 +16,7 @@
 #include "Compiler/Project.h"
 #include "Common/IO.h"
 #include "Common/GC.h"
-#include <vector>
-#include <algorithm>
-#include <map>
-#include <sstream>
+#include "Common/Strings.h"
 
 namespace
 {

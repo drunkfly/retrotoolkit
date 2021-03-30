@@ -16,6 +16,7 @@ add(Tests
         Util/TestUtil.cpp
         Util/TestUtil.h
         CaseTests.cpp
+        Common.h
         DataTests.cpp
         EquTests.cpp
         ErrorTests.cpp
@@ -24,6 +25,15 @@ add(Tests
         LabelTests.cpp
         OpcodeTests.cpp
         main.cpp
+    )
+
+target_precompile_headers(Tests
+    PRIVATE
+        [["Tests/Common.h"]]
+    )
+
+set_source_files_properties(main.cpp PROPERTIES
+    SKIP_PRECOMPILE_HEADERS TRUE
     )
 
 set(result_cpp "${CMAKE_CURRENT_BINARY_DIR}/testresult.cpp")

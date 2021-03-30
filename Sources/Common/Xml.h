@@ -1,12 +1,8 @@
 #ifndef COMMON_XML_H
 #define COMMON_XML_H
 
+#include "Common/Common.h"
 #include <rapidxml.hpp>
-#include <memory>
-#include <optional>
-#include <string>
-#include <sstream>
-#include <filesystem>
 
 #define ROOT(NAME) \
     XmlNode xml##NAME = xmlGetRootElement(xml, #NAME)

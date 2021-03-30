@@ -1,12 +1,7 @@
 #ifndef COMPILER_OUTPUT_SPECTRUMTAPEWRITER_H
 #define COMPILER_OUTPUT_SPECTRUMTAPEWRITER_H
 
-#include "Common/Common.h"
 #include "Compiler/Output/IOutputWriter.h"
-#include <memory>
-#include <filesystem>
-#include <vector>
-#include <optional>
 
 class SpectrumTapeWriter final : public IOutputWriter
 {

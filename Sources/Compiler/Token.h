@@ -2,7 +2,6 @@
 #define COMPILER_TOKEN_H
 
 #include "Common/GC.h"
-#include <stdint.h>
 
 enum TokenID
 {

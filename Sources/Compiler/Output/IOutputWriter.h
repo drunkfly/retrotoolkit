@@ -2,7 +2,6 @@
 #define COMPILER_OUTPUT_IOUTPUTWRITER_H
 
 #include "Compiler/Linker/CodeEmitter.h"
-#include <string>
 
 class IOutputWriter
 {

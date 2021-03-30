@@ -1,8 +1,7 @@
 #ifndef GUI_WIDGETS_BUILDSTATUSLABEL_H
 #define GUI_WIDGETS_BUILDSTATUSLABEL_H
 
-#include "Common/Common.h"
-#include <QLabel>
+#include "GUI/Common.h"
 
 class SourceLocation;
 

@@ -2,8 +2,6 @@
 #define COMPILER_OUTPUT_LIBSPECTRUM_VIRTUALFILE_H
 
 #include "Common/Common.h"
-#include <memory>
-#include <stdint.h>
 
 #ifdef _WIN32
 #define ssize_t ptrdiff_t

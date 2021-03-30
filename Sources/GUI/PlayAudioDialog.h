@@ -1,10 +1,7 @@
 #ifndef GUI_PLAYAUDIODIALOG_H
 #define GUI_PLAYAUDIODIALOG_H
 
-#include <QDialog>
-#include <QMediaPlayer>
-#include <memory>
-#include <filesystem>
+#include "GUI/Common.h"
 
 class Ui_PlayAudioDialog;
 class QLabel;

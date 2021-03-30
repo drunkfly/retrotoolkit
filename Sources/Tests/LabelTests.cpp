@@ -1,5 +1,4 @@
-#include <catch.hpp>
-#include "Tests/Util/TestUtil.h"
+#include "Tests/Common.h"
 
 TEST_CASE("label at end of file", "[labels]")
 {

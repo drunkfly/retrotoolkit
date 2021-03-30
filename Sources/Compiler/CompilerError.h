@@ -1,10 +1,7 @@
 #ifndef COMPILER_COMPILERERROR_H
 #define COMPILER_COMPILERERROR_H
 
-#include "Common/Common.h"
 #include "Compiler/Tree/SourceLocation.h"
-#include <string>
-#include <exception>
 
 class CompilerError : public std::exception
 {

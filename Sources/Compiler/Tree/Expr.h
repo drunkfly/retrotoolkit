@@ -1,13 +1,10 @@
 #ifndef COMPILER_TREE_EXPR_H
 #define COMPILER_TREE_EXPR_H
 
-#include "Common/Common.h"
 #include "Common/GC.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/Value.h"
-#include <string>
-#include <memory>
 
 class ExprIdentifier;
 class AssemblerContext;

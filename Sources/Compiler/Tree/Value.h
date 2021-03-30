@@ -1,7 +1,7 @@
 #ifndef COMPILER_TREE_VALUE_H
 #define COMPILER_TREE_VALUE_H
 
-#include <stdint.h>
+#include "Common/Common.h"
 
 enum class Sign
 {

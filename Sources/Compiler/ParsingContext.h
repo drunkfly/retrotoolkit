@@ -1,9 +1,7 @@
 #ifndef COMPILER_ASSEMBLER_PARSINGCONTEXT_H
 #define COMPILER_ASSEMBLER_PARSINGCONTEXT_H
 
-#include "Common/Common.h"
 #include "Common/StringSet.h"
-#include <string>
 
 class GCHeap;
 class Token;

@@ -1,8 +1,7 @@
 #ifndef GUI_UTIL_CONVERSION_H
 #define GUI_UTIL_CONVERSION_H
 
-#include <QString>
-#include <filesystem>
+#include "GUI/Common.h"
 
 QByteArray toByteArray(const std::string& str);
 

@@ -1,11 +1,8 @@
 #ifndef COMPILER_LINKER_COMPILEDFILE_H
 #define COMPILER_LINKER_COMPILEDFILE_H
 
-#include "Common/Common.h"
 #include "Common/GC.h"
 #include "Compiler/Linker/CodeEmitterUncompressed.h"
-#include <memory>
-#include <string>
 
 class DebugInformation;
 

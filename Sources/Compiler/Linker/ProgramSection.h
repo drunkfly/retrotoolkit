@@ -1,13 +1,8 @@
 #ifndef COMPILER_LINKER_PROGRAMSECTION_H
 #define COMPILER_LINKER_PROGRAMSECTION_H
 
-#include "Common/Common.h"
 #include "Common/GC.h"
 #include "Compiler/Compression/Compression.h"
-#include <vector>
-#include <string>
-#include <optional>
-#include <memory>
 
 class Instruction;
 class CodeEmitter;

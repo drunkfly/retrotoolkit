@@ -1,6 +1,8 @@
 #ifndef COMPILER_LEXERUTILS_H
 #define COMPILER_LEXERUTILS_H
 
+#include "Common/Common.h"
+
 #define DIGIT_1_9 \
          '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9'
 #define DIGIT \

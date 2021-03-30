@@ -4,13 +4,6 @@
 #include "GUI/Util/Conversion.h"
 #include "GUI/Settings.h"
 #include "ui_SettingsDialog.h"
-#include <QFileDialog>
-
-#ifdef _WIN32
- #define WIN32_LEAN_AND_MEAN
- #define NOMINMAX
- #include <windows.h>
-#endif
 
 static int selectedTab;
 static const QString red = QStringLiteral("<font color=\"red\">%1</font>");

@@ -1,8 +1,7 @@
 #ifndef GUI_SETTINGS_H
 #define GUI_SETTINGS_H
 
-#include "Common/Common.h"
-#include <QSettings>
+#include "GUI/Common.h"
 
 class Settings
 {

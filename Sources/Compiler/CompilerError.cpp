@@ -1,5 +1,4 @@
 #include "CompilerError.h"
-#include <sstream>
 
 CompilerError::CompilerError(SourceLocation* location, std::string message)
     : mLocation(location)

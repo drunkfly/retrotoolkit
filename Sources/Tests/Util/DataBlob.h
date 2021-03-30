@@ -1,10 +1,7 @@
 #ifndef TESTS_UTIL_DATABLOB_H
 #define TESTS_UTIL_DATABLOB_H
 
-#include <string>
-#include <memory>
-#include <unordered_map>
-#include <ostream>
+#include "Tests/Common.h"
 
 class CompiledFile;
 

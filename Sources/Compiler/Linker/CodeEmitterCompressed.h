@@ -3,8 +3,6 @@
 
 #include "Compiler/Linker/CodeEmitter.h"
 #include "Compiler/Linker/DebugInformation.h"
-#include <vector>
-#include <memory>
 
 class Compressor;
 

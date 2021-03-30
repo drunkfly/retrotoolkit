@@ -1,8 +1,7 @@
 #ifndef GUI_WIDGETS_MEMORYMAPWIDGET_H
 #define GUI_WIDGETS_MEMORYMAPWIDGET_H
 
-#include "Common/Common.h"
-#include <QTreeWidget>
+#include "GUI/Common.h"
 
 class CompiledOutput;
 

@@ -2,7 +2,6 @@
 #define COMPILER_LINKER_LINKER_H
 
 #include "Common/Common.h"
-#include <string>
 
 class GCHeap;
 class Project;

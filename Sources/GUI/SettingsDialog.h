@@ -1,10 +1,7 @@
 #ifndef GUI_SETTINGSDIALOG_H
 #define GUI_SETTINGSDIALOG_H
 
-#include <QDialog>
-#include <QMediaPlayer>
-#include <memory>
-#include <filesystem>
+#include "GUI/Common.h"
 
 class Ui_SettingsDialog;
 class QLabel;

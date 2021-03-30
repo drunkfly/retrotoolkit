@@ -1,9 +1,7 @@
 #ifndef GUI_ABOUT_ABOUTDIALOG_H
 #define GUI_ABOUT_ABOUTDIALOG_H
 
-#include "Common/Common.h"
-#include <QDialog>
-#include <memory>
+#include "GUI/Common.h"
 
 class Ui_AboutDialog;
 

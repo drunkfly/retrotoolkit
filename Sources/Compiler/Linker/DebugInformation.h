@@ -1,11 +1,7 @@
 #ifndef COMPILER_LINKER_DEBUGINFORMATION_H
 #define COMPILER_LINKER_DEBUGINFORMATION_H
 
-#include "Common/Common.h"
 #include "Compiler/Compression/Compression.h"
-#include <string>
-#include <optional>
-#include <vector>
 
 class DebugInformation
 {

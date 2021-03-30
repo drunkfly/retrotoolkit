@@ -1,9 +1,7 @@
 #ifndef COMPILER_EXPRESSIONPARSER_H
 #define COMPILER_EXPRESSIONPARSER_H
 
-#include "Common/Common.h"
 #include "Common/StringSet.h"
-#include <string>
 
 class GCHeap;
 class ParsingContext;

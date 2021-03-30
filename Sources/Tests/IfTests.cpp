@@ -1,5 +1,4 @@
-#include <catch.hpp>
-#include "Tests/Util/TestUtil.h"
+#include "Tests/Common.h"
 
 // FIXME: test with global labels in non-nested and nested ifs: one name in one block, one name in multiple blocks
 

@@ -1,6 +1,5 @@
 #include "ErrorConsumer.h"
 #include "Compiler/Tree/SourceLocation.h"
-#include <sstream>
 
 ErrorConsumer::ErrorConsumer()
 {

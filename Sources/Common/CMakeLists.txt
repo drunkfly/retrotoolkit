@@ -18,3 +18,8 @@ add(Common
         Xml.cpp
         Xml.h
     )
+
+target_precompile_headers(Common
+    PRIVATE
+        [["Common/Common.h"]]
+    )

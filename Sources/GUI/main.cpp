@@ -1,6 +1,4 @@
 #include "GUI/MainWindow.h"
-#include <string>
-#include <QApplication>
 
 Q_DECLARE_METATYPE(std::string);
 

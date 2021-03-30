@@ -2,8 +2,6 @@
 #define COMPILER_ASSEMBLER_ASSEMBLERPARSER_H
 
 #include "Common/Common.h"
-#include <string>
-#include <unordered_map>
 
 struct Token;
 class GCHeap;

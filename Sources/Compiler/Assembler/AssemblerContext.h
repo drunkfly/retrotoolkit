@@ -2,7 +2,6 @@
 #define COMPILER_ASSEMBLER_ASSEMBLERCONTEXT_H
 
 #include "Common/GC.h"
-#include <string>
 
 class Expr;
 class ProgramSection;

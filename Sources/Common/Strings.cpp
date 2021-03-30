@@ -1,8 +1,4 @@
 #include "Strings.h"
-#include <codecvt>
-#include <locale>
-#include <string.h>
-#include <ctype.h>
 
 std::string toLower(std::string str)
 {

@@ -1,7 +1,6 @@
 #ifndef COMPILER_OUTPUT_LIBSPECTRUM_LIBSPECTRUMBUFFER_H
 #define COMPILER_OUTPUT_LIBSPECTRUM_LIBSPECTRUMBUFFER_H
 
-#include "Common/Common.h"
 #include "Compiler/Output/LibSpectrum/LibSpectrum.h"
 
 class LibSpectrumBuffer

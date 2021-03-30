@@ -2,8 +2,6 @@
 #define COMPILER_COMPILER_H
 
 #include "Common/Common.h"
-#include <optional>
-#include <filesystem>
 
 class GCHeap;
 class CompiledOutput;

@@ -1,7 +1,6 @@
 #include "AboutDialog.h"
 #include "GUI/ThirdPartyDialog.h"
 #include "ui_AboutDialog.h"
-#include <QMessageBox>
 
 AboutDialog::AboutDialog(QWidget* parent)
     : QDialog(parent)

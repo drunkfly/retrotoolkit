@@ -1,7 +1,6 @@
 #ifndef COMPILER_COMPRESSION_ZX7COMPRESSOR_H
 #define COMPILER_COMPRESSION_ZX7COMPRESSOR_H
 
-#include "Common/Common.h"
 #include "Compiler/Compression/Compressor.h"
 
 class Zx7Compressor final : public Compressor

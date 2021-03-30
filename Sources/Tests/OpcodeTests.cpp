@@ -1,6 +1,5 @@
 // THIS IS A GENERATED FILE. DO NOT EDIT!
-#include <catch.hpp>
-#include "Tests/Util/TestUtil.h"
+#include "Tests/Common.h"
 
 TEST_CASE("adc a, (hl)", "[opcodes]")
 {

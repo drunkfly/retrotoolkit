@@ -1,8 +1,7 @@
 #ifndef JNI_H
 #define JNI_H
 
-#include <stdarg.h>
-#include <stdint.h>
+#include "Common/Common.h"
 
 typedef uint8_t jboolean;
 typedef uint16_t jchar;

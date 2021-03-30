@@ -2,10 +2,6 @@
 #define COMPILER_JAVA_JSTRINGLIST_H
 
 #include "Compiler/Java/JNI.h"
-#include <vector>
-#include <string>
-#include <filesystem>
-#include <optional>
 
 class JStringList
 {

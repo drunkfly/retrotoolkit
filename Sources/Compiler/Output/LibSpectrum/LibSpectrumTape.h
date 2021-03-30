@@ -1,10 +1,7 @@
 #ifndef COMPILER_OUTPUT_LIBSPECTRUM_LIBSPECTRUMTAPE_H
 #define COMPILER_OUTPUT_LIBSPECTRUM_LIBSPECTRUMTAPE_H
 
-#include "Common/Common.h"
 #include "Compiler/Output/LibSpectrum/LibSpectrum.h"
-#include <stdint.h>
-#include <filesystem>
 
 class LibSpectrum;
 class LibSpectrumTapeBlock;

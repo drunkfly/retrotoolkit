@@ -1,9 +1,6 @@
 #include "Xml.h"
 #include "Common/Strings.h"
 #include "Common/IO.h"
-#include <stdexcept>
-#include <sstream>
-#include <string.h>
 
 XmlDocument xmlLoad(const std::filesystem::path& path)
 {

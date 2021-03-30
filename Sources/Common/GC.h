@@ -2,7 +2,6 @@
 #define COMMON_GC_H
 
 #include "Common/Common.h"
-#include <cassert>
 
 class GCHeap;
 

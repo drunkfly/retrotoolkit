@@ -4,7 +4,6 @@
 #include "GUI/Settings.h"
 #include "GUI/Util/Conversion.h"
 #include "ui_BuildDialog.h"
-#include <QThread>
 
 namespace
 {

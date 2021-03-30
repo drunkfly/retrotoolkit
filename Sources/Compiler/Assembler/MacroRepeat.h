@@ -2,7 +2,6 @@
 #define COMPILER_ASSEMBLER_MACROREPEAT_H
 
 #include "Compiler/Assembler/Instruction.h"
-#include <vector>
 
 class MacroRepeat final : public Instruction
 {

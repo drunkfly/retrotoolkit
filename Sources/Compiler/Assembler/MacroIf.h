@@ -2,7 +2,6 @@
 #define COMPILER_ASSEMBLER_MACROIF_H
 
 #include "Compiler/Assembler/Instruction.h"
-#include <vector>
 
 class Expr;
 
