@@ -84,7 +84,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         mListener->compilerProgress(0, 0, "Scanning directories...");
 
     std::map<std::string, std::vector<SourceFile>> basicFiles;
-    std::vector<SourceFile> javaFiles;
+    std::vector<SourceFile> gameJavaFiles;
+    std::vector<SourceFile> buildJavaFiles;
     std::vector<SourceFile> sourceFiles;
     int nBasic = 0;
 
@@ -98,8 +99,13 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             if (initSourceFile(sourceFile, FileType::Asm, it.path()))
                 sourceFiles.emplace_back(sourceFile);
         } else if (ext == ".java") {
-            if (initSourceFile(sourceFile, FileType::Java, it.path()))
-                javaFiles.emplace_back(sourceFile);
+            if (initSourceFile(sourceFile, FileType::Java, it.path())) {
+                std::string prefix = sourceFile.fileID->name().string();
+                if (!startsWith(prefix, "build/") && !startsWith(prefix, "build\\"))
+                    gameJavaFiles.emplace_back(sourceFile);
+                else
+                    buildJavaFiles.emplace_back(sourceFile);
+            }
         } else if (ext == ".bas") {
             if (initSourceFile(sourceFile, FileType::Basic, it.path())) {
                 ++nBasic;
@@ -108,7 +114,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         }
     }
 
-    std::sort(javaFiles.begin(), javaFiles.end());
+    std::sort(gameJavaFiles.begin(), gameJavaFiles.end());
+    std::sort(buildJavaFiles.begin(), buildJavaFiles.end());
     std::sort(sourceFiles.begin(), sourceFiles.end());
     for (auto& it : basicFiles) {
         if (it.second.size() > 1)
@@ -116,8 +123,13 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     }
 
     int n = int(sourceFiles.size());
-    int total = n + 1 + nBasic + (javaFiles.empty() ? 0 : 2) + project.outputs.size();
     int count = 0;
+    int total = 1
+              + n
+              + nBasic
+              + (buildJavaFiles.empty() ? 0 : 1)
+              + (buildJavaFiles.empty() && gameJavaFiles.empty() ? 0 : 2)
+              + project.outputs.size();
 
     auto program = new (mHeap) Program();
 
@@ -126,7 +138,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
     // Compile java files
 
-    if (!javaFiles.empty()) {
+    if (!buildJavaFiles.empty() || !gameJavaFiles.empty()) {
         if (mListener)
             mListener->compilerProgress(count++, total, "Initializing Java Virtual Machine...");
 
@@ -146,29 +158,70 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         if (mListener)
             mListener->compilerProgress(count++, total, "Compiling Java sources...");
 
-        JStringList list;
-        list.reserve(javaFiles.size() + 15);
-        list.add("-verbose");
-        list.add("-Xlint:all");
-        list.add("-g");
-        list.add("-source");
-        list.add("1.8");
-        list.add("-target");
-        list.add("1.8");
-        list.add("-bootclasspath");
-        list.add(mResourcesPath / "RetroEngine.jar");
-        list.add("-classpath");
-        list.add(mResourcesPath / "RetroTools.jar");
-        list.add("-sourcepath");
-        list.add(mProjectPath);
-        list.add("-d");
-        list.add(mOutputPath / "java");
-        for (const auto& file : javaFiles)
-            list.add(file.fileID->path());
+        // Game code
 
-        if (!JVM::compile(list, mListener)) {
-            JVM::throwIfException();
-            throw CompilerError(nullptr, "Java compilation failed.");
+        if (!gameJavaFiles.empty()) {
+            JStringList list;
+            list.reserve(gameJavaFiles.size() + 12);
+            list.add("-Xlint:all");
+            list.add("-g");
+            list.add("-source");
+            list.add("1.8"); // FIXME: determine JVM version and use lesser version if needed
+            list.add("-target");
+            list.add("1.8");
+            list.add("-bootclasspath");
+            list.add(mResourcesPath / "RetroEngine.jar");
+            list.add("-sourcepath");
+            list.add(mProjectPath);
+            list.add("-d");
+            list.add(mOutputPath / "java");
+            for (const auto& file : gameJavaFiles)
+                list.add(file.fileID->path());
+
+            if (!JVM::compile(list, mListener)) {
+                JVM::throwIfException();
+                throw CompilerError(nullptr, "Java compilation failed.");
+            }
+        }
+
+        // Build and run tools
+
+        if (!buildJavaFiles.empty()) {
+            JStringList list;
+            list.reserve(buildJavaFiles.size() + 8);
+            list.add("-Xlint:all");
+            list.add("-g");
+            list.add("-classpath");
+            list.add(mResourcesPath / "RetroBuild.jar");
+            list.add("-sourcepath");
+            list.add(mProjectPath);
+            list.add("-d");
+            list.add(mOutputPath / "java");
+            for (const auto& file : buildJavaFiles)
+                list.add(file.fileID->path());
+
+            if (!JVM::compile(list, mListener)) {
+                JVM::throwIfException();
+                throw CompilerError(nullptr, "Java compilation failed.");
+            }
+
+            if (mListener)
+                mListener->compilerProgress(count++, total, "Running Java tools...");
+
+            JStringList classpath;
+            classpath.add(mResourcesPath / "RetroBuild.jar");
+            classpath.add(mProjectPath / "!*.class");
+            classpath.add(mOutputPath / "java" / "*.class");
+            classpath.add(mOutputPath / "generated" / "=>");
+
+            list.clear();
+            for (const auto& file : buildJavaFiles)
+                list.add(file.fileID->name());
+
+            if (!JVM::runClass("drunkfly/BuilderLauncher", list, mListener, true, &classpath)) {
+                JVM::throwIfException();
+                throw CompilerError(nullptr, "Error running build tool with Java.");
+            }
         }
     }
 

@@ -41,9 +41,14 @@ public:
     static jclass stringClass();
 
     static bool compile(const JStringList& args, ICompilerListener* listener);
+    static bool runClass(const char* className, const JStringList& args,
+        ICompilerListener* listener, bool useClassLoader = false, const JStringList* classPath = nullptr);
 
 private:
-    static void drunkfly_Output_print(JNIEnv* env, jclass, jstring message);
+    static void JNICALL drunkfly_Messages_print(JNIEnv* env, jclass, jstring message);
+    static jobject JNICALL drunkfly_Messages_getInstance(JNIEnv* env, jclass);
+    static jobject JNICALL drunkfly_Messages_getPrintWriter(JNIEnv* env, jclass);
+    static jobject JNICALL drunkfly_BuilderClassLoader_getInstance(JNIEnv* env, jclass);
 
     static void ensureNecessaryClassesLoaded();
 

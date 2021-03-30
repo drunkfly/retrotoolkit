@@ -18,6 +18,12 @@
 
 extern const unsigned JavaOutputWriter_len;
 extern const unsigned char JavaOutputWriter[];
+extern const unsigned JavaBuilder_len;
+extern const unsigned char JavaBuilder[];
+extern const unsigned JavaBuilderClassLoader_len;
+extern const unsigned char JavaBuilderClassLoader[];
+extern const unsigned JavaBuilderLauncher_len;
+extern const unsigned char JavaBuilderLauncher[];
 
 static JavaVM* jvm;
 static JNIEnv* env;
@@ -28,9 +34,16 @@ static bool outputWriterMethodsRegistered;
 static jobject outputWriterRef;
 static jclass printWriterClassRef;
 static jobject printWriterRef;
+static jclass classLoaderClassRef;
+static bool classLoaderMethodsRegistered;
+static jmethodID classLoaderConstructorID;
+static jmethodID classLoaderLoadClassMethodID;
 static jclass compilerClassRef;
 static jmethodID compilerMethodID;
+static jclass builderLauncherClassRef;
+static jclass builderClassRef;
 static ICompilerListener* compilerListener;
+static jobject classLoader;
 
 static void printJniError(std::stringstream& ss, int r)
 {
@@ -229,8 +242,14 @@ void JVM::destroy()
     outputWriterRef = nullptr;
     printWriterClassRef = nullptr;
     printWriterRef = nullptr;
+    classLoaderClassRef = nullptr;
+    classLoaderMethodsRegistered = false;
+    classLoaderConstructorID = nullptr;
+    classLoaderLoadClassMethodID = nullptr;
     compilerClassRef = nullptr;
     compilerMethodID = nullptr;
+    builderLauncherClassRef = nullptr;
+    builderClassRef = nullptr;
 }
 
 bool JVM::isAttached()
@@ -463,6 +482,8 @@ jclass JVM::stringClass()
 
 bool JVM::compile(const JStringList& args, ICompilerListener* listener)
 {
+    assert(!compilerListener);
+
     jobjectArray argList = args.toJavaArray();
     if (!argList)
         return false;
@@ -476,11 +497,117 @@ bool JVM::compile(const JStringList& args, ICompilerListener* listener)
     return (!env->vtbl->ExceptionCheck(env) && result == 0);
 }
 
-void JVM::drunkfly_Output_print(JNIEnv* env, jclass, jstring message)
+bool JVM::runClass(const char* className, const JStringList& args,
+    ICompilerListener* listener, bool useClassLoader, const JStringList* classPath)
+{
+    assert(!compilerListener);
+    assert(!classLoader);
+
+    if (useClassLoader) {
+        jobjectArray classPathArray = nullptr;
+        if (classPath) {
+            classPathArray = classPath->toJavaArray();
+            if (!classPathArray)
+                return false;
+        }
+
+        compilerListener = listener;
+        classLoader = env->vtbl->NewObject(env, classLoaderClassRef, classLoaderConstructorID, classPathArray);
+        compilerListener = nullptr;
+
+        if (classPathArray)
+            env->vtbl->DeleteLocalRef(env, classPathArray);
+
+        if (!classLoader)
+            return false;
+    }
+
+    jclass classRef;
+    if (!strcmp(className, "drunkfly/BuilderLauncher"))
+        classRef = builderLauncherClassRef;
+    else if (!classLoader)
+        classRef = env->vtbl->FindClass(env, className);
+    else {
+        jstring classNameString = env->vtbl->NewStringUTF(env, className);
+        if (!classNameString) {
+            env->vtbl->DeleteLocalRef(env, classLoader);
+            classLoader = nullptr;
+            return false;
+        }
+
+        compilerListener = listener;
+        classRef = env->vtbl->CallObjectMethod(env, classLoader, classLoaderLoadClassMethodID, classNameString);
+        compilerListener = nullptr;
+
+        env->vtbl->DeleteLocalRef(env, classNameString);
+    }
+
+    if (!classRef) {
+        if (classLoader) {
+            env->vtbl->DeleteLocalRef(env, classLoader);
+            classLoader = nullptr;
+        }
+        return false;
+    }
+
+    jmethodID mainMethodID = env->vtbl->GetStaticMethodID(env, classRef, "main", "([Ljava/lang/String;)V");
+    if (!mainMethodID) {
+        if (classRef != builderLauncherClassRef)
+            env->vtbl->DeleteLocalRef(env, classRef);
+        if (classLoader) {
+            env->vtbl->DeleteLocalRef(env, classLoader);
+            classLoader = nullptr;
+        }
+        return false;
+    }
+
+    jobjectArray argList = args.toJavaArray();
+    if (!argList) {
+        if (classRef != builderLauncherClassRef)
+            env->vtbl->DeleteLocalRef(env, classRef);
+        if (classLoader) {
+            env->vtbl->DeleteLocalRef(env, classLoader);
+            classLoader = nullptr;
+        }
+        return false;
+    }
+
+    compilerListener = listener;
+    env->vtbl->CallStaticVoidMethod(env, classRef, mainMethodID, argList);
+    compilerListener = nullptr;
+
+    env->vtbl->DeleteLocalRef(env, argList);
+    if (classRef != builderLauncherClassRef)
+        env->vtbl->DeleteLocalRef(env, classRef);
+    if (classLoader) {
+        env->vtbl->DeleteLocalRef(env, classLoader);
+        classLoader = nullptr;
+    }
+
+    return !env->vtbl->ExceptionCheck(env);
+}
+
+void JNICALL JVM::drunkfly_Messages_print(JNIEnv* env, jclass, jstring message)
 {
     assert(compilerListener);
     if (compilerListener)
         compilerListener->printMessage(toUtf8(message));
+}
+
+jobject JNICALL JVM::drunkfly_Messages_getInstance(JNIEnv* env, jclass)
+{
+    return outputWriterRef;
+}
+
+jobject JNICALL JVM::drunkfly_Messages_getPrintWriter(JNIEnv* env, jclass)
+{
+    return printWriterRef;
+}
+
+jobject JNICALL JVM::drunkfly_BuilderClassLoader_getInstance(JNIEnv* env, jclass)
+{
+    assert(classLoader);
+    return classLoader;
 }
 
 void JVM::ensureNecessaryClassesLoaded()
@@ -496,19 +623,23 @@ void JVM::ensureNecessaryClassesLoaded()
     if (!outputWriterClassRef) {
         auto p = reinterpret_cast<const jbyte*>(JavaOutputWriter);
         outputWriterClassRef =
-            makeGlobalRef(env->vtbl->DefineClass(env, "drunkfly/Output", nullptr, p, JavaOutputWriter_len));
+            makeGlobalRef(env->vtbl->DefineClass(env, "drunkfly/Messages", nullptr, p, JavaOutputWriter_len));
         if (!outputWriterClassRef) {
             throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.Output\".");
+            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.Messages\".");
         }
     }
 
     if (!outputWriterMethodsRegistered) {
-        const JNINativeMethod method = { "print", "(Ljava/lang/String;)V", drunkfly_Output_print };
-        jint r = env->vtbl->RegisterNatives(env, outputWriterClassRef, &method, 1);
+        const JNINativeMethod methods[] = {
+                { "print", "(Ljava/lang/String;)V", drunkfly_Messages_print },
+                { "getInstance", "()Ldrunkfly/Messages;", drunkfly_Messages_getInstance },
+                { "getPrintWriter", "()Ljava/io/PrintWriter;", drunkfly_Messages_getPrintWriter },
+            };
+        jint r = env->vtbl->RegisterNatives(env, outputWriterClassRef, methods, sizeof(methods) / sizeof(methods[0]));
         if (r != JNI_OK) {
             std::stringstream ss;
-            ss << "Unable to register method \"print\" for class \"drunkfly.Output\": ";
+            ss << "Unable to register native methods for class \"drunkfly.Messages\": ";
             printJniError(ss, r);
             throw CompilerError(nullptr, ss.str());
         }
@@ -520,13 +651,13 @@ void JVM::ensureNecessaryClassesLoaded()
         jmethodID constructorID = env->vtbl->GetMethodID(env, outputWriterClassRef, "<init>", "()V");
         if (!constructorID) {
             throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve constructor of class \"drunkfly.Output\".");
+            throw CompilerError(nullptr, "Unable to resolve constructor of class \"drunkfly.Messages\".");
         }
 
         outputWriterRef = makeGlobalRef(env->vtbl->NewObject(env, outputWriterClassRef, constructorID));
         if (!outputWriterRef) {
             throwIfException();
-            throw CompilerError(nullptr, "Unable to construct instance of class \"drunkfly.Output\".");
+            throw CompilerError(nullptr, "Unable to construct instance of class \"drunkfly.Messages\".");
         }
     }
 
@@ -552,8 +683,51 @@ void JVM::ensureNecessaryClassesLoaded()
         }
     }
 
+    if (!classLoaderClassRef) {
+        auto p = reinterpret_cast<const jbyte*>(JavaBuilderClassLoader);
+        classLoaderClassRef = makeGlobalRef(
+            env->vtbl->DefineClass(env, "drunkfly/BuilderClassLoader", nullptr, p, JavaBuilderClassLoader_len));
+        if (!classLoaderClassRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.BuilderClassLoader\".");
+        }
+    }
+
+    if (!classLoaderMethodsRegistered) {
+        const JNINativeMethod method =
+            { "getInstance", "()Ldrunkfly/BuilderClassLoader;", drunkfly_BuilderClassLoader_getInstance };
+        jint r = env->vtbl->RegisterNatives(env, classLoaderClassRef, &method, 1);
+        if (r != JNI_OK) {
+            std::stringstream ss;
+            ss << "Unable to register native methods for class \"drunkfly.BuilderClassLoader\": ";
+            printJniError(ss, r);
+            throw CompilerError(nullptr, ss.str());
+        }
+
+        classLoaderMethodsRegistered = true;
+    }
+
+    if (!classLoaderConstructorID) {
+        classLoaderConstructorID =
+            env->vtbl->GetMethodID(env, classLoaderClassRef, "<init>", "([Ljava/lang/String;)V");
+        if (!classLoaderConstructorID) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve constructor of class \"drunkfly.BuilderClassLoader\".");
+        }
+    }
+
+    if (!classLoaderLoadClassMethodID) {
+        classLoaderLoadClassMethodID =
+            env->vtbl->GetMethodID(env, classLoaderClassRef, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+        if (!classLoaderLoadClassMethodID) {
+            throwIfException();
+            throw CompilerError(nullptr,
+                "Unable to resolve method \"loadClass\" of class \"drunkfly.BuilderClassLoader\".");
+        }
+    }
+
     if (!compilerClassRef) {
-        compilerClassRef = env->vtbl->FindClass(env, "com/sun/tools/javac/Main");
+        compilerClassRef = makeGlobalRef(env->vtbl->FindClass(env, "com/sun/tools/javac/Main"));
         if (!compilerClassRef) {
             throwIfException();
             throw CompilerError(nullptr, "Unable to resolve class \"com.sun.tools.javac.Main\".");
@@ -566,6 +740,25 @@ void JVM::ensureNecessaryClassesLoaded()
         if (!compilerMethodID) {
             throwIfException();
             throw CompilerError(nullptr, "Unable to find method \"compile\" in class \"com.sun.tools.javac.Main\".");
+        }
+    }
+
+    if (!builderLauncherClassRef) {
+        auto p = reinterpret_cast<const jbyte*>(JavaBuilderLauncher);
+        builderLauncherClassRef = makeGlobalRef(
+            env->vtbl->DefineClass(env, "drunkfly/BuilderLauncher", nullptr, p, JavaBuilderLauncher_len));
+        if (!builderLauncherClassRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.BuilderLauncher\".");
+        }
+    }
+
+    if (!builderClassRef) {
+        auto p = reinterpret_cast<const jbyte*>(JavaBuilder);
+        builderClassRef = makeGlobalRef(env->vtbl->DefineClass(env, "drunkfly/Builder", nullptr, p, JavaBuilder_len));
+        if (!builderClassRef) {
+            throwIfException();
+            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.Builder\".");
         }
     }
 }

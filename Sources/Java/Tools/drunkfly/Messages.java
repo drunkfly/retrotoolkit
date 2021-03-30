@@ -1,11 +1,16 @@
 package drunkfly;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Writer;
 
-public class Output extends Writer
+public final class Messages extends Writer
 {
     public static native void print(String message);
+    public static void println(String message) { print(message + "\n"); }
+
+    public static native Messages getInstance();
+    public static native PrintWriter getPrintWriter();
 
     @Override public void write(char chars[], int offset, int length) throws IOException
     {

@@ -14,8 +14,8 @@ add(Compiler
     DEPENDS
         JavaClasspath
     INSTALL_RESOURCES
+        ../Java/Build/RetroBuild.jar
         ../Java/Build/RetroEngine.jar
-        ../Java/Build/RetroTools.jar
     SOURCES
         Assembler/AssemblerContext.cpp
         Assembler/AssemblerContext.h
@@ -111,6 +111,14 @@ add(Compiler
         SpectrumBasicCompiler.h
         Token.cpp
         Token.h
+    )
+
+set_source_files_properties(
+        ../Java/Build/RetroBuild.jar
+        ../Java/Build/RetroEngine.jar
+    PROPERTIES
+        GENERATED TRUE
+        HEADER_FILE_ONLY TRUE
     )
 
 target_precompile_headers(Compiler

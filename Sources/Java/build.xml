@@ -29,10 +29,13 @@
              includes="**"
             >
         </jar>
-        <jar destfile="Build/RetroTools.jar"
-             basedir="Build/Tools"
-             includes="**"
-            >
+        <jar destfile="Build/RetroBuild.jar"
+             >
+             <fileset dir="Build/Tools">
+                <include name="**/*.class" />
+                <exclude name="drunkfly/BuilderClassLoader.class" />
+                <exclude name="drunkfly/BuilderLauncher.class" />
+            </fileset>
         </jar>
     </target>
 

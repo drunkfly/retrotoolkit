@@ -9,6 +9,11 @@ JStringList::~JStringList()
 {
 }
 
+void JStringList::clear()
+{
+    mArguments.clear();
+}
+
 void JStringList::reserve(size_t size)
 {
     mArguments.reserve(size);

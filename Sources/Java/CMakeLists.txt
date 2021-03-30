@@ -56,6 +56,7 @@ add_custom_target(JavaClasspath
             -Dant.home="${ANT_HOME}"
             -Dant.library.dir="${ANT_HOME}/lib"
             org.apache.tools.ant.launch.Launcher
+            -q
     DEPENDS ${src_java} build.xml
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     COMMENT "Compiling Java sources"
@@ -84,7 +85,9 @@ macro(embed_class symbol file)
 endmacro()
 
 embed_class(JavaOutputWriter "Build/Tools/drunkfly/Messages.class")
+embed_class(JavaBuilder "Build/Tools/drunkfly/Builder.class")
 embed_class(JavaBuilderClassLoader "Build/Tools/drunkfly/BuilderClassLoader.class")
+embed_class(JavaBuilderLauncher "Build/Tools/drunkfly/BuilderLauncher.class")
 
 add(JavaClasspathEmbedded
     STATIC_LIBRARY

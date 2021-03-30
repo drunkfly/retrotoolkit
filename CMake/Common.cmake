@@ -146,12 +146,13 @@ endmacro()
 macro(install_resources target outputDir)
     foreach(file ${ARGN})
         get_filename_component(name "${file}" NAME)
+        get_filename_component(path "${file}" ABSOLUTE)
         if(MSVC)
             foreach(config ${CMAKE_CONFIGURATION_TYPES})
                 add_custom_command(OUTPUT "${outputDir}/${config}/${name}"
-                    COMMAND "${CMAKE_COMMAND}" -E copy "${file}" "${outputDir}/${config}/${name}"
-                    MAIN_DEPENDENCY "${file}"
-                    DEPENDS "${file}"
+                    COMMAND "${CMAKE_COMMAND}" -E copy "${path}" "${outputDir}/${config}/${name}"
+                    MAIN_DEPENDENCY "${path}"
+                    DEPENDS "${path}"
                     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                     COMMENT "Installing resource '${file}' (${config})"
                     )
@@ -161,9 +162,9 @@ macro(install_resources target outputDir)
             endforeach()
         else()
             add_custom_command(OUTPUT "${outputDir}/${name}"
-                COMMAND "${CMAKE_COMMAND}" -E copy "${file}" "${outputDir}/${name}"
-                MAIN_DEPENDENCY "${file}"
-                DEPENDS "${file}"
+                COMMAND "${CMAKE_COMMAND}" -E copy "${path}" "${outputDir}/${name}"
+                MAIN_DEPENDENCY "${path}"
+                DEPENDS "${path}"
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                 COMMENT "Installing resource '${file}'"
                 )

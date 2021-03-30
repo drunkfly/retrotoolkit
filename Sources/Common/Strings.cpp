@@ -93,6 +93,29 @@ std::wstring wstringFromUtf8(const std::string& str)
     return converter.from_bytes(str.c_str());
 }
 
+bool startsWith(const std::string& str, const char* start)
+{
+    size_t len = strlen(start);
+    if (str.length() < len)
+        return false;
+    return memcmp(str.data(), start, len) == 0;
+}
+
+bool startsWith(const std::string& str, const std::string& start)
+{
+    if (str.length() < start.length())
+        return false;
+    return memcmp(str.data(), start.data(), start.length()) == 0;
+}
+
+bool endsWith(const std::string& str, const char* end)
+{
+    size_t len = strlen(end);
+    if (str.length() < len)
+        return false;
+    return memcmp(str.data() + str.length() - len, end, len) == 0;
+}
+
 bool endsWith(const std::string& str, const std::string& end)
 {
     if (str.length() < end.length())

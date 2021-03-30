@@ -16,6 +16,8 @@ public:
     JStringList();
     ~JStringList();
 
+    void clear();
+
     void reserve(size_t size);
 
     void add(const char* str);
