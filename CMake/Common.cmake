@@ -36,6 +36,18 @@ endif()
 
 #######################################################################################################################
 
+macro(set_source_file_group file)
+    get_filename_component(path "${file}" DIRECTORY)
+    if ("${path}" STREQUAL "")
+        string(REPLACE "/" "\\" group "Source Files")
+    else()
+        string(REPLACE "/" "\\" group "Source Files/${path}")
+    endif()
+    source_group("${group}" FILES "${file}")
+endmacro()
+
+#######################################################################################################################
+
 macro(install_library config targetDir file)
     get_filename_component(name "${file}" NAME)
     if(EXISTS "${file}" AND NOT EXISTS "${targetDir}/${name}")
@@ -136,10 +148,28 @@ macro(install_resources target outputDir)
         get_filename_component(name "${file}" NAME)
         if(MSVC)
             foreach(config ${CMAKE_CONFIGURATION_TYPES})
-                configure_file("${file}" "${outputDir}/${config}/${name}" COPYONLY)
+                add_custom_command(OUTPUT "${outputDir}/${config}/${name}"
+                    COMMAND "${CMAKE_COMMAND}" -E copy "${file}" "${outputDir}/${config}/${name}"
+                    MAIN_DEPENDENCY "${file}"
+                    DEPENDS "${file}"
+                    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                    COMMENT "Installing resource '${file}' (${config})"
+                    )
+                source_group("Generated Files\\${config}" FILES "${outputDir}/${config}/${name}")
+                set_source_files_properties("${outputDir}/${config}/${name}" PROPERTIES HEADER_FILE_ONLY TRUE)
+                target_sources("${target}" PRIVATE "${outputDir}/${config}/${name}")
             endforeach()
         else()
-            configure_file("${file}" "${outputDir}/${name}" COPYONLY)
+            add_custom_command(OUTPUT "${outputDir}/${name}"
+                COMMAND "${CMAKE_COMMAND}" -E copy "${file}" "${outputDir}/${name}"
+                MAIN_DEPENDENCY "${file}"
+                DEPENDS "${file}"
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                COMMENT "Installing resource '${file}'"
+                )
+            source_group("Generated Files" FILES "${outputDir}/${config}/${name}")
+            set_source_files_properties("${outputDir}/${config}/${name}" PROPERTIES HEADER_FILE_ONLY TRUE)
+            target_sources("${target}" PRIVATE "${outputDir}/${config}/${name}")
         endif()
     endforeach()
 endmacro()
@@ -160,6 +190,7 @@ macro(add target type)
         "SOURCES"
         "LIBS"
         "USES"
+        "DEPENDS"
         "PRIVATE_DEFINES"
         "DEFINES"
         "PRIVATE_INCLUDE_DIRS"
@@ -296,6 +327,13 @@ macro(add target type)
     target_link_libraries("${target}" PUBLIC ${CMAKE_DL_LIBS})
 
     #########################################################################################################
+    ## Dependencies
+
+    if(ARG_DEPENDS)
+        add_dependencies("${target}" ${ARG_DEPENDS})
+    endif()
+
+    #########################################################################################################
     ## Install files
 
     if(ARG_INSTALL_RESOURCES)
@@ -315,14 +353,7 @@ macro(add target type)
 
     foreach(file ${src})
         get_filename_component(ext "${file}" EXT)
-        get_filename_component(path "${file}" DIRECTORY)
-
-        if ("${path}" STREQUAL "")
-            string(REPLACE "/" "\\" group "Source Files")
-        else()
-            string(REPLACE "/" "\\" group "Source Files/${path}")
-        endif()
-        source_group("${group}" FILES "${file}")
+        set_source_file_group("${file}")
 
         get_property(header_only SOURCE "${file}" PROPERTY HEADER_FILE_ONLY)
         if(header_only)

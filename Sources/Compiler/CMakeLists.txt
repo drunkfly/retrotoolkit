@@ -8,9 +8,11 @@ add(Compiler
         AudioFile
         FuseUtils
         LibSpectrum
-        JavaOutputWriter
+        JavaClasspathEmbedded
         ZX7
         LZSA
+    DEPENDS
+        JavaClasspath
     INSTALL_RESOURCES
         ../Java/Build/RetroEngine.jar
         ../Java/Build/RetroTools.jar

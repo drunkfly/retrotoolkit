@@ -1,8 +1,8 @@
 @echo off
 setlocal
 
-set JAVA_HOME=C:\Program Files (x86)\Java\jdk1.8.0_202
-set ANT=C:\Program Files\Apache Ant\bin\ant.bat
+set JAVA_HOME=C:\Program Files\Java\jdk1.5.0_22
+set ANT=%~dp0..\..\Libs\Ant\bin\ant.bat
 
 call "%ANT%"
 if errorlevel 1 goto error

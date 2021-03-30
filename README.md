@@ -5,6 +5,15 @@ Retro Toolkit
 and make frequent backups of your projects! If you find any problems, please report them through the
 GitHub issue system.**
 
+Compiling
+---------
+
+You will need to install the following dependencies:
+
+* CMake 3.16 or newer.
+* Qt 5.15. Older 5.x versions may work as well, but are not tested
+* Java Development Kit 1.5 or newer.
+
 Known Issues
 ------------
 
@@ -41,3 +50,7 @@ educational use, modification and redistribution, free of charge and without dur
 
 This software also includes a bunch of third party software. Please consult licensing for this software in the
 corresponding directories inside `Libs`.
+
+Please note that Apache Ant included into source distribution uses the Apache 2 license which is incompatible with
+GNU GPL v2. Apache Ant is only used during the compilation process as an external tool and is not included into
+the final distribution.

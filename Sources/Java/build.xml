@@ -1,6 +1,6 @@
-<project name="java" default="build" basedir=".">
+<project name="java" default="build-classpath" basedir=".">
 
-    <target name="build">
+    <target name="build-classpath">
         <mkdir dir="Build/Classpath" />
         <mkdir dir="Build/Tools" />
 
@@ -9,8 +9,8 @@
                destdir="Build/Classpath"
                bootclasspath="Classpath"
                debug="on"
-               source="1.7"
-               target="1.7"
+               source="1.5"
+               target="1.5"
                >
             <compilerarg value="-Xlint:all" />
         </javac>
@@ -18,8 +18,8 @@
                srcdir="Tools"
                destdir="Build/Tools"
                debug="on"
-               source="1.7"
-               target="1.7"
+               source="1.5"
+               target="1.5"
                >
             <compilerarg value="-Xlint:all" />
         </javac>
