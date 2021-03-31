@@ -16,8 +16,11 @@ public:
 
     static std::filesystem::path findJvmDll(const std::filesystem::path& jdkPath);
     static std::filesystem::path findJavaC(const std::filesystem::path& jdkPath);
+    static std::filesystem::path findToolsJar(const std::filesystem::path& jdkPath);
 
-    static void load(std::filesystem::path dllPath);
+    static void setListener(ICompilerListener* listener);
+
+    static void load(const std::filesystem::path& jdkPath);
     static void destroy();
 
     static bool isAttached();
@@ -40,9 +43,9 @@ public:
 
     static jclass stringClass();
 
-    static bool compile(const JStringList& args, ICompilerListener* listener);
+    static bool compile(const JStringList& args);
     static bool runClass(const char* className, const JStringList& args,
-        ICompilerListener* listener, bool useClassLoader = false, const JStringList* classPath = nullptr);
+        bool useClassLoader = false, const JStringList* classPath = nullptr);
 
 private:
     static void JNICALL drunkfly_Messages_print(JNIEnv* env, jclass, jstring message);
@@ -51,6 +54,8 @@ private:
     static jobject JNICALL drunkfly_BuilderClassLoader_getInstance(JNIEnv* env, jclass);
 
     static void ensureNecessaryClassesLoaded();
+
+    static jint vfprintfHook(FILE* fp, const char* format, va_list args);
 
     DISABLE_COPY(JVM);
 };

@@ -96,7 +96,7 @@ struct JNIEnv;
 #define JNI_STRUCT_BEGIN(NAME, UNUSED) struct NAME { const struct { void* unused[UNUSED];
 #define JNI_STRUCT_END() }* vtbl; };
 
-typedef jint (JNICALL* PFNJNICREATEJAVAVM)(JavaVM**, JNIEnv**, void*);
+typedef jint (JNICALL* PFNJNICREATEJAVAVM)(JavaVM**, JNIEnv**, JavaVMInitArgs*);
 
 JNI_STRUCT_BEGIN(JNIEnv, 4)
     jint            JNIFUNC(GetVersion)                     (JNIEnv*);

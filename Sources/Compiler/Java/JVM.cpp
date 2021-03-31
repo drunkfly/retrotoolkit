@@ -1,4 +1,5 @@
 #include "JVM.h"
+#include "Common/IO.h"
 #include "Compiler/Java/JStringList.h"
 #include "Compiler/Compiler.h"
 #include "Compiler/CompilerError.h"
@@ -149,9 +150,32 @@ std::filesystem::path JVM::findJavaC(const std::filesystem::path& jdkPath)
     throw CompilerError(nullptr, ss.str());
 }
 
-void JVM::load(std::filesystem::path dllPath)
+std::filesystem::path JVM::findToolsJar(const std::filesystem::path& jdkPath)
+{
+    std::filesystem::path toolsJar;
+
+    toolsJar = jdkPath / "lib/tools.jar";
+    if (std::filesystem::exists(toolsJar) && std::filesystem::is_regular_file(toolsJar))
+        return toolsJar;
+
+    toolsJar = jdkPath / "jmods/jdk.compiler.jmod";
+    if (std::filesystem::exists(toolsJar) && std::filesystem::is_regular_file(toolsJar))
+        return toolsJar;
+
+    std::stringstream ss;
+    ss << "Unable to find \"tools.jar\" or \"jdk.compiler.jmod\" in \"" << jdkPath.string() << "\".";
+    throw CompilerError(nullptr, ss.str());
+}
+
+void JVM::setListener(ICompilerListener* listener)
+{
+    compilerListener = listener;
+}
+
+void JVM::load(const std::filesystem::path& jdkPath)
 {
     if (!jvmDll) {
+        std::filesystem::path dllPath = findJvmDll(jdkPath);
       #ifdef _WIN32
         jvmDll = LoadLibraryW(dllPath.c_str());
         if (!jvmDll) {
@@ -196,16 +220,29 @@ void JVM::load(std::filesystem::path dllPath)
         }
       #endif
 
+        std::filesystem::path toolsJar = findToolsJar(jdkPath).lexically_normal();
+        std::string classpath = "-Djava.class.path=" + pathToUtf8(toolsJar);
+      #ifdef _WIN32
+        for (char& ch : classpath) {
+            if (ch == '\\')
+                ch = '/';
+        }
+      #endif
+
         std::vector<JavaVMOption> opts;
+        opts.emplace_back(JavaVMOption{ "vfprintf", vfprintfHook });
+        opts.emplace_back(JavaVMOption{ classpath.c_str() });
       #ifndef NDEBUG
-        opts.emplace_back(JavaVMOption{ "-verbose:jni" });
+        //opts.emplace_back(JavaVMOption{ "-verbose:gc" });
+        //opts.emplace_back(JavaVMOption{ "-verbose:class" });
+        //opts.emplace_back(JavaVMOption{ "-verbose:jni" });
       #endif
 
         JavaVMInitArgs args;
         args.version = JNI_VERSION_1_4;
         args.options = opts.data();
         args.nOptions = int(opts.size());
-        args.ignoreUnrecognized = false;
+        args.ignoreUnrecognized = JNI_FALSE;
 
         int r = JNI_CreateJavaVM(&jvm, &env, &args);
         if (r != JNI_OK) {
@@ -480,27 +517,20 @@ jclass JVM::stringClass()
     return stringClassRef;
 }
 
-bool JVM::compile(const JStringList& args, ICompilerListener* listener)
+bool JVM::compile(const JStringList& args)
 {
-    assert(!compilerListener);
-
     jobjectArray argList = args.toJavaArray();
     if (!argList)
         return false;
 
-    compilerListener = listener;
     jint result = env->vtbl->CallStaticIntMethod(env, compilerClassRef, compilerMethodID, argList, printWriterRef);
-    compilerListener = nullptr;
-
     env->vtbl->DeleteLocalRef(env, argList);
 
     return (!env->vtbl->ExceptionCheck(env) && result == 0);
 }
 
-bool JVM::runClass(const char* className, const JStringList& args,
-    ICompilerListener* listener, bool useClassLoader, const JStringList* classPath)
+bool JVM::runClass(const char* className, const JStringList& args, bool useClassLoader, const JStringList* classPath)
 {
-    assert(!compilerListener);
     assert(!classLoader);
 
     if (useClassLoader) {
@@ -511,9 +541,7 @@ bool JVM::runClass(const char* className, const JStringList& args,
                 return false;
         }
 
-        compilerListener = listener;
         classLoader = env->vtbl->NewObject(env, classLoaderClassRef, classLoaderConstructorID, classPathArray);
-        compilerListener = nullptr;
 
         if (classPathArray)
             env->vtbl->DeleteLocalRef(env, classPathArray);
@@ -535,9 +563,7 @@ bool JVM::runClass(const char* className, const JStringList& args,
             return false;
         }
 
-        compilerListener = listener;
         classRef = env->vtbl->CallObjectMethod(env, classLoader, classLoaderLoadClassMethodID, classNameString);
-        compilerListener = nullptr;
 
         env->vtbl->DeleteLocalRef(env, classNameString);
     }
@@ -572,9 +598,7 @@ bool JVM::runClass(const char* className, const JStringList& args,
         return false;
     }
 
-    compilerListener = listener;
     env->vtbl->CallStaticVoidMethod(env, classRef, mainMethodID, argList);
-    compilerListener = nullptr;
 
     env->vtbl->DeleteLocalRef(env, argList);
     if (classRef != builderLauncherClassRef)
@@ -761,4 +785,16 @@ void JVM::ensureNecessaryClassesLoaded()
             throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.Builder\".");
         }
     }
+}
+
+jint JVM::vfprintfHook(FILE* fp, const char* format, va_list args)
+{
+    char buf[1024];
+    vsnprintf(buf, sizeof(buf), format, args);
+
+    assert(compilerListener);
+    if (compilerListener)
+        compilerListener->printMessage(buf);
+
+    return 0;
 }

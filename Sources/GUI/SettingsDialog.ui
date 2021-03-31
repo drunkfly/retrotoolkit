@@ -69,6 +69,16 @@
         </widget>
        </item>
        <item>
+        <widget class="QLabel" name="jdkToolsJarNotFoundLabel">
+         <property name="text">
+          <string>Compiler API (tools.jar) was not found in the selected JDK. Please make sure that you have selected path to the root of JDK installation directory.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="jdkWrongArchitectureLabel">
          <property name="text">
           <string>Selected JDK was compiled for different processor architecture.</string>

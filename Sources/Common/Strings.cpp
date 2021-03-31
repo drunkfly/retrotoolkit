@@ -90,7 +90,13 @@ bool intFromString(int& out, const char* p, size_t size)
 std::wstring wstringFromUtf8(const std::string& str)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.from_bytes(str.c_str());
+    return converter.from_bytes(str);
+}
+
+std::string wstringToUtf8(const std::wstring& str)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    return converter.to_bytes(str);
 }
 
 bool startsWith(const std::string& str, const char* start)

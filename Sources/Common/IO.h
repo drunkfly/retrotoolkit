@@ -11,6 +11,7 @@ enum WriteFlag
 };
 
 std::filesystem::path pathFromUtf8(const std::string& name);
+std::string pathToUtf8(const std::filesystem::path& path);
 
 std::string loadFile(const std::filesystem::path& fileName);
 

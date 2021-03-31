@@ -37,7 +37,7 @@ void BuildThread::compile()
             Settings settings;
             QString jdkPath = settings.jdkPath;
             if (!jdkPath.isEmpty())
-                compiler.setJvmDllPath(JVM::findJvmDll(toPath(jdkPath)));
+                compiler.setJdkPath(toPath(jdkPath));
             compiler.setEnableWav(mEnableWav);
             compiler.buildProject(toPath(mProjectFile), mProjectConfiguration);
             mLinkerOutput = compiler.linkerOutput();
@@ -78,6 +78,10 @@ void BuildThread::compilerProgress(int current, int total, const std::string& me
 
 void BuildThread::printMessage(std::string text)
 {
+  #ifdef _WIN32
+    OutputDebugStringA(text.c_str());
+  #endif
+
     emit message(std::move(text));
 }
 

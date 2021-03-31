@@ -32,13 +32,17 @@ void LogWidget::print(const std::string& message)
 bool LogWidget::flush(bool force)
 {
     size_t n = mBuffer.size();
-    if (n == 0 && !force)
-        return false;
-
-    if (mBuffer[n - 1] == '\r')
-        mBuffer[n - 1] = 0;
-    else
-        mBuffer.emplace_back(0);
+    if (n == 0) {
+        if (!force)
+            return false;
+        else
+            mBuffer.emplace_back(0);
+    } else {
+        if (mBuffer[n - 1] == '\r')
+            mBuffer[n - 1] = 0;
+        else
+            mBuffer.emplace_back(0);
+    }
 
     println(QString::fromUtf8(mBuffer.data()));
     mBuffer.clear();

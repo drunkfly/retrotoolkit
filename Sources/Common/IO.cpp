@@ -71,6 +71,15 @@ std::filesystem::path pathFromUtf8(const std::string& name)
   #endif
 }
 
+std::string pathToUtf8(const std::filesystem::path& path)
+{
+  #ifdef _WIN32
+    return wstringToUtf8(path.wstring());
+  #else
+    return path.string();
+  #endif
+}
+
 std::string loadFile(const std::filesystem::path& fileName)
 {
   #ifdef _WIN32

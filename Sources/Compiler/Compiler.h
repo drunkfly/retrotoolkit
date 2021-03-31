@@ -23,7 +23,7 @@ public:
     Compiler(GCHeap* heap, std::filesystem::path resourcesPath, ICompilerListener* listener = nullptr);
     ~Compiler();
 
-    void setJvmDllPath(std::filesystem::path path);
+    void setJdkPath(std::filesystem::path path);
 
     CompiledOutput* linkerOutput() const { return mLinkerOutput; }
     const std::optional<std::filesystem::path>& generatedWavFile() const { return mGeneratedWavFile; }
@@ -36,7 +36,7 @@ private:
     GCHeap* mHeap;
     ICompilerListener* mListener;
     CompiledOutput* mLinkerOutput;
-    std::optional<std::filesystem::path> mJvmDllPath;
+    std::optional<std::filesystem::path> mJdkPath;
     std::filesystem::path mProjectPath;
     std::filesystem::path mOutputPath;
     std::filesystem::path mResourcesPath;

@@ -52,9 +52,9 @@ Compiler::~Compiler()
     }
 }
 
-void Compiler::setJvmDllPath(std::filesystem::path path)
+void Compiler::setJdkPath(std::filesystem::path path)
 {
-    mJvmDllPath = std::move(path);
+    mJdkPath = std::move(path);
 }
 
 void Compiler::buildProject(const std::filesystem::path& projectFile, const std::string& projectConfiguration)
@@ -142,86 +142,93 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         if (mListener)
             mListener->compilerProgress(count++, total, "Initializing Java Virtual Machine...");
 
-        if (JVM::isLoaded()) {
-            if (!JVM::isAttached()) {
-                JVM::attachCurrentThread();
+        JVM::setListener(mListener);
+
+        try {
+            if (JVM::isLoaded()) {
+                if (!JVM::isAttached()) {
+                    JVM::attachCurrentThread();
+                    mShouldDetachJVM = true;
+                }
+            } else {
+                if (!mJdkPath.has_value())
+                    throw CompilerError(nullptr, "JDK path was not specified.");
+
+                JVM::load(*mJdkPath);
                 mShouldDetachJVM = true;
-            }
-        } else {
-            if (!mJvmDllPath.has_value())
-                throw CompilerError(nullptr, "JDK path was not specified.");
-
-            JVM::load(*mJvmDllPath);
-            mShouldDetachJVM = true;
-        }
-
-        if (mListener)
-            mListener->compilerProgress(count++, total, "Compiling Java sources...");
-
-        // Game code
-
-        if (!gameJavaFiles.empty()) {
-            JStringList list;
-            list.reserve(gameJavaFiles.size() + 12);
-            list.add("-Xlint:all");
-            list.add("-g");
-            list.add("-source");
-            list.add("1.8"); // FIXME: determine JVM version and use lesser version if needed
-            list.add("-target");
-            list.add("1.8");
-            list.add("-bootclasspath");
-            list.add(mResourcesPath / "RetroEngine.jar");
-            list.add("-sourcepath");
-            list.add(mProjectPath);
-            list.add("-d");
-            list.add(mOutputPath / "java");
-            for (const auto& file : gameJavaFiles)
-                list.add(file.fileID->path());
-
-            if (!JVM::compile(list, mListener)) {
-                JVM::throwIfException();
-                throw CompilerError(nullptr, "Java compilation failed.");
-            }
-        }
-
-        // Build and run tools
-
-        if (!buildJavaFiles.empty()) {
-            JStringList list;
-            list.reserve(buildJavaFiles.size() + 8);
-            list.add("-Xlint:all");
-            list.add("-g");
-            list.add("-classpath");
-            list.add(mResourcesPath / "RetroBuild.jar");
-            list.add("-sourcepath");
-            list.add(mProjectPath);
-            list.add("-d");
-            list.add(mOutputPath / "java");
-            for (const auto& file : buildJavaFiles)
-                list.add(file.fileID->path());
-
-            if (!JVM::compile(list, mListener)) {
-                JVM::throwIfException();
-                throw CompilerError(nullptr, "Java compilation failed.");
             }
 
             if (mListener)
-                mListener->compilerProgress(count++, total, "Running Java tools...");
+                mListener->compilerProgress(count++, total, "Compiling Java sources...");
 
-            JStringList classpath;
-            classpath.add(mResourcesPath / "RetroBuild.jar");
-            classpath.add(mProjectPath / "!*.class");
-            classpath.add(mOutputPath / "java" / "*.class");
-            classpath.add(mOutputPath / "generated" / "=>");
+            // Game code
 
-            list.clear();
-            for (const auto& file : buildJavaFiles)
-                list.add(file.fileID->name());
+            if (!gameJavaFiles.empty()) {
+                JStringList list;
+                list.reserve(gameJavaFiles.size() + 12);
+                list.add("-Xlint:all");
+                list.add("-g");
+                list.add("-source");
+                list.add("1.8"); // FIXME: determine JVM version and use lesser version if needed
+                list.add("-target");
+                list.add("1.8");
+                list.add("-bootclasspath");
+                list.add(mResourcesPath / "RetroEngine.jar");
+                list.add("-sourcepath");
+                list.add(mProjectPath);
+                list.add("-d");
+                list.add(mOutputPath / "java");
+                for (const auto& file : gameJavaFiles)
+                    list.add(file.fileID->path());
 
-            if (!JVM::runClass("drunkfly/BuilderLauncher", list, mListener, true, &classpath)) {
-                JVM::throwIfException();
-                throw CompilerError(nullptr, "Error running build tool with Java.");
+                if (!JVM::compile(list)) {
+                    JVM::throwIfException();
+                    throw CompilerError(nullptr, "Java compilation failed.");
+                }
             }
+
+            // Build and run tools
+
+            if (!buildJavaFiles.empty()) {
+                JStringList list;
+                list.reserve(buildJavaFiles.size() + 8);
+                list.add("-Xlint:all");
+                list.add("-g");
+                list.add("-classpath");
+                list.add(mResourcesPath / "RetroBuild.jar");
+                list.add("-sourcepath");
+                list.add(mProjectPath);
+                list.add("-d");
+                list.add(mOutputPath / "java");
+                for (const auto& file : buildJavaFiles)
+                    list.add(file.fileID->path());
+
+                if (!JVM::compile(list)) {
+                    JVM::throwIfException();
+                    throw CompilerError(nullptr, "Java compilation failed.");
+                }
+
+                if (mListener)
+                    mListener->compilerProgress(count++, total, "Running Java tools...");
+
+                JStringList classpath;
+                classpath.add(mResourcesPath / "RetroBuild.jar");
+                classpath.add(mProjectPath / "!*.class");
+                classpath.add(mOutputPath / "java" / "*.class");
+                classpath.add(mOutputPath / "generated" / "=>");
+
+                list.clear();
+                for (const auto& file : buildJavaFiles)
+                    list.add(file.fileID->name());
+
+                if (!JVM::runClass("drunkfly/BuilderLauncher", list, true, &classpath)) {
+                    JVM::throwIfException();
+                    throw CompilerError(nullptr, "Error running build tool with Java.");
+                }
+            }
+        } catch (...) {
+            JVM::setListener(nullptr);
+            throw;
         }
     }
 

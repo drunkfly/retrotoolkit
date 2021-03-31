@@ -23,6 +23,8 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     mUi->jdkWrongArchitectureLabel->setText(red.arg(mUi->jdkWrongArchitectureLabel->text()));
     mUi->jdkReloadNoticeLabel->setVisible(false);
     mUi->jdkReloadNoticeLabel->setText(red.arg(mUi->jdkReloadNoticeLabel->text()));
+    mUi->jdkToolsJarNotFoundLabel->setVisible(false);
+    mUi->jdkToolsJarNotFoundLabel->setText(red.arg(mUi->jdkToolsJarNotFoundLabel->text()));
 
     Settings settings;
     mUi->jdkPathEdit->setText(settings.jdkPath);
@@ -56,9 +58,12 @@ void SettingsDialog::on_jdkPathEdit_textChanged(const QString& newText)
     mUi->jdkCompilerNotFoundLabel->setVisible(false);
     mUi->jdkWrongArchitectureLabel->setVisible(false);
     mUi->jdkReloadNoticeLabel->setVisible(false);
+    mUi->jdkToolsJarNotFoundLabel->setVisible(false);
+
+    std::filesystem::path jdkPath = toPath(newText);
 
     try {
-        jvmDllPath = JVM::findJvmDll(toPath(newText));
+        jvmDllPath = JVM::findJvmDll(jdkPath);
     } catch (const CompilerError&) {
         mUi->jdkDllNotFoundLabel->setVisible(true);
         return;
@@ -68,12 +73,22 @@ void SettingsDialog::on_jdkPathEdit_textChanged(const QString& newText)
     }
 
     try {
-        javacPath = JVM::findJavaC(toPath(newText));
+        javacPath = JVM::findJavaC(jdkPath);
     } catch (const CompilerError&) {
         mUi->jdkCompilerNotFoundLabel->setVisible(true);
         return;
     } catch (const std::exception&) {
         mUi->jdkCompilerNotFoundLabel->setVisible(true);
+        return;
+    }
+
+    try {
+        JVM::findToolsJar(jdkPath);
+    } catch (const CompilerError&) {
+        mUi->jdkToolsJarNotFoundLabel->setVisible(true);
+        return;
+    } catch (const std::exception&) {
+        mUi->jdkToolsJarNotFoundLabel->setVisible(true);
         return;
     }
 
