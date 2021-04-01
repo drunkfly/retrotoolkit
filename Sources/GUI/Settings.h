@@ -33,6 +33,9 @@ public:
     PROPERTY(QString, lastProjectFile, QString());
 
     PROPERTY(QString, jdkPath, QString());
+    PROPERTY(bool, jdkVerboseGC, false);
+    PROPERTY(bool, jdkVerboseClass, false);
+    PROPERTY(bool, jdkVerboseJNI, false);
 
     Settings();
     ~Settings();

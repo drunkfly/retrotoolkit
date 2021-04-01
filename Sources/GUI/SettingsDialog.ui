@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>600</width>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -49,9 +49,9 @@
         </layout>
        </item>
        <item>
-        <widget class="QLabel" name="jdkDllNotFoundLabel">
+        <widget class="QLabel" name="jdkErrorLabel">
          <property name="text">
-          <string>JVM shared library was not found in the selected JDK. Please make sure that you have selected path to the root of JDK installation directory.</string>
+          <string notr="true">[ERROR]</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -59,42 +59,23 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="jdkCompilerNotFoundLabel">
+        <widget class="QCheckBox" name="jdkVerboseGC">
          <property name="text">
-          <string>Java compiler was not found in the selected JDK. Please make sure that you have selected path to the root of JDK installation directory.</string>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
+          <string>Verbose &amp;GC</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="jdkToolsJarNotFoundLabel">
+        <widget class="QCheckBox" name="jdkVerboseClass">
          <property name="text">
-          <string>Compiler API (tools.jar) was not found in the selected JDK. Please make sure that you have selected path to the root of JDK installation directory.</string>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
+          <string>Verbose &amp;class</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="jdkWrongArchitectureLabel">
+        <widget class="QCheckBox" name="jdkVerboseJNI">
          <property name="text">
-          <string>Selected JDK was compiled for different processor architecture.</string>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="jdkReloadNoticeLabel">
-         <property name="text">
-          <string>JVM is already loaded. Changes to JDK path will only take effect after restart of the IDE.</string>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
+          <string>Verbose J&amp;NI</string>
          </property>
         </widget>
        </item>
@@ -110,6 +91,16 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="jdkAlreadyLoadedLabel">
+         <property name="text">
+          <string notr="true">[ALREADY LOADED]</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

@@ -38,6 +38,9 @@ void BuildThread::compile()
             QString jdkPath = settings.jdkPath;
             if (!jdkPath.isEmpty())
                 compiler.setJdkPath(toPath(jdkPath));
+            JVM::setVerboseGC(settings.jdkVerboseGC);
+            JVM::setVerboseClass(settings.jdkVerboseClass);
+            JVM::setVerboseJNI(settings.jdkVerboseJNI);
             compiler.setEnableWav(mEnableWav);
             compiler.buildProject(toPath(mProjectFile), mProjectConfiguration);
             mLinkerOutput = compiler.linkerOutput();

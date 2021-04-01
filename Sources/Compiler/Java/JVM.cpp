@@ -29,6 +29,12 @@ extern const unsigned char JavaBuilderLauncher[];
 static JavaVM* jvm;
 static JNIEnv* env;
 static std::filesystem::path loadedDllPath;
+static bool currentVerboseGC;
+static bool currentVerboseClass;
+static bool currentVerboseJNI;
+static bool verboseGC;
+static bool verboseClass;
+static bool verboseJNI;
 static jclass stringClassRef;
 static jclass outputWriterClassRef;
 static bool outputWriterMethodsRegistered;
@@ -67,6 +73,21 @@ bool JVM::isLoaded()
 const std::filesystem::path& JVM::loadedDllPath()
 {
     return ::loadedDllPath;
+}
+
+bool JVM::loadedVerboseGC()
+{
+    return currentVerboseGC;
+}
+
+bool JVM::loadedVerboseClass()
+{
+    return currentVerboseClass;
+}
+
+bool JVM::loadedVerboseJNI()
+{
+    return currentVerboseJNI;
 }
 
 JNIEnv* JVM::jniEnv()
@@ -172,6 +193,21 @@ void JVM::setListener(ICompilerListener* listener)
     compilerListener = listener;
 }
 
+void JVM::setVerboseGC(bool flag)
+{
+    verboseGC = flag;
+}
+
+void JVM::setVerboseClass(bool flag)
+{
+    verboseClass = flag;
+}
+
+void JVM::setVerboseJNI(bool flag)
+{
+    verboseJNI = flag;
+}
+
 void JVM::load(const std::filesystem::path& jdkPath)
 {
     if (!jvmDll) {
@@ -221,7 +257,7 @@ void JVM::load(const std::filesystem::path& jdkPath)
       #endif
 
         std::filesystem::path toolsJar = findToolsJar(jdkPath).lexically_normal();
-        std::string classpath = "-Djava.class.path=" + pathToUtf8(toolsJar);
+        std::string classpath = "-Djava.class.path=" + toolsJar.string();
       #ifdef _WIN32
         for (char& ch : classpath) {
             if (ch == '\\')
@@ -231,12 +267,19 @@ void JVM::load(const std::filesystem::path& jdkPath)
 
         std::vector<JavaVMOption> opts;
         opts.emplace_back(JavaVMOption{ "vfprintf", vfprintfHook });
+        opts.emplace_back(JavaVMOption{ "exit", exitHook });
+        opts.emplace_back(JavaVMOption{ "abort", abortHook });
         opts.emplace_back(JavaVMOption{ classpath.c_str() });
-      #ifndef NDEBUG
-        //opts.emplace_back(JavaVMOption{ "-verbose:gc" });
-        //opts.emplace_back(JavaVMOption{ "-verbose:class" });
-        //opts.emplace_back(JavaVMOption{ "-verbose:jni" });
-      #endif
+        if (verboseGC)
+            opts.emplace_back(JavaVMOption{ "-verbose:gc" });
+        if (verboseClass)
+            opts.emplace_back(JavaVMOption{ "-verbose:class" });
+        if (verboseJNI)
+            opts.emplace_back(JavaVMOption{ "-verbose:jni" });
+
+        currentVerboseGC = verboseGC;
+        currentVerboseClass = verboseClass;
+        currentVerboseJNI = verboseJNI;
 
         JavaVMInitArgs args;
         args.version = JNI_VERSION_1_4;
@@ -797,4 +840,12 @@ jint JVM::vfprintfHook(FILE* fp, const char* format, va_list args)
         compilerListener->printMessage(buf);
 
     return 0;
+}
+
+void JVM::exitHook(int code)
+{
+}
+
+void JVM::abortHook()
+{
 }

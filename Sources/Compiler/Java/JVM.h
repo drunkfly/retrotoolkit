@@ -11,6 +11,9 @@ class JVM
 public:
     static bool isLoaded();
     static const std::filesystem::path& loadedDllPath();
+    static bool loadedVerboseGC();
+    static bool loadedVerboseClass();
+    static bool loadedVerboseJNI();
 
     static JNIEnv* jniEnv();
 
@@ -19,6 +22,9 @@ public:
     static std::filesystem::path findToolsJar(const std::filesystem::path& jdkPath);
 
     static void setListener(ICompilerListener* listener);
+    static void setVerboseGC(bool flag);
+    static void setVerboseClass(bool flag);
+    static void setVerboseJNI(bool flag);
 
     static void load(const std::filesystem::path& jdkPath);
     static void destroy();
@@ -55,7 +61,9 @@ private:
 
     static void ensureNecessaryClassesLoaded();
 
-    static jint vfprintfHook(FILE* fp, const char* format, va_list args);
+    static int vfprintfHook(FILE* fp, const char* format, va_list args);
+    static void exitHook(int code);
+    static void abortHook();
 
     DISABLE_COPY(JVM);
 };
