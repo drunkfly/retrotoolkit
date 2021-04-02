@@ -9,11 +9,6 @@ public final class IO
 {
     private IO() {}
 
-    public static byte[] loadAsset(String path)
-    {
-        return loadFile(BuilderClassLoader.getInstance().findResourceFile(path));
-    }
-
     public static byte[] loadFile(File file)
     {
         try {
@@ -44,10 +39,8 @@ public final class IO
         }
     }
 
-    public static void generateFile(String name, byte[] data)
+    public static void writeFile(File file, byte[] data)
     {
-        File file = new File(BuilderClassLoader.getInstance().getOutputDirectory(), name);
-
         File parentDir = file.getParentFile();
         if (parentDir != null)
             parentDir.mkdirs();

@@ -25,7 +25,7 @@ final class BuilderLauncher
                     continue;
 
                 Builder builder = (Builder)classInstance.newInstance();
-                builder.build();
+                builder.build(false);
             }
         } finally {
             currentThread.setContextClassLoader(oldClassLoader);
