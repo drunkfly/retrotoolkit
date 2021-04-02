@@ -143,7 +143,7 @@ std::filesystem::path JVM::findJvmDll(const std::filesystem::path& jdkPath)
         return jvmDllPath;
   #endif
 
-    // FIXME: Linux, MacOS
+    // FIXME: MacOS
 
     std::stringstream ss;
     ss << "Unable to find JVM shared library in \"" << jdkPath.string() << "\".";
@@ -164,7 +164,7 @@ std::filesystem::path JVM::findJavaC(const std::filesystem::path& jdkPath)
         return javacPath;
   #endif
 
-    // FIXME: Linux, MacOS
+    // FIXME: MacOS
 
     std::stringstream ss;
     ss << "Unable to find Java compiler executable in \"" << jdkPath.string() << "\".";

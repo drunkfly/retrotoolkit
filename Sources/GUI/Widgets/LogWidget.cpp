@@ -6,6 +6,7 @@ LogWidget::LogWidget(QWidget* parent)
 {
     setUndoRedoEnabled(false);
     setReadOnly(true);
+    setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     mBuffer.reserve(1024);
 }
 

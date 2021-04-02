@@ -61,21 +61,21 @@
        <item>
         <widget class="QCheckBox" name="jdkVerboseGC">
          <property name="text">
-          <string>Verbose &amp;GC</string>
+          <string>Enable &amp;GC debug messages</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="jdkVerboseClass">
          <property name="text">
-          <string>Verbose &amp;class</string>
+          <string>Enable &amp;class debug messages</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="jdkVerboseJNI">
          <property name="text">
-          <string>Verbose J&amp;NI</string>
+          <string>Enable J&amp;NI debug messages</string>
          </property>
         </widget>
        </item>
