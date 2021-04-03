@@ -26,14 +26,3 @@ void JavaStdClasses::releaseAll()
     #include "Compiler/Java/JavaStdClasses.lst"
     #undef JAVA_STD_CLASS
 }
-
-void JavaStdClasses::write(const std::filesystem::path& path)
-{
-}
-
-void JavaStdClasses::write(const std::filesystem::path& path, const char* className, const void* bytes, size_t size)
-{
-    std::stringstream ss;
-    ss << className << ".class";
-    writeFile(path / ss.str(), bytes, size, SkipIfSameContent);
-}

@@ -12,9 +12,6 @@ public:
 
     static void ensureLoaded();
     static void releaseAll();
-
-    static void write(const std::filesystem::path& path);
-    static void write(const std::filesystem::path& path, const char* className, const void* bytes, size_t size);
 };
 
 #endif

@@ -79,21 +79,11 @@ set_directory_properties(PROPERTIES
     )
 
 #######################################################################################################################
-# Embed some classes into compiler binary
-
-file(GLOB_RECURSE src
-    CONFIGURE_DEPENDS
-    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-        Build/_/*.h
-    )
+# Generate class loader
 
 set(JavaClasses_h "${CMAKE_CURRENT_SOURCE_DIR}/Build/_/Compiler/Java/JavaClasses.h")
 set_source_files_properties("${JavaClasses_h}" PROPERTIES GENERATED TRUE)
-
-source_group("Generated Files" FILES ${src} "${JavaClasses_h}")
-foreach(file ${src})
-    set_source_files_properties("${file}" PROPERTIES GENERATED TRUE)
-endforeach()
+source_group("Generated Files" FILES "${JavaClasses_h}")
 
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/Build/RetroBuild.jar" PROPERTIES GENERATED TRUE)
 
@@ -123,7 +113,6 @@ add(JavaClasspathEmbedded
     INCLUDE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/Build/_"
     SOURCES
-        ${src}
         "${JavaClasses_h}"
         CMakeEmbedClasses.cmake
         JavaClasses.cpp

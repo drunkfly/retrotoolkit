@@ -167,7 +167,7 @@ const std::filesystem::path& JVM::loadedDllPath()
     return ::loadedDllPath;
 }
 
-void JVM::load(const std::filesystem::path& jdkPath)
+void JVM::load(const std::filesystem::path& jdkPath, const std::filesystem::path& classPath)
 {
     if (!jvmDll) {
         std::filesystem::path dllPath = findJvmDll(jdkPath);
@@ -193,6 +193,7 @@ void JVM::load(const std::filesystem::path& jdkPath)
 
     if (!jvm) {
       #ifdef _WIN32
+        const char* sep = ";";
         auto JNI_CreateJavaVM = (PFNJNICREATEJAVAVM)GetProcAddress(jvmDll, "JNI_CreateJavaVM");
         if (!JNI_CreateJavaVM) {
             DWORD dwLastError = GetLastError();
@@ -203,6 +204,7 @@ void JVM::load(const std::filesystem::path& jdkPath)
             throw CompilerError(nullptr, ss.str());
         }
       #else
+        const char* sep = ":";
         dlerror();
         auto JNI_CreateJavaVM = (PFNJNICREATEJAVAVM)dlsym(jvmDll, "JNI_CreateJavaVM");
         if (!JNI_CreateJavaVM) {
@@ -215,8 +217,12 @@ void JVM::load(const std::filesystem::path& jdkPath)
         }
       #endif
 
-        std::filesystem::path toolsJar = findToolsJar(jdkPath).lexically_normal();
-        std::string classpath = "-Djava.class.path=" + toolsJar.string();
+        std::stringstream ss;
+        ss << "-Djava.class.path=";
+        ss << findToolsJar(jdkPath).lexically_normal().string();
+        ss << sep;
+        ss << classPath.string();
+        std::string classpath = ss.str();
       #ifdef _WIN32
         for (char& ch : classpath) {
             if (ch == '\\')

@@ -32,7 +32,7 @@ public:
 
     static bool isLoaded();
     static const std::filesystem::path& loadedDllPath();
-    static void load(const std::filesystem::path& jdkPath);
+    static void load(const std::filesystem::path& jdkPath, const std::filesystem::path& classPath);
     static void unloadPermanently();
 
     static bool isAttached();

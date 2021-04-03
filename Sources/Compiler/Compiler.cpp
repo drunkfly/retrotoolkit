@@ -159,7 +159,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 throw CompilerError(nullptr, "JDK path was not specified.");
 
             mShouldDetachJVM = true;
-            JVM::load(*mJdkPath);
+            JVM::load(*mJdkPath, mResourcesPath / "RetroBuild.jar");
         }
 
         if (mListener)
@@ -194,14 +194,12 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         // Build and run tools
 
         if (!buildJavaFiles.empty()) {
-            JavaClasses::write(mOutputPath / "classpath");
-
             JStringList list;
             list.reserve(buildJavaFiles.size() + 8);
             list.add("-Xlint:all");
             list.add("-g");
             list.add("-classpath");
-            list.add(mOutputPath / "classpath");
+            list.add(mResourcesPath / "RetroBuild.jar");
             list.add("-sourcepath");
             list.add(mProjectPath);
             list.add("-d");

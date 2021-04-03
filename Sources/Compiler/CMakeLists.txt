@@ -14,6 +14,7 @@ add(Compiler
     DEPENDS
         JavaClasspath
     INSTALL_RESOURCES
+        ../Java/Build/RetroBuild.jar
         ../Java/Build/RetroEngine.jar
     SOURCES
         Assembler/AssemblerContext.cpp
