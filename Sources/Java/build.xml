@@ -29,6 +29,11 @@
              includes="**"
             >
         </jar>
+        <jar destfile="Build/RetroBuild.jar"
+             basedir="Build/Tools"
+             includes="**"
+            >
+        </jar>
     </target>
 
     <target name="clean">

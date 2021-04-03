@@ -105,8 +105,12 @@ public final class BuilderClassLoader extends URLClassLoader
         for (File dir : classDirectories) {
             File classFile = new File(dir, classFileName);
             if (classFile.isFile()) {
-                byte[] classData = IO.loadFile(classFile);
-                return defineClass(name, classData, 0, classData.length);
+                try {
+                    byte[] classData = IO.loadFile(classFile);
+                    return defineClass(name, classData, 0, classData.length);
+                } catch (IOException e) {
+                    throw new RuntimeException("Unable to load class file \"" + classFile + "\".", e);
+                }
             }
         }
 

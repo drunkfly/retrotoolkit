@@ -88,6 +88,8 @@ foreach(file ${src})
     set_source_files_properties("${file}" PROPERTIES GENERATED TRUE)
 endforeach()
 
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/Build/RetroBuild.jar" PROPERTIES GENERATED TRUE)
+
 add_custom_command(OUTPUT
         "${JavaClasses_h}"
     COMMAND
@@ -100,7 +102,7 @@ add_custom_command(OUTPUT
     MAIN_DEPENDENCY
         CMakeEmbedClasses.cmake
     DEPENDS
-        JavaClasspath
+        "${CMAKE_CURRENT_SOURCE_DIR}/Build/RetroBuild.jar"
     )
 
 add(JavaClasspathEmbedded

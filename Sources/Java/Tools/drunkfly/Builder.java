@@ -65,7 +65,11 @@ public abstract class Builder
     protected byte[] loadBytes(String path)
     {
         File file = registerInputFile(path);
-        return IO.loadFile(file);
+        try {
+            return IO.loadFile(file);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to load \"" + path + "\".", e);
+        }
     }
 
     protected Gfx loadGfx(String path)
@@ -81,7 +85,11 @@ public abstract class Builder
     protected void writeFile(String path, byte[] data)
     {
         File file = registerOutputFile(path);
-        IO.writeFile(file, data);
+        try {
+            IO.writeFile(file, data);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write \"" + path + "\".", e);
+        }
     }
 
     // Dependency management
@@ -173,10 +181,10 @@ public abstract class Builder
                 stream.writeUTF(outputFiles.get(i).path);
 
             data = byteStream.toByteArray();
+
+            IO.writeFile(depFile, data);
         } catch (IOException e) {
             throw new RuntimeException("Unable to write file \"" + depFile + "\".", e);
         }
-
-        IO.writeFile(depFile, data);
     }
 }
