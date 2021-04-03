@@ -1,5 +1,5 @@
-#ifndef JNI_H
-#define JNI_H
+#ifndef COMPILER_JAVA_JNI_H
+#define COMPILER_JAVA_JNI_H
 
 #include "Common/Common.h"
 

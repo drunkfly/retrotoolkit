@@ -294,6 +294,8 @@ void JVM::load(const std::filesystem::path& jdkPath)
             printJniError(ss, r);
             throw CompilerError(nullptr, ss.str());
         }
+
+        atexit(JVM::destroy);
     }
 
     ensureNecessaryClassesLoaded();
@@ -844,8 +846,10 @@ jint JVM::vfprintfHook(FILE* fp, const char* format, va_list args)
 
 void JVM::exitHook(int code)
 {
+    assert(false);
 }
 
 void JVM::abortHook()
 {
+    assert(false);
 }

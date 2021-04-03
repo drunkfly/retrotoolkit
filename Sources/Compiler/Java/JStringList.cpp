@@ -58,7 +58,7 @@ jobjectArray JStringList::toJavaArray() const
 {
     auto env = JVM::jniEnv();
 
-    auto arr = (jobjectArray)env->vtbl->NewObjectArray(env, jint(mArguments.size()), JVM::stringClass(), nullptr);
+    auto arr = jobjectArray(env->vtbl->NewObjectArray(env, jint(mArguments.size()), JVM::stringClass(), nullptr));
     if (!arr)
         return nullptr;
 
