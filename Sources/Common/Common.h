@@ -28,6 +28,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <iomanip>
 #include <mutex>
 
 #define DISABLE_COPY(NAME) \

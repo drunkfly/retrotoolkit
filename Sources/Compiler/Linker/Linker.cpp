@@ -14,10 +14,6 @@
 #include "Compiler/Project.h"
 #include "Compiler/ExpressionParser.h"
 #include "Compiler/CompilerError.h"
-#include <sstream>
-#include <unordered_set>
-#include <vector>
-#include <algorithm>
 
 //#define DEBUG_LINKER 1
 

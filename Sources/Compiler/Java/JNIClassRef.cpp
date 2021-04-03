@@ -3,7 +3,6 @@
 #include "Compiler/Java/JNIStringRef.h"
 #include "Compiler/Java/JNIThrowableRef.h"
 #include "Compiler/Java/JVM.h"
-#include <sstream>
 
 void JNIClassRef::loadGlobal(const char* name)
 {

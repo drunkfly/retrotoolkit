@@ -1,8 +1,6 @@
 #include "SpectrumTapeWriter.h"
 #include "Common/StreamUtils.h"
 #include "Compiler/Output/LibSpectrum/LibSpectrumTape.h"
-#include <sstream>
-#include <algorithm>
 
 #ifdef max
 #undef max

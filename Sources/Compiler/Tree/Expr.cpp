@@ -3,7 +3,6 @@
 #include "Compiler/Assembler/AssemblerContext.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/CompilerError.h"
-#include <sstream>
 
 class Expr::MarkAsEvaluating
 {

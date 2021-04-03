@@ -5,7 +5,6 @@
 #include "Compiler/ExpressionParser.h"
 #include "Compiler/Token.h"
 #include "Compiler/Lexer.h"
-#include <sstream>
 
 ExpressionParser::ExpressionParser(GCHeap* heap,
         const StringSet* registerNames, const StringSet* conditionNames, const std::string* localLabelsPrefix)

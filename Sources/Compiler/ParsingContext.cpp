@@ -3,7 +3,6 @@
 #include "Compiler/CompilerError.h"
 #include "Compiler/ExpressionParser.h"
 #include "Compiler/Token.h"
-#include <ctype.h>
 
 void ParsingContext::nextToken()
 {

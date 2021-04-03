@@ -1,7 +1,6 @@
 #include "CompiledOutput.h"
 #include "Compiler/Linker/DebugInformation.h"
 #include "Compiler/CompilerError.h"
-#include <sstream>
 
 CompiledOutput::CompiledOutput()
 {

@@ -1,6 +1,5 @@
 #include "Lzsa2Compressor.h"
 #include "Compiler/CompilerError.h"
-#include <string.h>
 
 extern "C" {
 #include <lib.h>

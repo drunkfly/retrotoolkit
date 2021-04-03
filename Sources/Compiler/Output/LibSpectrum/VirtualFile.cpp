@@ -1,6 +1,4 @@
 #include "VirtualFile.h"
-#include <assert.h>
-#include <string.h>
 
 VirtualFile::VirtualFile()
     : mOffset(0)

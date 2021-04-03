@@ -14,8 +14,6 @@
 #include "Compiler/Linker/ProgramSection.h"
 #include "Common/GC.h"
 #include "Common/Strings.h"
-#include <string>
-#include <sstream>
 
 std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDataDirectives = {
         { "db", &AssemblerParser::parseDefByte },

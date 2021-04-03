@@ -1,6 +1,5 @@
 #include "LibSpectrum.h"
 #include "Compiler/CompilerError.h"
-#include <string.h>
 
 std::mutex LibSpectrum::mutex;
 std::vector<std::string> LibSpectrum::messages;

@@ -6,7 +6,6 @@
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Token.h"
 #include "Compiler/CompilerError.h"
-#include <sstream>
 
 AssemblerContext::AssemblerContext(AssemblerContext* prev)
     : mPrev(prev)

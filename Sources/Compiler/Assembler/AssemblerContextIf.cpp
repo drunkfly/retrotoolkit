@@ -7,7 +7,6 @@
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/Token.h"
 #include "Compiler/CompilerError.h"
-#include <sstream>
 
 // FIXME: if AssemblerContextIf is empty, its condition is never validated
 

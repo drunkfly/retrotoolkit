@@ -7,7 +7,6 @@
 #include "Compiler/ExpressionParser.h"
 #include "Common/Xml.h"
 #include "Common/IO.h"
-#include <unordered_map>
 
 const char* Project::FileSuffix = "retro";
 const char* Project::DefaultOutputDirectory = "_out";

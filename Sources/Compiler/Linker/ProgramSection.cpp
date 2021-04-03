@@ -3,7 +3,6 @@
 #include "Compiler/Linker/CodeEmitter.h"
 #include "Compiler/Assembler/Instruction.h"
 #include "Compiler/Assembler/Label.h"
-#include <sstream>
 
 ProgramSection::ProgramSection(std::string name)
     : mName(std::move(name))
