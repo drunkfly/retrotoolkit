@@ -425,12 +425,24 @@ jint JVM::vfprintfHook(FILE* fp, const char* format, va_list args)
     char buf[1024];
     vsnprintf(buf, sizeof(buf), format, args);
 
-    try {
-        auto listener = JVMThreadContext::instance()->listener();
-        if (listener)
-            listener->printMessage(buf);
-    } catch (...) {
-        assert(false);
+    if (JVMThreadContext::hasInstance()) {
+        try {
+            auto listener = JVMThreadContext::instance()->listener();
+            if (listener)
+                listener->printMessage(buf);
+        } catch (const std::exception& e) {
+          #ifndef NDEBUG
+           #ifdef _WIN32
+            OutputDebugStringA(e.what());
+            OutputDebugStringA("\n");
+           #else
+            fprintf(stderr, "%s\n", e.what());
+           #endif
+          #endif
+            assert(false);
+        } catch (...) {
+            assert(false);
+        }
     }
 
     return 0;
@@ -438,10 +450,24 @@ jint JVM::vfprintfHook(FILE* fp, const char* format, va_list args)
 
 void JVM::exitHook(int code)
 {
+  #ifndef NDEBUG
+   #ifdef _WIN32
+    OutputDebugStringA("exitHook\n");
+   #else
+    fprintf(stderr, "exitHook\n");
+   #endif
+  #endif
     assert(false);
 }
 
 void JVM::abortHook()
 {
+  #ifndef NDEBUG
+   #ifdef _WIN32
+    OutputDebugStringA("abortHook\n");
+   #else
+    fprintf(stderr, "abortHook\n");
+   #endif
+  #endif
     assert(false);
 }

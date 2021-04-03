@@ -84,8 +84,12 @@ void BuildThread::compilerProgress(int current, int total, const std::string& me
 
 void BuildThread::printMessage(std::string text)
 {
-  #ifdef _WIN32
+  #ifndef NDEBUG
+   #ifdef _WIN32
     OutputDebugStringA(text.c_str());
+   #else
+    printf("%s", text.c_str());
+   #endif
   #endif
 
     emit message(std::move(text));
