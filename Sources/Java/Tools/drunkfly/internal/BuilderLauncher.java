@@ -1,6 +1,9 @@
-package drunkfly;
+package drunkfly.internal;
 
-final class BuilderLauncher
+import drunkfly.Builder;
+import drunkfly.Messages;
+
+public final class BuilderLauncher
 {
     private BuilderLauncher() {}
 
@@ -20,7 +23,7 @@ final class BuilderLauncher
                 name = name.replace('/', '.');
                 name = name.replace('\\', '.');
 
-                Class<?> classInstance = classLoader.loadClass(name);
+                Class<?> classInstance = classLoader.loadClass(name, true);
                 if (!Builder.class.isAssignableFrom(classInstance))
                     continue;
 

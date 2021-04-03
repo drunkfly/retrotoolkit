@@ -4,6 +4,7 @@
 #include "Common/Common.h"
 
 class GCHeap;
+class JVMThreadContext;
 class CompiledOutput;
 struct SourceFile;
 enum class FileType;
@@ -36,6 +37,7 @@ private:
     GCHeap* mHeap;
     ICompilerListener* mListener;
     CompiledOutput* mLinkerOutput;
+    JVMThreadContext* mJVMThreadContext;
     std::optional<std::filesystem::path> mJdkPath;
     std::filesystem::path mProjectPath;
     std::filesystem::path mOutputPath;

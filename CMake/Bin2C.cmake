@@ -5,39 +5,43 @@ endif()                         #
 set(COMMON_BIN2C_INCLUDED TRUE) #
 #################################
 
-if(BIN2C_IS_TOOL)
-
-    # BIN2C_IS_TOOL=TRUE
-    # BIN2C_SYMBOLNAME=<identifier>
-    # BIN2C_INFILE=<input file>
-    # BIN2C_OUTFILE=<output file>
-
-    file(READ "${BIN2C_INFILE}" data HEX)
+macro(do_bin2c symbolName inFile)
+    file(READ "${inFile}" data HEX)
 
     string(LENGTH "${data}" datalen)
     math(EXPR len "${datalen} / 2")
-    set(result "\nextern const unsigned ${BIN2C_SYMBOLNAME}_len;\n")
-    set(result "${result}extern const unsigned char ${BIN2C_SYMBOLNAME}[];\n")
-    set(result "${result}\nconst unsigned ${BIN2C_SYMBOLNAME}_len = ${len};\n")
+    set(bin2c_output "${bin2c_output}const unsigned ${symbolName}_len = ${len};\n")
 
     if("${datalen}" GREATER "0")
         math(EXPR datalen "${datalen} - 1")
     endif()
 
-    set(result "${result}const unsigned char ${BIN2C_SYMBOLNAME}[] =\n{")
+    set(bin2c_output "${bin2c_output}const unsigned char ${symbolName}_bytes[] =\n{")
     if("${datalen}" GREATER "0")
         foreach(index RANGE 0 "${datalen}" 2)
             math(EXPR tmp "(${index} / 2) % 14")
             if("${tmp}" EQUAL "0")
-                set(result "${result}\n    ")
+                set(bin2c_output "${bin2c_output}\n    ")
             endif()
             string(SUBSTRING "${data}" "${index}" 2 hex)
-            set(result "${result}0x${hex},")
+            set(bin2c_output "${bin2c_output}0x${hex},")
         endforeach()
     endif()
-    set(result "${result}\n    0\n};\n")
+    set(bin2c_output "${bin2c_output}\n    0\n};\n")
+endmacro()
 
-    file(WRITE "${BIN2C_OUTFILE}" "${result}")
+if(BIN2C_IS_TOOL)
+
+    # Arguments:
+    #   BIN2C_IS_TOOL=TRUE
+    #   BIN2C_SYMBOLNAME=<identifier>
+    #   BIN2C_INFILE=<input file>
+    #   BIN2C_OUTFILE=<output file>
+
+    set(bin2c_output "extern const unsigned ${BIN2C_SYMBOLNAME}_len;\n")
+    set(bin2c_output "${bin2c_output}extern const unsigned char ${BIN2C_SYMBOLNAME}_bytes[];\n\n")
+    do_bin2c("${BIN2C_SYMBOLNAME}" "${BIN2C_INFILE}")
+    file(WRITE "${BIN2C_OUTFILE}" "${bin2c_output}")
 
 else()
 

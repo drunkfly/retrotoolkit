@@ -1,0 +1,5 @@
+JAVA_STD_CLASS(java_lang_String)
+JAVA_STD_CLASS(java_lang_RuntimeException)
+JAVA_STD_CLASS(java_lang_OutOfMemoryError)
+JAVA_STD_CLASS(java_io_PrintWriter)
+JAVA_STD_CLASS(com_sun_tools_javac_Main)

@@ -14,7 +14,6 @@ add(Compiler
     DEPENDS
         JavaClasspath
     INSTALL_RESOURCES
-        ../Java/Build/RetroBuild.jar
         ../Java/Build/RetroEngine.jar
     SOURCES
         Assembler/AssemblerContext.cpp
@@ -45,11 +44,32 @@ add(Compiler
         Compression/Lzsa2Compressor.h
         Compression/Zx7Compressor.cpp
         Compression/Zx7Compressor.h
+        Java/Natives/drunkfly_internal_BuilderClassLoader.cpp
+        Java/Natives/drunkfly_internal_BuilderClassLoader.h
+        Java/Natives/drunkfly_Messages.cpp
+        Java/Natives/drunkfly_Messages.h
+        Java/Exceptions.cpp
+        Java/Exceptions.h
+        Java/JavaStdClasses.cpp
+        Java/JavaStdClasses.h
+        Java/JavaStdClasses.lst
         Java/JNI.h
+        Java/JNIClassRef.cpp
+        Java/JNIClassRef.h
+        Java/JNIRef.cpp
+        Java/JNIRef.h
+        Java/JNIStringRef.cpp
+        Java/JNIStringRef.h
+        Java/JNIThrowableRef.cpp
+        Java/JNIThrowableRef.h
         Java/JStringList.cpp
         Java/JStringList.h
         Java/JVM.cpp
         Java/JVM.h
+        Java/JVMGlobalContext.cpp
+        Java/JVMGlobalContext.h
+        Java/JVMThreadContext.cpp
+        Java/JVMThreadContext.h
         Linker/CodeEmitter.cpp
         Linker/CodeEmitter.h
         Linker/CodeEmitterCompressed.cpp

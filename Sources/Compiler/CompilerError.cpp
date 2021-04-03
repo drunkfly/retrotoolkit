@@ -16,15 +16,20 @@ const char* CompilerError::what() const noexcept
     return mFullMessage.c_str();
 }
 
+void CompilerError::locationToString(SourceLocation* location, const char* suffix, std::stringstream& ss)
+{
+    if (location && location->file()) {
+        if (location->line() <= 0)
+            ss << location->file()->name().string() << suffix;
+        else
+            ss << location->file()->name().string() << '(' << location->line() << ')' << suffix;
+    }
+}
+
 std::string CompilerError::makeFullMessage(SourceLocation* location, const std::string& message)
 {
     std::stringstream ss;
-    if (location && location->file()) {
-        if (location->line() <= 0)
-            ss << location->file()->name().string() << ": ";
-        else
-            ss << location->file()->name().string() << '(' << location->line() << "): ";
-    }
+    locationToString(location, ": ", ss);
     ss << message;
     return ss.str();
 }

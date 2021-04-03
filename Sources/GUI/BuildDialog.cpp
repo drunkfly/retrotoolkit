@@ -57,6 +57,9 @@ void BuildThread::compile()
     } catch (const std::exception& e) {
         emit failure(QString(), 0, QString::fromUtf8(e.what()));
         return;
+    } catch (...) {
+        emit failure(QString(), 0, tr("Internal compiler error."));
+        return;
     }
 
     emit success();

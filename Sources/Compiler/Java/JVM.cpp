@@ -1,6 +1,11 @@
 #include "JVM.h"
 #include "Common/IO.h"
+#include "Compiler/Java/JNIClassRef.h"
+#include "Compiler/Java/JNIStringRef.h"
 #include "Compiler/Java/JStringList.h"
+#include "Compiler/Java/JVMThreadContext.h"
+#include "Compiler/Java/JVMGlobalContext.h"
+#include "Compiler/Java/JavaClasses.h"
 #include "Compiler/Compiler.h"
 #include "Compiler/CompilerError.h"
 #include <vector>
@@ -17,15 +22,6 @@
  static void* jvmDll;
 #endif
 
-extern const unsigned JavaOutputWriter_len;
-extern const unsigned char JavaOutputWriter[];
-extern const unsigned JavaBuilder_len;
-extern const unsigned char JavaBuilder[];
-extern const unsigned JavaBuilderClassLoader_len;
-extern const unsigned char JavaBuilderClassLoader[];
-extern const unsigned JavaBuilderLauncher_len;
-extern const unsigned char JavaBuilderLauncher[];
-
 static JavaVM* jvm;
 static JNIEnv* env;
 static std::filesystem::path loadedDllPath;
@@ -35,60 +31,6 @@ static bool currentVerboseJNI;
 static bool verboseGC;
 static bool verboseClass;
 static bool verboseJNI;
-static jclass stringClassRef;
-static jclass outputWriterClassRef;
-static bool outputWriterMethodsRegistered;
-static jobject outputWriterRef;
-static jclass printWriterClassRef;
-static jobject printWriterRef;
-static jclass classLoaderClassRef;
-static bool classLoaderMethodsRegistered;
-static jmethodID classLoaderConstructorID;
-static jmethodID classLoaderLoadClassMethodID;
-static jclass compilerClassRef;
-static jmethodID compilerMethodID;
-static jclass builderLauncherClassRef;
-static jclass builderClassRef;
-static ICompilerListener* compilerListener;
-static jobject classLoader;
-
-static void printJniError(std::stringstream& ss, int r)
-{
-    switch (r) {
-        case JNI_ERR: ss << "JNI_ERR"; break;
-        case JNI_EDETACHED: ss << "JNI_EDETACHED"; break;
-        case JNI_EVERSION: ss << "JNI_EVERSION"; break;
-        case JNI_ENOMEM: ss << "JNI_ENOMEM"; break;
-        case JNI_EEXIST: ss << "JNI_EEXIST"; break;
-        case JNI_EINVAL: ss << "JNI_EINVAL"; break;
-        default: ss << "code " << r;
-    }
-}
-
-bool JVM::isLoaded()
-{
-    return jvmDll || jvm || env;
-}
-
-const std::filesystem::path& JVM::loadedDllPath()
-{
-    return ::loadedDllPath;
-}
-
-bool JVM::loadedVerboseGC()
-{
-    return currentVerboseGC;
-}
-
-bool JVM::loadedVerboseClass()
-{
-    return currentVerboseClass;
-}
-
-bool JVM::loadedVerboseJNI()
-{
-    return currentVerboseJNI;
-}
 
 JNIEnv* JVM::jniEnv()
 {
@@ -188,11 +130,6 @@ std::filesystem::path JVM::findToolsJar(const std::filesystem::path& jdkPath)
     throw CompilerError(nullptr, ss.str());
 }
 
-void JVM::setListener(ICompilerListener* listener)
-{
-    compilerListener = listener;
-}
-
 void JVM::setVerboseGC(bool flag)
 {
     verboseGC = flag;
@@ -206,6 +143,31 @@ void JVM::setVerboseClass(bool flag)
 void JVM::setVerboseJNI(bool flag)
 {
     verboseJNI = flag;
+}
+
+bool JVM::loadedVerboseGC()
+{
+    return currentVerboseGC;
+}
+
+bool JVM::loadedVerboseClass()
+{
+    return currentVerboseClass;
+}
+
+bool JVM::loadedVerboseJNI()
+{
+    return currentVerboseJNI;
+}
+
+bool JVM::isLoaded()
+{
+    return jvmDll || jvm || env;
+}
+
+const std::filesystem::path& JVM::loadedDllPath()
+{
+    return ::loadedDllPath;
 }
 
 void JVM::load(const std::filesystem::path& jdkPath)
@@ -237,7 +199,7 @@ void JVM::load(const std::filesystem::path& jdkPath)
         auto JNI_CreateJavaVM = (PFNJNICREATEJAVAVM)GetProcAddress(jvmDll, "JNI_CreateJavaVM");
         if (!JNI_CreateJavaVM) {
             DWORD dwLastError = GetLastError();
-            destroy();
+            unloadPermanently(); // unloading here allows user to change JVM path in settings and retry
             std::stringstream ss;
             ss << "Unable to resolve symbol \"JNI_CreateJavaVM\" in library \"" << ::loadedDllPath.string()
                 << "\" (code 0x" << std::hex << std::setw(8) << std::setfill('0') << dwLastError << ").";
@@ -248,7 +210,7 @@ void JVM::load(const std::filesystem::path& jdkPath)
         auto JNI_CreateJavaVM = (PFNJNICREATEJAVAVM)dlsym(jvmDll, "JNI_CreateJavaVM");
         if (!JNI_CreateJavaVM) {
             std::string error = dlerror();
-            destroy();
+            unloadPermanently(); // unloading here allows user to change JVM path in settings and retry
             std::stringstream ss;
             ss << "Unable to resolve symbol \"JNI_CreateJavaVM\" in library \""
                 << ::loadedDllPath.string() << "\": " << error;
@@ -295,15 +257,45 @@ void JVM::load(const std::filesystem::path& jdkPath)
             throw CompilerError(nullptr, ss.str());
         }
 
-        atexit(JVM::destroy);
+        atexit(JVM::unloadPermanently);
     }
 
-    ensureNecessaryClassesLoaded();
+    JVMGlobalContext::instance()->ensureInitialized();
+    JVMThreadContext::instance()->ensureInitialized();
 }
 
-void JVM::destroy()
+void JVM::unloadPermanently()
 {
     if (jvm) {
+        jint r = jvm->vtbl->AttachCurrentThread(jvm, &env, nullptr);
+        assert(r == JNI_OK);
+        if (r == JNI_OK) {
+            if (JVMThreadContext::hasInstance()) {
+                try {
+                    JVMThreadContext::instance()->releaseAll();
+                } catch (...) {
+                    assert(false);
+                }
+            }
+
+            if (JVMGlobalContext::hasInstance()) {
+                try {
+                    JVMGlobalContext::instance()->releaseAll();
+                } catch (...) {
+                    assert(false);
+                }
+            }
+
+            try {
+                JavaClasses::releaseAll();
+            } catch (...) {
+                assert(false);
+            }
+
+            r = jvm->vtbl->DetachCurrentThread(jvm);
+            assert(r == JNI_OK);
+        }
+
         jvm->vtbl->DestroyJavaVM(jvm);
         jvm = nullptr;
         env = nullptr;
@@ -317,21 +309,6 @@ void JVM::destroy()
       #endif
         jvmDll = nullptr;
     }
-
-    stringClassRef = nullptr;
-    outputWriterClassRef = nullptr;
-    outputWriterMethodsRegistered = false;
-    outputWriterRef = nullptr;
-    printWriterClassRef = nullptr;
-    printWriterRef = nullptr;
-    classLoaderClassRef = nullptr;
-    classLoaderMethodsRegistered = false;
-    classLoaderConstructorID = nullptr;
-    classLoaderLoadClassMethodID = nullptr;
-    compilerClassRef = nullptr;
-    compilerMethodID = nullptr;
-    builderLauncherClassRef = nullptr;
-    builderClassRef = nullptr;
 }
 
 bool JVM::isAttached()
@@ -357,7 +334,9 @@ void JVM::attachCurrentThread()
     }
 
     try {
-        ensureNecessaryClassesLoaded();
+        JVMGlobalContext::instance()->ensureInitialized();
+        if (JVMThreadContext::hasInstance())
+            JVMThreadContext::instance()->ensureInitialized();
     } catch (...) {
         detachCurrentThread();
         throw;
@@ -366,6 +345,12 @@ void JVM::attachCurrentThread()
 
 void JVM::detachCurrentThread()
 {
+    if (!isLoaded())
+        return;
+
+    if (JVMThreadContext::hasInstance())
+        JVMThreadContext::instance()->releaseAll();
+
     jint r = jvm->vtbl->DetachCurrentThread(jvm);
     if (r != JNI_OK) {
         std::stringstream ss;
@@ -375,461 +360,67 @@ void JVM::detachCurrentThread()
     }
 }
 
-void JVM::throwIfException()
+void JVM::printJniError(std::stringstream& ss, int r)
 {
-    if (!env->vtbl->ExceptionCheck(env))
-        return;
-
-    jthrowable throwable = env->vtbl->ExceptionOccurred(env);
-    env->vtbl->ExceptionClear(env);
-    if (!throwable)
-        throw CompilerError(nullptr, "Unknown Java exception.");
-
-    jstring throwableClassName = className(throwable);
-    if (!throwableClassName) {
-        env->vtbl->DeleteLocalRef(env, throwable);
-        throw CompilerError(nullptr, "Unknown Java exception.");
+    switch (r) {
+        case JNI_ERR: ss << "JNI_ERR"; break;
+        case JNI_EDETACHED: ss << "JNI_EDETACHED"; break;
+        case JNI_EVERSION: ss << "JNI_EVERSION"; break;
+        case JNI_ENOMEM: ss << "JNI_ENOMEM"; break;
+        case JNI_EEXIST: ss << "JNI_EEXIST"; break;
+        case JNI_EINVAL: ss << "JNI_EINVAL"; break;
+        default: ss << "code " << r;
     }
-
-    std::string classNameString = toUtf8(throwableClassName);
-    env->vtbl->DeleteLocalRef(env, throwableClassName);
-
-    size_t index = classNameString.rfind('.');
-    if (index != std::string::npos)
-        classNameString = classNameString.substr(index + 1);
-
-    jclass throwableClass = env->vtbl->GetObjectClass(env, throwable);
-    if (!throwableClass) {
-        env->vtbl->DeleteLocalRef(env, throwable);
-        throw CompilerError(nullptr, "Unknown Java exception.");
-    }
-
-    jmethodID throwableGetMessageMethod =
-        env->vtbl->GetMethodID(env, throwableClass, "getMessage", "()Ljava/lang/String;");
-    env->vtbl->DeleteLocalRef(env, throwableClass);
-    if (!throwableGetMessageMethod) {
-        env->vtbl->DeleteLocalRef(env, throwable);
-        std::stringstream ss;
-        ss << "JVM: " << classNameString;
-        throw CompilerError(nullptr, ss.str());
-    }
-
-    jstring message = (jstring)env->vtbl->CallObjectMethod(env, throwable, throwableGetMessageMethod);
-    if (!message) {
-        env->vtbl->DeleteLocalRef(env, throwable);
-        std::stringstream ss;
-        ss << "JVM: " << classNameString;
-        throw CompilerError(nullptr, ss.str());
-    }
-
-    std::string messageString = toUtf8(message);
-    env->vtbl->DeleteLocalRef(env, message);
-    env->vtbl->DeleteLocalRef(env, throwable);
-
-    std::stringstream ss;
-    ss << "JVM: " << classNameString << ": " << messageString;
-    throw CompilerError(nullptr, ss.str());
-}
-
-jstring JVM::toJString(const std::string& utf8)
-{
-    return env->vtbl->NewStringUTF(env, utf8.c_str());
-}
-
-jstring JVM::toJString(const std::wstring& str)
-{
-    size_t n = str.length();
-    if constexpr (sizeof(jchar) == sizeof(wchar_t))
-        return env->vtbl->NewString(env, reinterpret_cast<const jchar*>(str.c_str()), jint(n));
-    else {
-        std::unique_ptr<jchar[]> buf{new (std::nothrow) jchar[n]};
-        if (!buf.get())
-            return nullptr;
-        for (size_t i = 0; i < n; i++)
-            buf[i] = str[i];
-        return env->vtbl->NewString(env, buf.get(), n);
-    }
-}
-
-jstring JVM::toJString(const std::filesystem::path& str)
-{
-    return toJString(str.native());
-}
-
-std::string JVM::toUtf8(jstring str)
-{
-    if (!str)
-        return std::string();
-
-    jint length = env->vtbl->GetStringUTFLength(env, str);
-    if (length <= 0)
-        return std::string();
-
-    const char* utf = env->vtbl->GetStringUTFChars(env, str, nullptr);
-    if (!utf)
-        return std::string();
-
-    std::string result(utf, size_t(length));
-    env->vtbl->ReleaseStringUTFChars(env, str, utf);
-
-    return result;
-}
-
-std::wstring JVM::toWString(jstring str)
-{
-    if (!str)
-        return std::wstring();
-
-    jint length = env->vtbl->GetStringLength(env, str);
-    if (length <= 0)
-        return std::wstring();
-
-    const jchar* chars = env->vtbl->GetStringChars(env, str, nullptr);
-    if (!chars)
-        return std::wstring();
-
-    if constexpr (sizeof(jchar) == sizeof(wchar_t)) {
-        std::wstring result(reinterpret_cast<const wchar_t*>(chars), size_t(length));
-        env->vtbl->ReleaseStringChars(env, str, chars);
-        return result;
-    } else {
-        std::wstring result((size_t)length, 0);
-        for (jint i = 0; i < length; i++)
-            result[i] = wchar_t(chars[i]);
-        env->vtbl->ReleaseStringChars(env, str, chars);
-        return result;
-    }
-}
-
-std::filesystem::path JVM::toPath(jstring str)
-{
-    if constexpr (sizeof(std::filesystem::path::value_type) == sizeof(char))
-        return toUtf8(str);
-    else
-        return toWString(str);
-}
-
-jobject JVM::makeGlobalRef(jobject local)
-{
-    if (!local)
-        return nullptr;
-
-    jobject global = env->vtbl->NewGlobalRef(env, local);
-    env->vtbl->DeleteLocalRef(env, local);
-
-    return global;
-}
-
-jstring JVM::className(jobject obj)
-{
-    if (!obj)
-        return nullptr;
-
-    jclass objectClass = env->vtbl->GetObjectClass(env, obj);
-    if (!objectClass)
-        return nullptr;
-
-    jmethodID getClassMethod = env->vtbl->GetMethodID(env, objectClass, "getClass", "()Ljava/lang/Class;");
-    env->vtbl->DeleteLocalRef(env, objectClass);
-    if (!getClassMethod)
-        return nullptr;
-
-    jobject classObject = env->vtbl->CallObjectMethod(env, obj, getClassMethod);
-    if (!classObject)
-        return nullptr;
-
-    jclass classClass = env->vtbl->GetObjectClass(env, classObject);
-    if (!classClass) {
-        env->vtbl->DeleteLocalRef(env, classObject);
-        return nullptr;
-    }
-
-    jmethodID getNameMethod = env->vtbl->GetMethodID(env, classClass, "getName", "()Ljava/lang/String;");
-    env->vtbl->DeleteLocalRef(env, classClass);
-    if (!getNameMethod) {
-        env->vtbl->DeleteLocalRef(env, classObject);
-        return nullptr;
-    }
-
-    jstring name = (jstring)env->vtbl->CallObjectMethod(env, classObject, getNameMethod);
-    env->vtbl->DeleteLocalRef(env, classObject);
-
-    return name;
-}
-
-jclass JVM::stringClass()
-{
-    return stringClassRef;
 }
 
 bool JVM::compile(const JStringList& args)
 {
-    jobjectArray argList = args.toJavaArray();
+    JNIRef argList = args.toJavaArray();
     if (!argList)
         return false;
 
-    jint result = env->vtbl->CallStaticIntMethod(env, compilerClassRef, compilerMethodID, argList, printWriterRef);
-    env->vtbl->DeleteLocalRef(env, argList);
-
+    jint result = JVMGlobalContext::instance()->invokeJavaC(argList);
     return (!env->vtbl->ExceptionCheck(env) && result == 0);
 }
 
 bool JVM::runClass(const char* className, const JStringList& args, bool useClassLoader, const JStringList* classPath)
 {
-    assert(!classLoader);
+    struct ClassLoaderRAII {
+        bool unload = false;
+        ClassLoaderRAII() = default;
+        ~ClassLoaderRAII() { if (unload) JVMThreadContext::instance()->releaseClassLoader(); }
+        DISABLE_COPY(ClassLoaderRAII);
+    };
 
+    ClassLoaderRAII raii;
+
+    auto threadContext = JVMThreadContext::instance();
     if (useClassLoader) {
-        jobjectArray classPathArray = nullptr;
-        if (classPath) {
-            classPathArray = classPath->toJavaArray();
-            if (!classPathArray)
-                return false;
-        }
-
-        classLoader = env->vtbl->NewObject(env, classLoaderClassRef, classLoaderConstructorID, classPathArray);
-
-        if (classPathArray)
-            env->vtbl->DeleteLocalRef(env, classPathArray);
-
-        if (!classLoader)
+        if (!threadContext->constructClassLoader(classPath))
             return false;
+        raii.unload = true;
     }
 
-    jclass classRef;
-    if (!strcmp(className, "drunkfly/BuilderLauncher"))
-        classRef = builderLauncherClassRef;
-    else if (!classLoader)
+    JNIClassRef classRef;
+    if (JavaClasses::drunkfly_internal_BuilderLauncher.name() == className)
+        classRef = JavaClasses::drunkfly_internal_BuilderLauncher.newLocalRef();
+    else if (useClassLoader)
+        classRef = threadContext->loadWithClassLoader(JNIStringRef::from(className));
+    else
         classRef = env->vtbl->FindClass(env, className);
-    else {
-        jstring classNameString = env->vtbl->NewStringUTF(env, className);
-        if (!classNameString) {
-            env->vtbl->DeleteLocalRef(env, classLoader);
-            classLoader = nullptr;
-            return false;
-        }
-
-        classRef = env->vtbl->CallObjectMethod(env, classLoader, classLoaderLoadClassMethodID, classNameString);
-
-        env->vtbl->DeleteLocalRef(env, classNameString);
-    }
-
-    if (!classRef) {
-        if (classLoader) {
-            env->vtbl->DeleteLocalRef(env, classLoader);
-            classLoader = nullptr;
-        }
+    if (!classRef)
         return false;
-    }
 
-    jmethodID mainMethodID = env->vtbl->GetStaticMethodID(env, classRef, "main", "([Ljava/lang/String;)V");
-    if (!mainMethodID) {
-        if (classRef != builderLauncherClassRef)
-            env->vtbl->DeleteLocalRef(env, classRef);
-        if (classLoader) {
-            env->vtbl->DeleteLocalRef(env, classLoader);
-            classLoader = nullptr;
-        }
+    jmethodID mainMethodID = classRef.resolveStaticMethod("main", "([Ljava/lang/String;)V");
+    if (!mainMethodID)
         return false;
-    }
 
-    jobjectArray argList = args.toJavaArray();
-    if (!argList) {
-        if (classRef != builderLauncherClassRef)
-            env->vtbl->DeleteLocalRef(env, classRef);
-        if (classLoader) {
-            env->vtbl->DeleteLocalRef(env, classLoader);
-            classLoader = nullptr;
-        }
+    JNIRef argList = args.toJavaArray();
+    if (!argList)
         return false;
-    }
 
-    env->vtbl->CallStaticVoidMethod(env, classRef, mainMethodID, argList);
-
-    env->vtbl->DeleteLocalRef(env, argList);
-    if (classRef != builderLauncherClassRef)
-        env->vtbl->DeleteLocalRef(env, classRef);
-    if (classLoader) {
-        env->vtbl->DeleteLocalRef(env, classLoader);
-        classLoader = nullptr;
-    }
-
+    env->vtbl->CallStaticVoidMethod(env, classRef.toJNI(), mainMethodID, argList.toJNI());
     return !env->vtbl->ExceptionCheck(env);
-}
-
-void JNICALL JVM::drunkfly_Messages_print(JNIEnv* env, jclass, jstring message)
-{
-    assert(compilerListener);
-    if (compilerListener)
-        compilerListener->printMessage(toUtf8(message));
-}
-
-jobject JNICALL JVM::drunkfly_Messages_getInstance(JNIEnv* env, jclass)
-{
-    return outputWriterRef;
-}
-
-jobject JNICALL JVM::drunkfly_Messages_getPrintWriter(JNIEnv* env, jclass)
-{
-    return printWriterRef;
-}
-
-jobject JNICALL JVM::drunkfly_BuilderClassLoader_getInstance(JNIEnv* env, jclass)
-{
-    assert(classLoader);
-    return classLoader;
-}
-
-void JVM::ensureNecessaryClassesLoaded()
-{
-    if (!stringClassRef) {
-        stringClassRef = makeGlobalRef(env->vtbl->FindClass(env, "java/lang/String"));
-        if (!stringClassRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve class \"java.lang.String\".");
-        }
-    }
-
-    if (!outputWriterClassRef) {
-        auto p = reinterpret_cast<const jbyte*>(JavaOutputWriter);
-        outputWriterClassRef =
-            makeGlobalRef(env->vtbl->DefineClass(env, "drunkfly/Messages", nullptr, p, JavaOutputWriter_len));
-        if (!outputWriterClassRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.Messages\".");
-        }
-    }
-
-    if (!outputWriterMethodsRegistered) {
-        const JNINativeMethod methods[] = {
-                { "print", "(Ljava/lang/String;)V", drunkfly_Messages_print },
-                { "getInstance", "()Ldrunkfly/Messages;", drunkfly_Messages_getInstance },
-                { "getPrintWriter", "()Ljava/io/PrintWriter;", drunkfly_Messages_getPrintWriter },
-            };
-        jint r = env->vtbl->RegisterNatives(env, outputWriterClassRef, methods, sizeof(methods) / sizeof(methods[0]));
-        if (r != JNI_OK) {
-            std::stringstream ss;
-            ss << "Unable to register native methods for class \"drunkfly.Messages\": ";
-            printJniError(ss, r);
-            throw CompilerError(nullptr, ss.str());
-        }
-
-        outputWriterMethodsRegistered = true;
-    }
-
-    if (!outputWriterRef) {
-        jmethodID constructorID = env->vtbl->GetMethodID(env, outputWriterClassRef, "<init>", "()V");
-        if (!constructorID) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve constructor of class \"drunkfly.Messages\".");
-        }
-
-        outputWriterRef = makeGlobalRef(env->vtbl->NewObject(env, outputWriterClassRef, constructorID));
-        if (!outputWriterRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to construct instance of class \"drunkfly.Messages\".");
-        }
-    }
-
-    if (!printWriterClassRef) {
-        printWriterClassRef = makeGlobalRef(env->vtbl->FindClass(env, "java/io/PrintWriter"));
-        if (!printWriterClassRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve class \"java.io.PrintWriter\".");
-        }
-    }
-
-    if (!printWriterRef) {
-        jmethodID constructorID = env->vtbl->GetMethodID(env, printWriterClassRef, "<init>", "(Ljava/io/Writer;)V");
-        if (!constructorID) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve constructor of class \"java.io.PrintWriter\".");
-        }
-
-        printWriterRef = makeGlobalRef(env->vtbl->NewObject(env, printWriterClassRef, constructorID, outputWriterRef));
-        if (!printWriterRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to construct instance of class \"java.io.PrintWriter\".");
-        }
-    }
-
-    if (!classLoaderClassRef) {
-        auto p = reinterpret_cast<const jbyte*>(JavaBuilderClassLoader);
-        classLoaderClassRef = makeGlobalRef(
-            env->vtbl->DefineClass(env, "drunkfly/BuilderClassLoader", nullptr, p, JavaBuilderClassLoader_len));
-        if (!classLoaderClassRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.BuilderClassLoader\".");
-        }
-    }
-
-    if (!classLoaderMethodsRegistered) {
-        const JNINativeMethod method =
-            { "getInstance", "()Ldrunkfly/BuilderClassLoader;", drunkfly_BuilderClassLoader_getInstance };
-        jint r = env->vtbl->RegisterNatives(env, classLoaderClassRef, &method, 1);
-        if (r != JNI_OK) {
-            std::stringstream ss;
-            ss << "Unable to register native methods for class \"drunkfly.BuilderClassLoader\": ";
-            printJniError(ss, r);
-            throw CompilerError(nullptr, ss.str());
-        }
-
-        classLoaderMethodsRegistered = true;
-    }
-
-    if (!classLoaderConstructorID) {
-        classLoaderConstructorID =
-            env->vtbl->GetMethodID(env, classLoaderClassRef, "<init>", "([Ljava/lang/String;)V");
-        if (!classLoaderConstructorID) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve constructor of class \"drunkfly.BuilderClassLoader\".");
-        }
-    }
-
-    if (!classLoaderLoadClassMethodID) {
-        classLoaderLoadClassMethodID =
-            env->vtbl->GetMethodID(env, classLoaderClassRef, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
-        if (!classLoaderLoadClassMethodID) {
-            throwIfException();
-            throw CompilerError(nullptr,
-                "Unable to resolve method \"loadClass\" of class \"drunkfly.BuilderClassLoader\".");
-        }
-    }
-
-    if (!compilerClassRef) {
-        compilerClassRef = makeGlobalRef(env->vtbl->FindClass(env, "com/sun/tools/javac/Main"));
-        if (!compilerClassRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve class \"com.sun.tools.javac.Main\".");
-        }
-    }
-
-    if (!compilerMethodID) {
-        compilerMethodID = env->vtbl->GetStaticMethodID(env,
-            compilerClassRef, "compile", "([Ljava/lang/String;Ljava/io/PrintWriter;)I");
-        if (!compilerMethodID) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to find method \"compile\" in class \"com.sun.tools.javac.Main\".");
-        }
-    }
-
-    if (!builderLauncherClassRef) {
-        auto p = reinterpret_cast<const jbyte*>(JavaBuilderLauncher);
-        builderLauncherClassRef = makeGlobalRef(
-            env->vtbl->DefineClass(env, "drunkfly/BuilderLauncher", nullptr, p, JavaBuilderLauncher_len));
-        if (!builderLauncherClassRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.BuilderLauncher\".");
-        }
-    }
-
-    if (!builderClassRef) {
-        auto p = reinterpret_cast<const jbyte*>(JavaBuilder);
-        builderClassRef = makeGlobalRef(env->vtbl->DefineClass(env, "drunkfly/Builder", nullptr, p, JavaBuilder_len));
-        if (!builderClassRef) {
-            throwIfException();
-            throw CompilerError(nullptr, "Unable to resolve class \"drunkfly.Builder\".");
-        }
-    }
 }
 
 jint JVM::vfprintfHook(FILE* fp, const char* format, va_list args)
@@ -837,9 +428,13 @@ jint JVM::vfprintfHook(FILE* fp, const char* format, va_list args)
     char buf[1024];
     vsnprintf(buf, sizeof(buf), format, args);
 
-    assert(compilerListener);
-    if (compilerListener)
-        compilerListener->printMessage(buf);
+    try {
+        auto listener = JVMThreadContext::instance()->listener();
+        if (listener)
+            listener->printMessage(buf);
+    } catch (...) {
+        assert(false);
+    }
 
     return 0;
 }

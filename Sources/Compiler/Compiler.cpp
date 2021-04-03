@@ -1,7 +1,10 @@
 #include "Compiler.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/Java/JNIThrowableRef.h"
 #include "Compiler/Java/JStringList.h"
+#include "Compiler/Java/JVMThreadContext.h"
+#include "Compiler/Java/JavaClasses.h"
 #include "Compiler/Java/JVM.h"
 #include "Compiler/Linker/Program.h"
 #include "Compiler/Linker/Linker.h"
@@ -33,11 +36,12 @@ Compiler::Compiler(GCHeap* heap, std::filesystem::path resourcesPath, ICompilerL
     : mHeap(heap)
     , mListener(listener)
     , mLinkerOutput(nullptr)
+    , mJVMThreadContext(new JVMThreadContext)
     , mResourcesPath(std::move(resourcesPath))
     , mEnableWav(false)
     , mShouldDetachJVM(false)
 {
-    JVM::setListener(mListener);
+    mJVMThreadContext->setListener(mListener);
 }
 
 Compiler::~Compiler()
@@ -52,7 +56,7 @@ Compiler::~Compiler()
         }
     }
 
-    JVM::setListener(nullptr);
+    delete mJVMThreadContext;
 }
 
 void Compiler::setJdkPath(std::filesystem::path path)
@@ -147,15 +151,15 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
         if (JVM::isLoaded()) {
             if (!JVM::isAttached()) {
-                JVM::attachCurrentThread();
                 mShouldDetachJVM = true;
+                JVM::attachCurrentThread();
             }
         } else {
             if (!mJdkPath.has_value())
                 throw CompilerError(nullptr, "JDK path was not specified.");
 
-            JVM::load(*mJdkPath);
             mShouldDetachJVM = true;
+            JVM::load(*mJdkPath);
         }
 
         if (mListener)
@@ -182,7 +186,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 list.add(file.fileID->path());
 
             if (!JVM::compile(list)) {
-                JVM::throwIfException();
+                JNIThrowableRef::rethrowCurrentException();
                 throw CompilerError(nullptr, "Java compilation failed.");
             }
         }
@@ -190,12 +194,14 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         // Build and run tools
 
         if (!buildJavaFiles.empty()) {
+            JavaClasses::write(mOutputPath / "classpath");
+
             JStringList list;
             list.reserve(buildJavaFiles.size() + 8);
             list.add("-Xlint:all");
             list.add("-g");
             list.add("-classpath");
-            list.add(mResourcesPath / "RetroBuild.jar");
+            list.add(mOutputPath / "classpath");
             list.add("-sourcepath");
             list.add(mProjectPath);
             list.add("-d");
@@ -204,7 +210,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 list.add(file.fileID->path());
 
             if (!JVM::compile(list)) {
-                JVM::throwIfException();
+                JNIThrowableRef::rethrowCurrentException();
                 throw CompilerError(nullptr, "Java compilation failed.");
             }
 
@@ -212,7 +218,6 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 mListener->compilerProgress(count++, total, "Running Java tools...");
 
             JStringList classpath;
-            classpath.add(mResourcesPath / "RetroBuild.jar");
             classpath.add(mProjectPath / "!*.class");
             classpath.add(mOutputPath / "java" / "*.class");
             classpath.add(mOutputPath / "generated" / "=>");
@@ -221,8 +226,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             for (const auto& file : buildJavaFiles)
                 list.add(file.fileID->name());
 
-            if (!JVM::runClass("drunkfly/BuilderLauncher", list, true, &classpath)) {
-                JVM::throwIfException();
+            if (!JVM::runClass(JavaClasses::drunkfly_internal_BuilderLauncher.name().c_str(), list, true, &classpath)) {
+                JNIThrowableRef::rethrowCurrentException();
                 throw CompilerError(nullptr, "Error running build tool with Java.");
             }
         }

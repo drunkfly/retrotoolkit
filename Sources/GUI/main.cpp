@@ -1,4 +1,5 @@
 #include "GUI/MainWindow.h"
+#include "Compiler/Java/JVMGlobalContext.h"
 
 Q_DECLARE_METATYPE(std::string);
 
@@ -12,6 +13,8 @@ int main(int argc, char** argv)
     QApplication::setApplicationVersion(QStringLiteral("1.0"));
 
     qRegisterMetaType<std::string>();
+
+    JVMGlobalContext jvmGlobalContext;
 
     QApplication app(argc, argv);
     MainWindow mainWindow;

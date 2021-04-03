@@ -1,7 +1,6 @@
-package drunkfly;
+package drunkfly.internal;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -10,7 +9,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 
-final class BuilderClassLoader extends URLClassLoader
+import drunkfly.IO;
+
+public final class BuilderClassLoader extends URLClassLoader
 {
     private final ArrayList<File> classDirectories;
     private final ArrayList<File> resourceDirectories;
@@ -104,32 +105,7 @@ final class BuilderClassLoader extends URLClassLoader
         for (File dir : classDirectories) {
             File classFile = new File(dir, classFileName);
             if (classFile.isFile()) {
-                byte[] classData;
-                try {
-                    int fileSize = (int)classFile.length();
-                    classData = new byte[fileSize];
-
-                    int offset = 0;
-                    int bytesLeft = fileSize;
-
-                    FileInputStream stream = new FileInputStream(classFile);
-                    try {
-                        while (bytesLeft > 0) {
-                            int bytesRead = stream.read(classData, offset, bytesLeft);
-                            if (bytesRead <= 0)
-                                throw new RuntimeException("Unexpected end of file \"" + classFile + "\".");
-
-                            offset += bytesRead;
-                            bytesLeft -= bytesRead;
-                        }
-                    } finally {
-                        if (stream != null)
-                            stream.close();
-                    }
-                } catch (Throwable t) {
-                    throw new RuntimeException("Unable to load file \"" + classFile + "\".", t);
-                }
-
+                byte[] classData = IO.loadFile(classFile);
                 return defineClass(name, classData, 0, classData.length);
             }
         }

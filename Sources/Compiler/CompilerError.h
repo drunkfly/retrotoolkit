@@ -15,6 +15,7 @@ public:
 
     const char* what() const noexcept override;
 
+    static void locationToString(SourceLocation* location, const char* suffix, std::stringstream& ss);
     static std::string makeFullMessage(SourceLocation* location, const std::string& message);
 
 private:

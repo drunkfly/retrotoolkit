@@ -74,20 +74,34 @@ set_directory_properties(PROPERTIES
 #######################################################################################################################
 # Embed some classes into compiler binary
 
-set(src)
+file(GLOB_RECURSE src
+    CONFIGURE_DEPENDS
+    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+        Build/_/*.h
+    )
 
-macro(embed_class symbol file)
-    set(output_cpp "${CMAKE_CURRENT_BINARY_DIR}/${symbol}.cpp")
-    source_group("Generated Files" FILES "${output_cpp}")
-    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/${file}" PROPERTIES GENERATED TRUE)
-    bin2c("${symbol}" "${CMAKE_CURRENT_SOURCE_DIR}/${file}" "${output_cpp}")
-    list(APPEND src "${output_cpp}")
-endmacro()
+set(JavaClasses_h "${CMAKE_CURRENT_SOURCE_DIR}/Build/_/Compiler/Java/JavaClasses.h")
+set_source_files_properties("${JavaClasses_h}" PROPERTIES GENERATED TRUE)
 
-embed_class(JavaOutputWriter "Build/Tools/drunkfly/Messages.class")
-embed_class(JavaBuilder "Build/Tools/drunkfly/Builder.class")
-embed_class(JavaBuilderClassLoader "Build/Tools/drunkfly/BuilderClassLoader.class")
-embed_class(JavaBuilderLauncher "Build/Tools/drunkfly/BuilderLauncher.class")
+source_group("Generated Files" FILES ${src} "${JavaClasses_h}")
+foreach(file ${src})
+    set_source_files_properties("${file}" PROPERTIES GENERATED TRUE)
+endforeach()
+
+add_custom_command(OUTPUT
+        "${JavaClasses_h}"
+    COMMAND
+        "${CMAKE_COMMAND}"
+            "-DSRCPATH=${CMAKE_CURRENT_SOURCE_DIR}/Build/Tools"
+            "-DDSTPATH=${CMAKE_CURRENT_SOURCE_DIR}/Build/_/Compiler/Java"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/CMakeEmbedClasses.cmake"
+    WORKING_DIRECTORY
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+    MAIN_DEPENDENCY
+        CMakeEmbedClasses.cmake
+    DEPENDS
+        JavaClasspath
+    )
 
 add(JavaClasspathEmbedded
     STATIC_LIBRARY
@@ -95,6 +109,13 @@ add(JavaClasspathEmbedded
         "Java"
     DEPENDS
         JavaClasspath
+    LIBS
+        Compiler
+    INCLUDE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Build/_"
     SOURCES
         ${src}
+        "${JavaClasses_h}"
+        CMakeEmbedClasses.cmake
+        JavaClasses.cpp
     )

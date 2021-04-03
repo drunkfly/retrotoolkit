@@ -1,4 +1,6 @@
 #include "JStringList.h"
+#include "Compiler/Java/JNIStringRef.h"
+#include "Compiler/Java/JavaStdClasses.h"
 #include "Compiler/Java/JVM.h"
 
 JStringList::JStringList()
@@ -54,32 +56,31 @@ void JStringList::add(std::filesystem::path path)
     mArguments.emplace_back(std::move(arg));
 }
 
-jobjectArray JStringList::toJavaArray() const
+JNIRef JStringList::toJavaArray() const
 {
     auto env = JVM::jniEnv();
 
-    auto arr = jobjectArray(env->vtbl->NewObjectArray(env, jint(mArguments.size()), JVM::stringClass(), nullptr));
+    JNIRef arr = env->vtbl->NewObjectArray(env,
+        jint(mArguments.size()), JavaStdClasses::java_lang_String.toJNI(), nullptr);
     if (!arr)
-        return nullptr;
+        return arr;
 
     int index = 0;
     for (const auto& arg : mArguments) {
-        jstring str = nullptr;
+        JNIStringRef str;
         if (arg.string.has_value())
-            str = JVM::toJString(*arg.string);
+            str = JNIStringRef::from(*arg.string);
         else if (arg.wstring.has_value())
-            str = JVM::toJString(*arg.wstring);
+            str = JNIStringRef::from(*arg.wstring);
         else if (arg.path.has_value())
-            str = JVM::toJString(*arg.path);
+            str = JNIStringRef::from(*arg.path);
 
         if (!str) {
-            env->vtbl->DeleteLocalRef(env, arr);
-            return nullptr;
+            arr.release();
+            return arr;
         }
 
-        env->vtbl->SetObjectArrayElement(env, arr, index, str);
-        env->vtbl->DeleteLocalRef(env, str);
-
+        env->vtbl->SetObjectArrayElement(env, arr.toJNI(), index, str.toJNI());
         ++index;
     }
 

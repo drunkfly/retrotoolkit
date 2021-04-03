@@ -1,7 +1,7 @@
 #ifndef COMPILER_JAVA_JSTRINGLIST_H
 #define COMPILER_JAVA_JSTRINGLIST_H
 
-#include "Compiler/Java/JNI.h"
+#include "Compiler/Java/JNIRef.h"
 
 class JStringList
 {
@@ -26,7 +26,7 @@ public:
     void add(std::wstring wstr);
     void add(std::filesystem::path path);
 
-    jobjectArray toJavaArray() const;
+    JNIRef toJavaArray() const;
 
 private:
     std::vector<Argument> mArguments;

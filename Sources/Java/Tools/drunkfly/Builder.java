@@ -9,41 +9,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 
+import drunkfly.internal.BuilderClassLoader;
+import drunkfly.internal.InputFile;
+import drunkfly.internal.OutputFile;
+
 public abstract class Builder
 {
-    private static final class InputFile
-    {
-        public final String path;
-        public final File file;
-        public final long lastModified;
-
-        public InputFile(String path, File file)
-        {
-            this.path = path;
-            this.file = file;
-            this.lastModified = file.lastModified();
-        }
-
-        public InputFile(String path, File file, long lastModified)
-        {
-            this.path = path;
-            this.file = file;
-            this.lastModified = lastModified;
-        }
-    }
-
-    private static final class OutputFile
-    {
-        public final String path;
-        public final File file;
-
-        public OutputFile(String path, File file)
-        {
-            this.path = path;
-            this.file = file;
-        }
-    }
-
     ArrayList<InputFile> inputFiles;
     ArrayList<OutputFile> outputFiles;
 
