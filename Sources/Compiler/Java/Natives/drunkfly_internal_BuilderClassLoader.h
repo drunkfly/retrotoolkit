@@ -3,6 +3,6 @@
 
 #include "Compiler/Java/JNI.h"
 
-extern jobject JNICALL drunkfly_internal_BuilderClassLoader_getInstance(JNIEnv* env, jclass);
+extern const std::vector<JNINativeMethod> NATIVES_drunkfly_internal_BuilderClassLoader;
 
 #endif

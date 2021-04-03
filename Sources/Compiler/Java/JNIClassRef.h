@@ -15,7 +15,7 @@ public:
     const std::string& name();
 
     void registerNatives(jint count, const JNINativeMethod* methods);
-    template <size_t N> void registerNatives(const JNINativeMethod (&&m)[N]) { registerNatives(jint(N), m); }
+    void registerNatives(const std::vector<JNINativeMethod>& natives);
 
     void resolveMethod(jmethodID& method, const char* name, const char* signature);
     jmethodID resolveMethod(const char* name, const char* signature);

@@ -56,7 +56,7 @@ public final class BuilderClassLoader extends URLClassLoader
         if (classpaths != null) {
             for (String classpath : classpaths) {
                 if (classpath.endsWith(".jar"))
-                    result.add(new File(classpath).toURL());
+                    result.add(new File(classpath).toURI().toURL());
             }
         }
 
@@ -133,7 +133,7 @@ public final class BuilderClassLoader extends URLClassLoader
     {
         try {
             File resourceFile = findResourceFile(name);
-            return (resourceFile != null ? resourceFile.toURL() : null);
+            return (resourceFile != null ? resourceFile.toURI().toURL() : null);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -145,7 +145,7 @@ public final class BuilderClassLoader extends URLClassLoader
         for (File dir : resourceDirectories) {
             File resourceFile = new File(dir, name);
             if (resourceFile.isFile())
-                resources.add(resourceFile.toURL());
+                resources.add(resourceFile.toURI().toURL());
         }
 
         return Collections.enumeration(resources);

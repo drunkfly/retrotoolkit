@@ -3,8 +3,6 @@
 
 #include "Compiler/Java/JNI.h"
 
-extern jobject JNICALL drunkfly_Messages_getInstance(JNIEnv* env, jclass);
-extern jobject JNICALL drunkfly_Messages_getPrintWriter(JNIEnv* env, jclass);
-extern void JNICALL drunkfly_Messages_print(JNIEnv* env, jclass, jstring message);
+extern const std::vector<JNINativeMethod> NATIVES_drunkfly_Messages;
 
 #endif

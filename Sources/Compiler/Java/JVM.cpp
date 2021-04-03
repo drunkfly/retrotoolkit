@@ -225,9 +225,9 @@ void JVM::load(const std::filesystem::path& jdkPath)
       #endif
 
         std::vector<JavaVMOption> opts;
-        opts.emplace_back(JavaVMOption{ "vfprintf", vfprintfHook });
-        opts.emplace_back(JavaVMOption{ "exit", exitHook });
-        opts.emplace_back(JavaVMOption{ "abort", abortHook });
+        opts.emplace_back(JavaVMOption{ "vfprintf", (void*)vfprintfHook });
+        opts.emplace_back(JavaVMOption{ "exit", (void*)exitHook });
+        opts.emplace_back(JavaVMOption{ "abort", (void*)abortHook });
         opts.emplace_back(JavaVMOption{ classpath.c_str() });
         if (verboseGC)
             opts.emplace_back(JavaVMOption{ "-verbose:gc" });

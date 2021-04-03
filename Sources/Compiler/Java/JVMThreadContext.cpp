@@ -4,7 +4,7 @@
 #include "Compiler/Java/JStringList.h"
 #include "Compiler/CompilerError.h"
 
-thread_local JVMThreadContext* instance;
+static thread_local JVMThreadContext* instance;
 
 JVMThreadContext::JVMThreadContext()
     : mCompilerListener(nullptr)

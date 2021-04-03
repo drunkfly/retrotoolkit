@@ -6,17 +6,24 @@ if(WIN32 AND EXISTS "C:/Program Files/Java/jdk1.5.0_22/bin/javac.exe")
     set(JAVA_HOME "C:/Program Files/Java/jdk1.5.0_22")
 elseif(WIN32 AND EXISTS "C:/Program Files (x86)/Java/jdk1.5.0_22/bin/javac.exe")
     set(JAVA_HOME "C:/Program Files (x86)/Java/jdk1.5.0_22")
+elseif(NOT WIN32 AND EXISTS "/usr/lib/jvm/zulu-6-amd64")
+    set(JAVA_HOME "/usr/lib/jvm/zulu-6-amd64")
+elseif(NOT WIN32 AND EXISTS "/usr/lib/jvm/java-8-openjdk-amd64")
+    set(JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64")
 endif()
 
 find_package(Java 1.5 COMPONENTS Development Runtime REQUIRED)
 
-get_filename_component(JDK_ROOT "${Java_JAVAC_EXECUTABLE}" PATH)
+get_filename_component(JDK_ROOT "${Java_JAVAC_EXECUTABLE}" REALPATH)
+get_filename_component(JDK_ROOT "${JDK_ROOT}" PATH)
 get_filename_component(JDK_ROOT "${JDK_ROOT}" PATH)
 
 set(tools_jar "${JDK_ROOT}/lib/tools.jar")
-
 if(NOT EXISTS "${tools_jar}")
-    message(FATAL_ERROR "File \"${tools_jar}\" was not found.")
+    set(tools_jar "${JDK_ROOT}/jmods/jdk.compiler.jmod")
+    if(NOT EXISTS "${tools_jar}")
+        message(FATAL_ERROR "Neither \"lib/tools.jar\" nor \"jmods/jdk.compiler.jmod\" were found in the JDK.")
+    endif()
 endif()
 
 #######################################################################################################################

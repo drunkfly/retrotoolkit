@@ -7,7 +7,7 @@
 #include "Compiler/Java/JVM.h"
 #include "Compiler/CompilerError.h"
 
-JVMGlobalContext* instance;
+static JVMGlobalContext* instance;
 
 JVMGlobalContext::JVMGlobalContext()
     : mClassLoaderConstructorID(nullptr)
@@ -50,15 +50,8 @@ void JVMGlobalContext::ensureInitialized()
     mWasInitialized = true;
     JavaClasses::ensureLoaded();
 
-    JavaClasses::drunkfly_Messages.registerNatives({
-            { "getInstance", "()Ldrunkfly/Messages;", drunkfly_Messages_getInstance },
-            { "getPrintWriter", "()Ljava/io/PrintWriter;", drunkfly_Messages_getPrintWriter },
-            { "print", "(Ljava/lang/String;)V", drunkfly_Messages_print },
-        });
-
-    JavaClasses::drunkfly_internal_BuilderClassLoader.registerNatives({
-            { "getInstance", "()Ldrunkfly/internal/BuilderClassLoader;", drunkfly_internal_BuilderClassLoader_getInstance },
-        });
+    JavaClasses::drunkfly_Messages.registerNatives(NATIVES_drunkfly_Messages);
+    JavaClasses::drunkfly_internal_BuilderClassLoader.registerNatives(NATIVES_drunkfly_internal_BuilderClassLoader);
 
     JavaClasses::com_sun_tools_javac_Main.resolveStaticMethod(
         mCompilerMethodID, "compile", "([Ljava/lang/String;Ljava/io/PrintWriter;)I");

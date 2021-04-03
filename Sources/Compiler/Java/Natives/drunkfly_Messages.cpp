@@ -7,7 +7,7 @@
 #include "Compiler/Java/JVM.h"
 #include "Compiler/Compiler.h"
 
-jobject JNICALL drunkfly_Messages_getInstance(JNIEnv* env, jclass)
+static jobject JNICALL Messages_getInstance(JNIEnv* env, jclass)
 {
     JTRY
         return JVMGlobalContext::instance()->outputWriter().toJNI();
@@ -15,7 +15,7 @@ jobject JNICALL drunkfly_Messages_getInstance(JNIEnv* env, jclass)
         return nullptr;
 }
 
-jobject JNICALL drunkfly_Messages_getPrintWriter(JNIEnv* env, jclass)
+static jobject JNICALL Messages_getPrintWriter(JNIEnv* env, jclass)
 {
     JTRY
         return JVMGlobalContext::instance()->printWriter().toJNI();
@@ -23,7 +23,7 @@ jobject JNICALL drunkfly_Messages_getPrintWriter(JNIEnv* env, jclass)
         return nullptr;
 }
 
-void JNICALL drunkfly_Messages_print(JNIEnv* env, jclass, jstring message)
+static void JNICALL Messages_print(JNIEnv* env, jclass, jstring message)
 {
     JTRY
         auto listener = JVMThreadContext::instance()->listener();
@@ -31,3 +31,9 @@ void JNICALL drunkfly_Messages_print(JNIEnv* env, jclass, jstring message)
             listener->printMessage(JNIStringRef(message, JNIRef::Unknown).toUtf8());
     JCATCH
 }
+
+const std::vector<JNINativeMethod> NATIVES_drunkfly_Messages {
+        { "getInstance", "()Ldrunkfly/Messages;", (void*)Messages_getInstance },
+        { "getPrintWriter", "()Ljava/io/PrintWriter;", (void*)Messages_getPrintWriter },
+        { "print", "(Ljava/lang/String;)V", (void*)Messages_print },
+    };

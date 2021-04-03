@@ -91,6 +91,11 @@ void JNIClassRef::registerNatives(jint count, const JNINativeMethod* methods)
     mNativeMethodsRegistered = true;
 }
 
+void JNIClassRef::registerNatives(const std::vector<JNINativeMethod>& natives)
+{
+    registerNatives(jint(natives.size()), natives.data());
+}
+
 void JNIClassRef::resolveMethod(jmethodID& method, const char* name, const char* signature)
 {
     if (!method)
