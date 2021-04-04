@@ -8,6 +8,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 
 import drunkfly.IO;
 
@@ -16,6 +17,7 @@ public final class BuilderClassLoader extends URLClassLoader
     private final ArrayList<File> classDirectories;
     private final ArrayList<File> resourceDirectories;
     private final File outputDirectory;
+    private final HashMap<String, File> classFiles;
 
     public BuilderClassLoader(String[] classpaths) throws MalformedURLException
     {
@@ -23,6 +25,7 @@ public final class BuilderClassLoader extends URLClassLoader
 
         classDirectories = new ArrayList<File>();
         resourceDirectories = new ArrayList<File>();
+        classFiles = new HashMap<String, File>();
 
         File outputDir = null;
         if (classpaths != null) {
@@ -105,16 +108,27 @@ public final class BuilderClassLoader extends URLClassLoader
         for (File dir : classDirectories) {
             File classFile = new File(dir, classFileName);
             if (classFile.isFile()) {
+                Class<?> loadedClass = null;
                 try {
                     byte[] classData = IO.loadFile(classFile);
-                    return defineClass(name, classData, 0, classData.length);
+                    loadedClass = defineClass(name, classData, 0, classData.length);
                 } catch (IOException e) {
                     throw new RuntimeException("Unable to load class file \"" + classFile + "\".", e);
                 }
+
+                if (loadedClass != null)
+                    classFiles.put(name, classFile);
+
+                return loadedClass;
             }
         }
 
         return null;
+    }
+
+    public File getClassFile(String className)
+    {
+        return classFiles.get(className);
     }
 
     // Resources

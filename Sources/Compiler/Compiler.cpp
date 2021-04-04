@@ -221,8 +221,10 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             classpath.add(mOutputPath / "generated" / "=>");
 
             list.clear();
-            for (const auto& file : buildJavaFiles)
+            for (const auto& file : buildJavaFiles) {
                 list.add(file.fileID->name());
+                list.add(file.fileID->path());
+            }
 
             if (!JVM::runClass(JavaClasses::drunkfly_internal_BuilderLauncher.name().c_str(), list, true, &classpath)) {
                 JNIThrowableRef::rethrowCurrentException();

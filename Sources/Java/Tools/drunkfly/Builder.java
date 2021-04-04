@@ -17,21 +17,27 @@ public abstract class Builder
 {
     ArrayList<InputFile> inputFiles;
     ArrayList<OutputFile> outputFiles;
+    long classLastModified;
 
     protected abstract void run();
 
-    public void build(boolean force)
+    public final void build(long lastModified, boolean force)
     {
         loadDependencyInfo();
 
         if (!force) {
             boolean changed = false;
 
-            for (InputFile it : inputFiles) {
-                File file = it.file;
-                if (!file.isFile() || file.lastModified() > it.lastModified) {
-                    changed = true;
-                    break;
+            if (lastModified > classLastModified)
+                changed = true;
+
+            if (!changed) {
+                for (InputFile it : inputFiles) {
+                    File file = it.file;
+                    if (!file.isFile() || file.lastModified() > it.lastModified) {
+                        changed = true;
+                        break;
+                    }
                 }
             }
 
@@ -51,6 +57,8 @@ public abstract class Builder
 
         for (OutputFile it : outputFiles)
             it.file.delete();
+
+        classLastModified = lastModified;
 
         inputFiles.clear();
         outputFiles.clear();
@@ -137,6 +145,8 @@ public abstract class Builder
             if (!DEPENDENCY_FILE_ID.equals(stream.readUTF()))
                 return;
 
+            classLastModified = stream.readLong();
+
             int numInputFiles = stream.readInt();
             for (int i = 0; i < numInputFiles; i++) {
                 String path = stream.readUTF();
@@ -149,7 +159,8 @@ public abstract class Builder
             for (int i = 0; i < numOutputFiles; i++) {
                 String path = stream.readUTF();
                 File file = resolveOutputFile(path);
-                outputFiles.add(new OutputFile(path, file));
+                long lastModified = stream.readLong();
+                outputFiles.add(new OutputFile(path, file, lastModified));
             }
         } catch (IOException e) {
             inputFiles.clear();
@@ -167,6 +178,7 @@ public abstract class Builder
             DataOutputStream stream = new DataOutputStream(byteStream);
 
             stream.writeUTF(DEPENDENCY_FILE_ID);
+            stream.writeLong(classLastModified);
 
             int n = inputFiles.size();
             stream.writeInt(n);
@@ -177,8 +189,10 @@ public abstract class Builder
 
             n = outputFiles.size();
             stream.writeInt(n);
-            for (int i = 0; i < n; i++)
+            for (int i = 0; i < n; i++) {
                 stream.writeUTF(outputFiles.get(i).path);
+                stream.writeLong(outputFiles.get(i).lastModified);
+            }
 
             data = byteStream.toByteArray();
 
