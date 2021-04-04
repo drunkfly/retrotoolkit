@@ -10,7 +10,6 @@ ThirdPartyDialog::ThirdPartyDialog(QWidget* parent)
         "<html><body>"
 
         "<p><b>ASM</b><br>"
-        "ASM: a very small and fast Java bytecode manipulation framework<br>"
         "Copyright &copy; 2000-2011 INRIA, France Telecom<br>"
         "All rights reserved.<br>"
         "<br>"
@@ -38,6 +37,8 @@ ThirdPartyDialog::ThirdPartyDialog(QWidget* parent)
         "CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) "
         "ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF "
         "THE POSSIBILITY OF SUCH DAMAGE.</p>"
+
+        "<hr>"
 
         "<p><b>AudioFile</b><br>"
         "Copyright &copy; 1998&#8209;2000, 2003&#8209;2004, 2010&#8209;2013 Michael Pruett<br>"
