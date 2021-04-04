@@ -84,6 +84,15 @@ public abstract class Builder
         }
     }
 
+    public String loadText(String path)
+    {
+        try {
+            return new String(loadBytes(path), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Unable to load \"" + path + "\".", e);
+        }
+    }
+
     public Gfx loadGfx(String path)
     {
         try {
