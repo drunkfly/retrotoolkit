@@ -188,9 +188,9 @@ public class SerialVersionUIDAdder extends ClassVisitor {
       this.name = name;
       this.access = access;
       this.interfaces = interfaces.clone();
-      this.svuidFields = new ArrayList<>();
-      this.svuidConstructors = new ArrayList<>();
-      this.svuidMethods = new ArrayList<>();
+      this.svuidFields = new ArrayList<Item>();
+      this.svuidConstructors = new ArrayList<Item>();
+      this.svuidMethods = new ArrayList<Item>();
     }
 
     super.visit(version, access, name, signature, superName, interfaces);
@@ -342,8 +342,9 @@ public class SerialVersionUIDAdder extends ClassVisitor {
   protected long computeSVUID() throws IOException {
     long svuid = 0;
 
-    try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream)) {
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
+    {
 
       // 1. The class name written using UTF encoding.
       dataOutputStream.writeUTF(name.replace('/', '.'));
@@ -468,7 +469,7 @@ public class SerialVersionUIDAdder extends ClassVisitor {
       this.descriptor = descriptor;
     }
 
-    @Override
+    /*@Override*/
     public int compareTo(final Item item) {
       int result = name.compareTo(item.name);
       if (result == 0) {

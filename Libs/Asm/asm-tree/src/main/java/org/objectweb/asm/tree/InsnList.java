@@ -151,7 +151,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
    *
    * @return an iterator over the instructions in this list.
    */
-  @Override
+  /*@Override*/
   public ListIterator<AbstractInsnNode> iterator() {
     return iterator(0);
   }
@@ -503,12 +503,12 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       }
     }
 
-    @Override
+    /*@Override*/
     public boolean hasNext() {
       return nextInsn != null;
     }
 
-    @Override
+    /*@Override*/
     public Object next() {
       if (nextInsn == null) {
         throw new NoSuchElementException();
@@ -520,7 +520,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       return result;
     }
 
-    @Override
+    /*@Override*/
     public void remove() {
       if (remove != null) {
         if (remove == nextInsn) {
@@ -535,12 +535,12 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       }
     }
 
-    @Override
+    /*@Override*/
     public boolean hasPrevious() {
       return previousInsn != null;
     }
 
-    @Override
+    /*@Override*/
     public Object previous() {
       if (previousInsn == null) {
         throw new NoSuchElementException();
@@ -552,7 +552,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       return result;
     }
 
-    @Override
+    /*@Override*/
     public int nextIndex() {
       if (nextInsn == null) {
         return size();
@@ -563,7 +563,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       return nextInsn.index;
     }
 
-    @Override
+    /*@Override*/
     public int previousIndex() {
       if (previousInsn == null) {
         return -1;
@@ -574,7 +574,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       return previousInsn.index;
     }
 
-    @Override
+    /*@Override*/
     public void add(final Object o) {
       if (nextInsn != null) {
         InsnList.this.insertBefore(nextInsn, (AbstractInsnNode) o);
@@ -587,7 +587,7 @@ public class InsnList implements Iterable<AbstractInsnNode> {
       remove = null;
     }
 
-    @Override
+    /*@Override*/
     public void set(final Object o) {
       if (remove != null) {
         InsnList.this.set(remove, (AbstractInsnNode) o);

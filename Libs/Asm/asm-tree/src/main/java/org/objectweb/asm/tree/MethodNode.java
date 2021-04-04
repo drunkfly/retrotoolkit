@@ -226,9 +226,9 @@ public class MethodNode extends MethodVisitor {
     this.signature = signature;
     this.exceptions = Util.asArrayList(exceptions);
     if ((access & Opcodes.ACC_ABSTRACT) == 0) {
-      this.localVariables = new ArrayList<>(5);
+      this.localVariables = new ArrayList<LocalVariableNode>(5);
     }
-    this.tryCatchBlocks = new ArrayList<>();
+    this.tryCatchBlocks = new ArrayList<TryCatchBlockNode>();
     this.instructions = new InsnList();
   }
 
@@ -239,7 +239,7 @@ public class MethodNode extends MethodVisitor {
   @Override
   public void visitParameter(final String name, final int access) {
     if (parameters == null) {
-      parameters = new ArrayList<>(5);
+      parameters = new ArrayList<ParameterNode>(5);
     }
     parameters.add(new ParameterNode(name, access));
   }

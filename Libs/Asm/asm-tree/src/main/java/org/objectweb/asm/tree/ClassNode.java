@@ -161,10 +161,10 @@ public class ClassNode extends ClassVisitor {
    */
   public ClassNode(final int api) {
     super(api);
-    this.interfaces = new ArrayList<>();
-    this.innerClasses = new ArrayList<>();
-    this.fields = new ArrayList<>();
-    this.methods = new ArrayList<>();
+    this.interfaces = new ArrayList<String>();
+    this.innerClasses = new ArrayList<InnerClassNode>();
+    this.fields = new ArrayList<FieldNode>();
+    this.methods = new ArrayList<MethodNode>();
   }
 
   // -----------------------------------------------------------------------------------------------

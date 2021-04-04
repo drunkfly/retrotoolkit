@@ -201,7 +201,7 @@ public class CheckModuleAdapter extends ModuleVisitor {
 
     NameSet(final String type) {
       this.type = type;
-      this.names = new HashSet<>();
+      this.names = new HashSet<String>();
     }
 
     void checkNameNotAlreadyDeclared(final String name) {

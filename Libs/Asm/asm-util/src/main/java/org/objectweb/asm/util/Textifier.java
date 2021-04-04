@@ -1245,7 +1245,7 @@ public class Textifier extends Printer {
 
     if (attribute instanceof TextifierSupport) {
       if (labelNames == null) {
-        labelNames = new HashMap<>();
+        labelNames = new HashMap<Label, String>();
       }
       ((TextifierSupport) attribute).textify(stringBuilder, labelNames);
     } else {
@@ -1366,7 +1366,7 @@ public class Textifier extends Printer {
    */
   protected void appendLabel(final Label label) {
     if (labelNames == null) {
-      labelNames = new HashMap<>();
+      labelNames = new HashMap<Label, String>();
     }
     String name = labelNames.get(label);
     if (name == null) {

@@ -194,7 +194,7 @@ public class CheckClassAdapter extends ClassVisitor {
   protected CheckClassAdapter(
       final int api, final ClassVisitor classVisitor, final boolean checkDataFlow) {
     super(api, classVisitor);
-    this.labelInsnIndices = new HashMap<>();
+    this.labelInsnIndices = new HashMap<Label, Integer>();
     this.checkDataFlow = checkDataFlow;
   }
 
@@ -997,8 +997,11 @@ public class CheckClassAdapter extends ClassVisitor {
     ClassReader classReader;
     if (args[0].endsWith(".class")) {
       // Can't fix PMD warning for 1.5 compatibility.
-      try (InputStream inputStream = new FileInputStream(args[0])) { // NOPMD(AvoidFileStream)
+      InputStream inputStream = new FileInputStream(args[0]);
+      try { // NOPMD(AvoidFileStream)
         classReader = new ClassReader(inputStream);
+      } finally {
+        inputStream.close();
       }
     } else {
       classReader = new ClassReader(args[0]);
@@ -1041,7 +1044,7 @@ public class CheckClassAdapter extends ClassVisitor {
     Type syperType = classNode.superName == null ? null : Type.getObjectType(classNode.superName);
     List<MethodNode> methods = classNode.methods;
 
-    List<Type> interfaces = new ArrayList<>();
+    List<Type> interfaces = new ArrayList<Type>();
     for (String interfaceName : classNode.interfaces) {
       interfaces.add(Type.getObjectType(interfaceName));
     }
@@ -1053,7 +1056,7 @@ public class CheckClassAdapter extends ClassVisitor {
               syperType,
               interfaces,
               (classNode.access & Opcodes.ACC_INTERFACE) != 0);
-      Analyzer<BasicValue> analyzer = new Analyzer<>(verifier);
+      Analyzer<BasicValue> analyzer = new Analyzer<BasicValue>(verifier);
       if (loader != null) {
         verifier.setClassLoader(loader);
       }

@@ -325,7 +325,7 @@ public abstract class Printer {
   protected Printer(final int api) {
     this.api = api;
     this.stringBuilder = new StringBuilder();
-    this.text = new ArrayList<>();
+    this.text = new ArrayList<Object>();
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -1308,8 +1308,11 @@ public abstract class Printer {
         || className.indexOf('\\') != -1
         || className.indexOf('/') != -1) {
       // Can't fix PMD warning for 1.5 compatibility.
-      try (InputStream inputStream = new FileInputStream(className)) { // NOPMD(AvoidFileStream)
+      InputStream inputStream = new FileInputStream(className);
+      try { // NOPMD(AvoidFileStream)
         new ClassReader(inputStream).accept(traceClassVisitor, parsingOptions);
+      } finally {
+        inputStream.close();
       }
     } else {
       new ClassReader(className).accept(traceClassVisitor, parsingOptions);

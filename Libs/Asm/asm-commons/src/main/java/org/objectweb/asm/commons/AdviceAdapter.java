@@ -121,8 +121,8 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
   public void visitCode() {
     super.visitCode();
     if (isConstructor) {
-      stackFrame = new ArrayList<>();
-      forwardJumpStackFrames = new HashMap<>();
+      stackFrame = new ArrayList<Object>();
+      forwardJumpStackFrames = new HashMap<Label, List<Object>>();
     } else {
       onMethodEnter();
     }
@@ -578,7 +578,7 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
     // initialized twice), so this is not issue (in the sense that there is no risk to emit a wrong
     // 'onMethodEnter').
     if (isConstructor && !forwardJumpStackFrames.containsKey(handler)) {
-      List<Object> handlerStackFrame = new ArrayList<>();
+      List<Object> handlerStackFrame = new ArrayList<Object>();
       handlerStackFrame.add(OTHER);
       forwardJumpStackFrames.put(handler, handlerStackFrame);
     }
@@ -595,7 +595,7 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
     if (forwardJumpStackFrames.containsKey(label)) {
       return;
     }
-    forwardJumpStackFrames.put(label, new ArrayList<>(stackFrame));
+    forwardJumpStackFrames.put(label, new ArrayList<Object>(stackFrame));
   }
 
   private void endConstructorBasicBlockWithoutSuccessor() {

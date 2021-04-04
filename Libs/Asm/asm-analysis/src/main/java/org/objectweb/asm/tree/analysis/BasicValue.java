@@ -80,7 +80,7 @@ public class BasicValue implements Value {
     return type;
   }
 
-  @Override
+  /*@Override*/
   public int getSize() {
     return type == Type.LONG_TYPE || type == Type.DOUBLE_TYPE ? 2 : 1;
   }

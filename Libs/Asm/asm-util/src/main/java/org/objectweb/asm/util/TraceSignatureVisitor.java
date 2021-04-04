@@ -49,7 +49,7 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
   private static final Map<Character, String> BASE_TYPES;
 
   static {
-    HashMap<Character, String> baseTypes = new HashMap<>();
+    HashMap<Character, String> baseTypes = new HashMap<Character, String>();
     baseTypes.put('Z', "boolean");
     baseTypes.put('B', "byte");
     baseTypes.put('C', "char");

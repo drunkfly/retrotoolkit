@@ -144,9 +144,9 @@ public class AnalyzerAdapter extends MethodVisitor {
       final MethodVisitor methodVisitor) {
     super(api, methodVisitor);
     this.owner = owner;
-    locals = new ArrayList<>();
-    stack = new ArrayList<>();
-    uninitializedTypes = new HashMap<>();
+    locals = new ArrayList<Object>();
+    stack = new ArrayList<Object>();
+    uninitializedTypes = new HashMap<Object, Object>();
 
     if ((access & Opcodes.ACC_STATIC) == 0) {
       if ("<init>".equals(name)) {
@@ -206,8 +206,8 @@ public class AnalyzerAdapter extends MethodVisitor {
       this.locals.clear();
       this.stack.clear();
     } else {
-      this.locals = new ArrayList<>();
-      this.stack = new ArrayList<>();
+      this.locals = new ArrayList<Object>();
+      this.stack = new ArrayList<Object>();
     }
     visitFrameTypes(numLocal, local, this.locals);
     visitFrameTypes(numStack, stack, this.stack);
@@ -259,7 +259,7 @@ public class AnalyzerAdapter extends MethodVisitor {
     if (opcode == Opcodes.NEW) {
       if (labels == null) {
         Label label = new Label();
-        labels = new ArrayList<>(3);
+        labels = new ArrayList<Label>(3);
         labels.add(label);
         if (mv != null) {
           mv.visitLabel(label);
@@ -355,7 +355,7 @@ public class AnalyzerAdapter extends MethodVisitor {
   public void visitLabel(final Label label) {
     super.visitLabel(label);
     if (labels == null) {
-      labels = new ArrayList<>(3);
+      labels = new ArrayList<Label>(3);
     }
     labels.add(label);
   }

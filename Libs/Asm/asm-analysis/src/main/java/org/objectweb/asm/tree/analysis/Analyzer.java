@@ -125,7 +125,7 @@ public class Analyzer<V extends Value> implements Opcodes {
       for (int j = startIndex; j < endIndex; ++j) {
         List<TryCatchBlockNode> insnHandlers = handlers[j];
         if (insnHandlers == null) {
-          insnHandlers = new ArrayList<>();
+          insnHandlers = new ArrayList<TryCatchBlockNode>();
           handlers[j] = insnHandlers;
         }
         insnHandlers.add(tryCatchBlock);
@@ -135,11 +135,11 @@ public class Analyzer<V extends Value> implements Opcodes {
     // For each instruction, compute the subroutine to which it belongs.
     // Follow the main 'subroutine', and collect the jsr instructions to nested subroutines.
     Subroutine main = new Subroutine(null, method.maxLocals, null);
-    List<AbstractInsnNode> jsrInsns = new ArrayList<>();
+    List<AbstractInsnNode> jsrInsns = new ArrayList<AbstractInsnNode>();
     findSubroutine(0, main, jsrInsns);
     // Follow the nested subroutines, and collect their own nested subroutines, until all
     // subroutines are found.
-    Map<LabelNode, Subroutine> jsrSubroutines = new HashMap<>();
+    Map<LabelNode, Subroutine> jsrSubroutines = new HashMap<LabelNode, Subroutine>();
     while (!jsrInsns.isEmpty()) {
       JumpInsnNode jsrInsn = (JumpInsnNode) jsrInsns.remove(0);
       Subroutine subroutine = jsrSubroutines.get(jsrInsn.label);
@@ -382,7 +382,7 @@ public class Analyzer<V extends Value> implements Opcodes {
   private void findSubroutine(
       final int insnIndex, final Subroutine subroutine, final List<AbstractInsnNode> jsrInsns)
       throws AnalyzerException {
-    ArrayList<Integer> instructionIndicesToProcess = new ArrayList<>();
+    ArrayList<Integer> instructionIndicesToProcess = new ArrayList<Integer>();
     instructionIndicesToProcess.add(insnIndex);
     while (!instructionIndicesToProcess.isEmpty()) {
       int currentInsnIndex =
@@ -528,7 +528,7 @@ public class Analyzer<V extends Value> implements Opcodes {
    * @return the created frame.
    */
   protected Frame<V> newFrame(final int numLocals, final int numStack) {
-    return new Frame<>(numLocals, numStack);
+    return new Frame<V>(numLocals, numStack);
   }
 
   /**
@@ -538,7 +538,7 @@ public class Analyzer<V extends Value> implements Opcodes {
    * @return the created frame.
    */
   protected Frame<V> newFrame(final Frame<? extends V> frame) {
-    return new Frame<>(frame);
+    return new Frame<V>(frame);
   }
 
   /**

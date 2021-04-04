@@ -61,7 +61,7 @@ final class Subroutine {
   Subroutine(final LabelNode start, final int maxLocals, final JumpInsnNode caller) {
     this.start = start;
     this.localsUsed = new boolean[maxLocals];
-    this.callers = new ArrayList<>();
+    this.callers = new ArrayList<JumpInsnNode>();
     callers.add(caller);
   }
 
@@ -73,7 +73,7 @@ final class Subroutine {
   Subroutine(final Subroutine subroutine) {
     this.start = subroutine.start;
     this.localsUsed = subroutine.localsUsed.clone();
-    this.callers = new ArrayList<>(subroutine.callers);
+    this.callers = new ArrayList<JumpInsnNode>(subroutine.callers);
   }
 
   /**

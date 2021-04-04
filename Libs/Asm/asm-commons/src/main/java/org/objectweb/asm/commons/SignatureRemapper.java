@@ -43,7 +43,7 @@ public class SignatureRemapper extends SignatureVisitor {
 
   private final Remapper remapper;
 
-  private ArrayList<String> classNames = new ArrayList<>();
+  private ArrayList<String> classNames = new ArrayList<String>();
 
   /**
    * Constructs a new {@link SignatureRemapper}. <i>Subclasses must not use this constructor</i>.
