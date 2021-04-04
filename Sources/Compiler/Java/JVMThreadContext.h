@@ -3,6 +3,8 @@
 
 #include "Compiler/Java/JNIRef.h"
 
+class GCHeap;
+class SourceFile;
 class ICompilerListener;
 class JStringList;
 class JNIStringRef;
@@ -11,7 +13,7 @@ class JNIClassRef;
 class JVMThreadContext
 {
 public:
-    JVMThreadContext();
+    explicit JVMThreadContext(GCHeap* heap);
     ~JVMThreadContext();
 
     static bool hasInstance();
@@ -23,6 +25,9 @@ public:
     void ensureInitialized();
     void releaseAll();
 
+    const std::vector<SourceFile>& generatedFiles() const { return mGeneratedFiles; }
+    void addGeneratedFile(const JNIStringRef& name, const JNIStringRef& path);
+
     bool constructClassLoader(const JStringList* classPath);
     void releaseClassLoader();
     const JNIRef& classLoader() const;
@@ -30,6 +35,8 @@ public:
 
 private:
     ICompilerListener* mCompilerListener;
+    std::vector<SourceFile> mGeneratedFiles;
+    GCHeap* mHeap;
     JNIRef mClassLoader;
 
     DISABLE_COPY(JVMThreadContext);

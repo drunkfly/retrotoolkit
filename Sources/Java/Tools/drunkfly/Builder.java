@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 
@@ -51,8 +52,11 @@ public abstract class Builder
                 }
             }
 
-            if (!changed && (!inputFiles.isEmpty() || !outputFiles.isEmpty()))
+            if (!changed && (!inputFiles.isEmpty() || !outputFiles.isEmpty())) {
+                for (OutputFile it : outputFiles)
+                    compilerAddSource(it.path, it.file.getAbsolutePath());
                 return;
+            }
         }
 
         for (OutputFile it : outputFiles)
@@ -70,7 +74,7 @@ public abstract class Builder
 
     // I/O operations for builders
 
-    protected byte[] loadBytes(String path)
+    public byte[] loadBytes(String path)
     {
         File file = registerInputFile(path);
         try {
@@ -80,17 +84,17 @@ public abstract class Builder
         }
     }
 
-    protected Gfx loadGfx(String path)
+    public Gfx loadGfx(String path)
     {
         try {
             File file = registerInputFile(path);
-            return new Gfx(ImageIO.read(file));
+            return new Gfx(path, ImageIO.read(file), GfxFormat.RGBA);
         } catch (IOException e) {
             throw new RuntimeException("Unable to load \"" + path + "\".");
         }
     }
 
-    protected void writeFile(String path, byte[] data)
+    public void writeFile(String path, byte[] data)
     {
         File file = registerOutputFile(path);
         try {
@@ -98,6 +102,20 @@ public abstract class Builder
         } catch (IOException e) {
             throw new RuntimeException("Unable to write \"" + path + "\".", e);
         }
+    }
+
+    public void writeFile(String path, String data)
+    {
+        try {
+            writeFile(path, data.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Unable to write \"" + path + "\".", e);
+        }
+    }
+
+    public void writeFile(String path, StringBuilder data)
+    {
+        writeFile(path, data.toString());
     }
 
     // Dependency management
@@ -122,9 +140,12 @@ public abstract class Builder
     private File registerOutputFile(String path)
     {
         File file = resolveOutputFile(path);
+        compilerAddSource(path, file.getAbsolutePath());
         outputFiles.add(new OutputFile(path, file));
         return file;
     }
+
+    private native void compilerAddSource(String name, String path);
 
     private File dependencyFile()
     {

@@ -1,5 +1,6 @@
 #include "JVMGlobalContext.h"
 #include "Compiler/Java/Natives/drunkfly_Messages.h"
+#include "Compiler/Java/Natives/drunkfly_Builder.h"
 #include "Compiler/Java/Natives/drunkfly_internal_BuilderClassLoader.h"
 #include "Compiler/Java/JNIStringRef.h"
 #include "Compiler/Java/JavaClasses.h"
@@ -52,6 +53,7 @@ void JVMGlobalContext::ensureInitialized()
 
     JavaClasses::drunkfly_Messages.registerNatives(NATIVES_drunkfly_Messages);
     JavaClasses::drunkfly_internal_BuilderClassLoader.registerNatives(NATIVES_drunkfly_internal_BuilderClassLoader);
+    JavaClasses::drunkfly_Builder.registerNatives(NATIVES_drunkfly_Builder);
 
     JavaClasses::com_sun_tools_javac_Main.resolveStaticMethod(
         mCompilerMethodID, "compile", "([Ljava/lang/String;Ljava/io/PrintWriter;)I");

@@ -5,6 +5,7 @@
 
 enum class FileType
 {
+    Unknown,
     Asm,
     Java,
     Basic,
@@ -24,6 +25,8 @@ struct SourceFile
 
         return (fileID->name() < other.fileID->name());
     }
+
+    static FileType determineFileType(const std::filesystem::path& path);
 };
 
 #endif

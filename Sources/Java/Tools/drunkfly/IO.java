@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 public final class IO
 {
@@ -54,5 +55,19 @@ public final class IO
             if (deleteFile)
                 file.delete();
         }
+    }
+
+    public static void writeFile(File file, String data) throws IOException
+    {
+        try {
+            writeFile(file, data.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Unable to write \"" + file + "\".", e);
+        }
+    }
+
+    public static void writeFile(File file, StringBuilder data) throws IOException
+    {
+        writeFile(file, data.toString());
     }
 }

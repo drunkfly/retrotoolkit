@@ -45,6 +45,8 @@ add(Compiler
         Compression/Lzsa2Compressor.h
         Compression/Zx7Compressor.cpp
         Compression/Zx7Compressor.h
+        Java/Natives/drunkfly_Builder.cpp
+        Java/Natives/drunkfly_Builder.h
         Java/Natives/drunkfly_internal_BuilderClassLoader.cpp
         Java/Natives/drunkfly_internal_BuilderClassLoader.h
         Java/Natives/drunkfly_Messages.cpp
@@ -127,6 +129,7 @@ add(Compiler
         ParsingContext.h
         Project.cpp
         Project.h
+        SourceFile.cpp
         SourceFile.h
         SpectrumBasicCompiler.cpp
         SpectrumBasicCompiler.h

@@ -36,7 +36,7 @@ Compiler::Compiler(GCHeap* heap, std::filesystem::path resourcesPath, ICompilerL
     : mHeap(heap)
     , mListener(listener)
     , mLinkerOutput(nullptr)
-    , mJVMThreadContext(new JVMThreadContext)
+    , mJVMThreadContext(new JVMThreadContext(mHeap))
     , mResourcesPath(std::move(resourcesPath))
     , mEnableWav(false)
     , mShouldDetachJVM(false)
@@ -93,7 +93,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     std::map<std::string, std::vector<SourceFile>> basicFiles;
     std::vector<SourceFile> gameJavaFiles;
     std::vector<SourceFile> buildJavaFiles;
-    std::vector<SourceFile> sourceFiles;
+    std::vector<SourceFile> asmSourceFiles;
     int nBasic = 0;
 
     SourceFile sourceFile;
@@ -101,41 +101,45 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         if (it.is_directory())
             continue;
 
-        auto ext = it.path().extension();
-        if (ext == ".asm") {
-            if (initSourceFile(sourceFile, FileType::Asm, it.path()))
-                sourceFiles.emplace_back(sourceFile);
-        } else if (ext == ".java") {
-            if (initSourceFile(sourceFile, FileType::Java, it.path())) {
-                std::string prefix = sourceFile.fileID->name().string();
-                if (!startsWith(prefix, "build/") && !startsWith(prefix, "build\\"))
-                    gameJavaFiles.emplace_back(sourceFile);
-                else
-                    buildJavaFiles.emplace_back(sourceFile);
-            }
-        } else if (ext == ".bas") {
-            if (initSourceFile(sourceFile, FileType::Basic, it.path())) {
-                ++nBasic;
-                basicFiles[it.path().stem().string()].emplace_back(sourceFile);
-            }
+        FileType fileType = SourceFile::determineFileType(it.path());
+        switch (fileType) {
+            case FileType::Unknown:
+                break;
+
+            case FileType::Asm:
+                if (initSourceFile(sourceFile, FileType::Asm, it.path()))
+                    asmSourceFiles.emplace_back(sourceFile);
+                break;
+
+            case FileType::Java:
+                if (initSourceFile(sourceFile, FileType::Java, it.path())) {
+                    std::string prefix = sourceFile.fileID->name().string();
+                    if (!startsWith(prefix, "build/") && !startsWith(prefix, "build\\"))
+                        gameJavaFiles.emplace_back(sourceFile);
+                    else
+                        buildJavaFiles.emplace_back(sourceFile);
+                }
+                break;
+
+            case FileType::Basic:
+                if (initSourceFile(sourceFile, FileType::Basic, it.path())) {
+                    ++nBasic;
+                    basicFiles[it.path().stem().string()].emplace_back(sourceFile);
+                }
+                break;
         }
     }
 
     std::sort(gameJavaFiles.begin(), gameJavaFiles.end());
     std::sort(buildJavaFiles.begin(), buildJavaFiles.end());
-    std::sort(sourceFiles.begin(), sourceFiles.end());
-    for (auto& it : basicFiles) {
-        if (it.second.size() > 1)
-            std::sort(it.second.begin(), it.second.end());
-    }
 
-    int n = int(sourceFiles.size());
+    int nAsm = int(asmSourceFiles.size());
     int count = 0;
     int total = 1
-              + n
+              + nAsm
               + nBasic
               + (buildJavaFiles.empty() ? 0 : 1)
-              + (buildJavaFiles.empty() && gameJavaFiles.empty() ? 0 : 2)
+              + (buildJavaFiles.empty() && gameJavaFiles.empty() ? 0 : 3)
               + project.outputs.size();
 
     auto program = new (mHeap) Program();
@@ -162,9 +166,6 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             JVM::load(*mJdkPath, mResourcesPath / "RetroBuild.jar");
         }
 
-        if (mListener)
-            mListener->compilerProgress(count++, total, "Compiling Java sources...");
-
         int version = JVM::majorVersion();
         const char* targetVersion = "1.5";
         if (version >= 8)
@@ -175,6 +176,9 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             targetVersion = "1.6";
 
         // Game code
+
+        if (mListener)
+            mListener->compilerProgress(count++, total, "Compiling Java game code...");
 
         if (!gameJavaFiles.empty()) {
             JStringList list;
@@ -201,6 +205,9 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         }
 
         // Build and run tools
+
+        if (mListener)
+            mListener->compilerProgress(count++, total, "Compiling and running Java build scripts...");
 
         if (!buildJavaFiles.empty()) {
             JStringList list;
@@ -242,10 +249,39 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         }
     }
 
+    // Add generated source files
+
+    for (const auto& file : mJVMThreadContext->generatedFiles()) {
+        switch (file.fileType) {
+            case FileType::Java:
+            case FileType::Unknown:
+                break;
+
+            case FileType::Asm:
+                ++total;
+                ++nAsm;
+                asmSourceFiles.emplace_back(file);
+                break;
+
+            case FileType::Basic:
+                ++total;
+                ++nBasic;
+                basicFiles[file.fileID->path().stem().string()].emplace_back(file);
+                break;
+        }
+    }
+
+    std::sort(asmSourceFiles.begin(), asmSourceFiles.end());
+
+    for (auto& it : basicFiles) {
+        if (it.second.size() > 1)
+            std::sort(it.second.begin(), it.second.end());
+    }
+
     // Compile source files
 
-    for (int i = 0; i < n; i++) {
-        const auto& file = sourceFiles[i];
+    for (int i = 0; i < nAsm; i++) {
+        const auto& file = asmSourceFiles[i];
         if (mListener)
             mListener->compilerProgress(count++, total, file.fileID->name().string());
 
@@ -257,13 +293,17 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 parser.parse(lexer.firstToken());
                 break;
             }
+
+            default:
+                throw CompilerError(
+                    new (mHeap) SourceLocation(file.fileID, 0), "Internal compiler error: invalid file type.");
         }
     }
 
     // Link program
 
     if (mListener)
-        mListener->compilerProgress(count++, total, "Linking binaries...");
+        mListener->compilerProgress(count++, total, "Linking...");
 
     Linker linker(mHeap, &project);
     mLinkerOutput = linker.link(program);
