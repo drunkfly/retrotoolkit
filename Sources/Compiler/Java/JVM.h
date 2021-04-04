@@ -41,6 +41,8 @@ public:
 
     static void printJniError(std::stringstream& ss, int r);
 
+    static int majorVersion();
+
     static bool compile(const JStringList& args);
     static bool runClass(const char* className, const JStringList& args,
         bool useClassLoader = false, const JStringList* classPath = nullptr);

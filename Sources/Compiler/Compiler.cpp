@@ -165,6 +165,15 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         if (mListener)
             mListener->compilerProgress(count++, total, "Compiling Java sources...");
 
+        int version = JVM::majorVersion();
+        const char* targetVersion = "1.5";
+        if (version >= 8)
+            targetVersion = "1.8";
+        else if (version >= 7)
+            targetVersion = "1.7";
+        else if (version >= 6)
+            targetVersion = "1.6";
+
         // Game code
 
         if (!gameJavaFiles.empty()) {
@@ -173,9 +182,9 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             list.add("-Xlint:all");
             list.add("-g");
             list.add("-source");
-            list.add("1.8"); // FIXME: determine JVM version and use lesser version if needed
+            list.add(targetVersion);
             list.add("-target");
-            list.add("1.8");
+            list.add(targetVersion);
             list.add("-bootclasspath");
             list.add(mResourcesPath / "RetroEngine.jar");
             list.add("-sourcepath");

@@ -1,6 +1,7 @@
 #include "JVM.h"
 #include "Common/IO.h"
 #include "Compiler/Java/JNIClassRef.h"
+#include "Compiler/Java/JNIThrowableRef.h"
 #include "Compiler/Java/JNIStringRef.h"
 #include "Compiler/Java/JStringList.h"
 #include "Compiler/Java/JVMThreadContext.h"
@@ -8,6 +9,7 @@
 #include "Compiler/Java/JavaClasses.h"
 #include "Compiler/Compiler.h"
 #include "Compiler/CompilerError.h"
+#include "Compiler/LexerUtils.h"
 
 #ifdef _WIN32
  #define WIN32_LEAN_AND_MEAN
@@ -374,6 +376,38 @@ void JVM::printJniError(std::stringstream& ss, int r)
         case JNI_EINVAL: ss << "JNI_EINVAL"; break;
         default: ss << "code " << r;
     }
+}
+
+int JVM::majorVersion()
+{
+    jmethodID getPropertyMethodID =
+        JavaClasses::java_lang_System.resolveStaticMethod("getProperty", "(Ljava/lang/String;)Ljava/lang/String;");
+    if (!getPropertyMethodID) {
+        JNIThrowableRef::rethrowCurrentException();
+        throw CompilerError(nullptr, "Unable to determine JVM version.");
+    }
+
+    JNIStringRef versionString = env->vtbl->CallStaticObjectMethod(env,
+        JavaClasses::java_lang_System.toJNI(),
+        getPropertyMethodID,
+        JNIStringRef::from("java.version").toJNI());
+    if (!versionString) {
+        JNIThrowableRef::rethrowCurrentException();
+        throw CompilerError(nullptr, "Unable to determine JVM version.");
+    }
+
+    std::string str = versionString.toUtf8();
+    const char* p;
+    if (str.length() > 2 && str[0] == '1' && str[1] == '.')
+        p = &str[2];
+    else
+        p = str.c_str();
+
+    int version = 0;
+    while (isDigit(*p))
+        version = version * 10 + charToInt(*p++);
+
+    return version;
 }
 
 bool JVM::compile(const JStringList& args)
