@@ -28,7 +28,7 @@ public abstract class Builder
         if (!force) {
             boolean changed = false;
 
-            if (lastModified > classLastModified)
+            if (lastModified != -1 && lastModified > classLastModified)
                 changed = true;
 
             if (!changed) {

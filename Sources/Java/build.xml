@@ -5,27 +5,6 @@
         <mkdir dir="Build/Tools" />
 
         <javac includeantruntime="false"
-               srcdir="Classpath"
-               destdir="Build/Classpath"
-               bootclasspath="Classpath"
-               debug="on"
-               source="1.5"
-               target="1.5"
-               >
-            <compilerarg value="-Xlint:all" />
-        </javac>
-
-        <javac includeantruntime="false"
-               srcdir="Tools"
-               destdir="Build/Tools"
-               debug="on"
-               source="1.5"
-               target="1.5"
-               >
-            <compilerarg value="-Xlint:all" />
-        </javac>
-
-        <javac includeantruntime="false"
                srcdir="../../Libs/Asm/asm/src/main/java"
                destdir="Build/Tools"
                debug="on"
@@ -67,6 +46,27 @@
 
         <javac includeantruntime="false"
                srcdir="../../Libs/Asm/asm-util/src/main/java"
+               destdir="Build/Tools"
+               debug="on"
+               source="1.5"
+               target="1.5"
+               >
+            <compilerarg value="-Xlint:all" />
+        </javac>
+
+        <javac includeantruntime="false"
+               srcdir="Classpath"
+               destdir="Build/Classpath"
+               bootclasspath="Classpath"
+               debug="on"
+               source="1.5"
+               target="1.5"
+               >
+            <compilerarg value="-Xlint:all" />
+        </javac>
+
+        <javac includeantruntime="false"
+               srcdir="Tools"
                destdir="Build/Tools"
                debug="on"
                source="1.5"

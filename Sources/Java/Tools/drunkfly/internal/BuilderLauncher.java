@@ -2,7 +2,7 @@ package drunkfly.internal;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 
 import drunkfly.Builder;
 import drunkfly.Messages;
@@ -22,31 +22,28 @@ public final class BuilderLauncher
             currentThread.setContextClassLoader(classLoader);
 
             ArrayList<Class<?>> builders = new ArrayList<Class<?>>();
-            HashMap<String, File> classFiles = new HashMap<String, File>();
+            SourceFiles sourceFiles = new SourceFiles();
 
             int n = args.length;
             for (int i = 0; i < n; i += 2) {
-                String name = args[i * 2 + 0];
-                String path = args[i * 2 + 1];
+                String name = args[i + 0];
+                String path = args[i + 1];
 
                 name = name.substring(0, name.length() - 5);  // remove ".java"
                 name = name.replace('/', '.');
                 name = name.replace('\\', '.');
 
-                classFiles.put(name, new File(path));
+                sourceFiles.add(name, new File(path));
 
                 Class<?> classInstance = classLoader.loadClass(name);
                 if (Builder.class.isAssignableFrom(classInstance))
                     builders.add(classInstance);
-
-                if (classLoader.getClassFile(name) == null)
-                    throw new RuntimeException("Class \"" + name + "\" was not loaded with builder class loader.");
             }
 
             for (Class<?> builderClass : builders) {
-                // FIXME: only check files the build script actually depends on
-                long lastModified = 0;
-                for (File file : classFiles.values()) {
+                long lastModified = -1;
+                HashSet<File> sources = sourceFiles.forClass(builderClass);
+                for (File file : sources) {
                     long fileLastModified = file.lastModified();
                     if (lastModified < fileLastModified)
                         lastModified = fileLastModified;
