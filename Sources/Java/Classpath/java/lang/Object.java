@@ -2,20 +2,7 @@ package java.lang;
 
 public class Object
 {
-    public String toString()
-    {
-        // FIXME
-        return "Object";
-    }
-
-    public int hashCode()
-    {
-        // FIXME
-        return 0;
-    }
-
-    public boolean equals(Object other)
-    {
-        return (this == other);
-    }
+    public native String toString();
+    public native int hashCode();
+    public native boolean equals(Object other);
 }
