@@ -18,6 +18,7 @@ public final class BuilderClassLoader extends URLClassLoader
     private final ArrayList<File> resourceDirectories;
     private final File outputDirectory;
     private final HashMap<String, File> classFiles;
+    private final ArrayList<File> jarFiles;
 
     public BuilderClassLoader(String[] classpaths) throws MalformedURLException
     {
@@ -25,13 +26,16 @@ public final class BuilderClassLoader extends URLClassLoader
 
         classDirectories = new ArrayList<File>();
         resourceDirectories = new ArrayList<File>();
+        jarFiles = new ArrayList<File>();
         classFiles = new HashMap<String, File>();
 
         File outputDir = null;
         if (classpaths != null) {
             for (String classpath : classpaths) {
-                if (classpath.endsWith(".jar"))
+                if (classpath.endsWith(".jar")) {
+                    jarFiles.add(new File(classpath));
                     continue;
+                }
 
                 if (classpath.endsWith("/*.class") || classpath.endsWith("\\*.class"))
                     classDirectories.add(new File(classpath.substring(0, classpath.length() - 8)));
@@ -72,6 +76,17 @@ public final class BuilderClassLoader extends URLClassLoader
             throw new RuntimeException("No output directory specified.");
 
         return outputDirectory;
+    }
+
+    public long getJarFilesLastModificationTime()
+    {
+        long lastModificationTime = -1;
+        for (File file : jarFiles) {
+            long time = file.lastModified();
+            if (time > lastModificationTime)
+                lastModificationTime = time;
+        }
+        return lastModificationTime;
     }
 
     public static native BuilderClassLoader getInstance();

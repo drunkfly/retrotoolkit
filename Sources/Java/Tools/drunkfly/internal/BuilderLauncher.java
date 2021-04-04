@@ -24,6 +24,8 @@ public final class BuilderLauncher
             ArrayList<Class<?>> builders = new ArrayList<Class<?>>();
             SourceFiles sourceFiles = new SourceFiles();
 
+            long jarLastModified = classLoader.getJarFilesLastModificationTime();
+
             int n = args.length;
             for (int i = 0; i < n; i += 2) {
                 String name = args[i + 0];
@@ -48,6 +50,9 @@ public final class BuilderLauncher
                     if (lastModified < fileLastModified)
                         lastModified = fileLastModified;
                 }
+
+                if (lastModified < jarLastModified)
+                    lastModified = jarLastModified;
 
                 Builder builder = (Builder)builderClass.newInstance();
                 builder.build(lastModified, false);

@@ -233,6 +233,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
             JStringList classpath;
             classpath.add(mProjectPath / "!*.class");
+            classpath.add(mResourcesPath / "RetroBuild.jar");
             classpath.add(mOutputPath / "java" / "*.class");
             classpath.add(mOutputPath / "generated" / "=>");
 
