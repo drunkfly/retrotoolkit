@@ -38,6 +38,9 @@ public final class BuilderLauncher
                 Class<?> classInstance = classLoader.loadClass(name);
                 if (Builder.class.isAssignableFrom(classInstance))
                     builders.add(classInstance);
+
+                if (classLoader.getClassFile(name) == null)
+                    throw new RuntimeException("Class \"" + name + "\" was not loaded with builder class loader.");
             }
 
             for (Class<?> builderClass : builders) {
