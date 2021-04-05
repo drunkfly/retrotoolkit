@@ -4,6 +4,7 @@
 #include "Common/GC.h"
 #include "Compiler/Tree/SourceLocation.h"
 
+class ISectionResolver;
 class CodeEmitter;
 class CompilerError;
 
@@ -32,8 +33,8 @@ public:
     void unresolveLabel();
 
     virtual bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const = 0;
-    virtual bool canEmitCodeWithoutBaseAddress() const = 0;
-    virtual bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+    virtual bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const = 0;
+    virtual bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const = 0;
 
 private:

@@ -358,5 +358,5 @@ bool Project::Output::isEnabled(SymbolTable* symbolTable) const
         throw CompilerError(parser.errorLocation(), ss.str());
     }
 
-    return value->evaluateValue(nullptr).number != 0;
+    return value->evaluateValue(nullptr, nullptr).number != 0;
 }

@@ -1,6 +1,7 @@
 #include "Expr.h"
 #include "Compiler/Assembler/Label.h"
 #include "Compiler/Assembler/AssemblerContext.h"
+#include "Compiler/Linker/ISectionResolver.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/CompilerError.h"
 
@@ -39,16 +40,18 @@ bool Expr::isNegate() const
     return false;
 }
 
-bool Expr::canEvaluateValue(const int64_t* currentAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Expr::canEvaluateValue(const int64_t* currentAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
     MarkAsEvaluating mark(this);
     mCurrentAddress = currentAddress;
+    mSectionResolver = sectionResolver;
     return canEvaluate(resolveError);
 }
 
-uint8_t Expr::evaluateByte(const int64_t* currentAddress) const
+uint8_t Expr::evaluateByte(const int64_t* currentAddress, ISectionResolver* sectionResolver) const
 {
-    Value value = evaluateValue(currentAddress);
+    Value value = evaluateValue(currentAddress, sectionResolver);
 
     if (value.bits == SignificantBits::NoMoreThan8)
         value.truncateTo8Bit();
@@ -64,12 +67,13 @@ uint8_t Expr::evaluateByte(const int64_t* currentAddress) const
         return uint8_t(int8_t(value.number));
 }
 
-uint8_t Expr::evaluateByteOffset(int64_t nextAddress, const int64_t* currentAddress) const
+uint8_t Expr::evaluateByteOffset(int64_t nextAddress,
+    const int64_t* currentAddress, ISectionResolver* sectionResolver) const
 {
     if (!currentAddress)
-        throw CompilerError(location(), "byte offset cannot be evaluated at this point.");
+        throw CompilerError(location(), "byte offset cannot be evaluated in this context.");
 
-    Value value = evaluateValue(currentAddress);
+    Value value = evaluateValue(currentAddress, sectionResolver);
     if (value.bits != SignificantBits::All)
         value.truncateTo16Bit();
 
@@ -86,9 +90,9 @@ uint8_t Expr::evaluateByteOffset(int64_t nextAddress, const int64_t* currentAddr
         return uint8_t(int8_t(offset));
 }
 
-uint16_t Expr::evaluateWord(const int64_t* currentAddress) const
+uint16_t Expr::evaluateWord(const int64_t* currentAddress, ISectionResolver* sectionResolver) const
 {
-    Value value = evaluateValue(currentAddress);
+    Value value = evaluateValue(currentAddress, sectionResolver);
 
     if (value.bits == SignificantBits::NoMoreThan8 || value.bits == SignificantBits::NoMoreThan16)
         value.truncateTo16Bit();
@@ -104,9 +108,9 @@ uint16_t Expr::evaluateWord(const int64_t* currentAddress) const
         return uint16_t(int16_t(value.number));
 }
 
-uint16_t Expr::evaluateUnsignedWord(const int64_t* currentAddress) const
+uint16_t Expr::evaluateUnsignedWord(const int64_t* currentAddress, ISectionResolver* sectionResolver) const
 {
-    Value value = evaluateValue(currentAddress);
+    Value value = evaluateValue(currentAddress, sectionResolver);
 
     if (value.bits == SignificantBits::NoMoreThan8 || value.bits == SignificantBits::NoMoreThan16)
         value.truncateTo16Bit();
@@ -123,9 +127,9 @@ uint16_t Expr::evaluateUnsignedWord(const int64_t* currentAddress) const
     return uint16_t(value.number);
 }
 
-uint32_t Expr::evaluateDWord(const int64_t* currentAddress) const
+uint32_t Expr::evaluateDWord(const int64_t* currentAddress, ISectionResolver* sectionResolver) const
 {
-    Value value = evaluateValue(currentAddress);
+    Value value = evaluateValue(currentAddress, sectionResolver);
 
     if (value.bits == SignificantBits::NoMoreThan8 || value.bits == SignificantBits::NoMoreThan16)
         value.truncateTo32Bit();
@@ -141,10 +145,11 @@ uint32_t Expr::evaluateDWord(const int64_t* currentAddress) const
         return uint32_t(int32_t(value.number));
 }
 
-Value Expr::evaluateValue(const int64_t* currentAddress) const
+Value Expr::evaluateValue(const int64_t* currentAddress, ISectionResolver* sectionResolver) const
 {
     MarkAsEvaluating mark(this);
     mCurrentAddress = currentAddress;
+    mSectionResolver = sectionResolver;
     return evaluate();
 }
 
@@ -192,13 +197,13 @@ bool ExprCurrentAddress::canEvaluate(std::unique_ptr<CompilerError>& resolveErro
     if (!mLabel) {
         if (!mCurrentAddress) {
             resolveError = std::make_unique<CompilerError>(location(),
-                "current address is not available at this point.");
+                "current address is not available in this context.");
             return false;
         }
     } else {
         if (!mLabel->hasAddress()) {
             std::stringstream ss;
-            ss << "value of '$' in EQU is not available at this point.";
+            ss << "value of '$' in EQU is not available in this context.";
             resolveError = std::make_unique<CompilerError>(location(), ss.str());
             return false;
         }
@@ -210,12 +215,12 @@ Value ExprCurrentAddress::evaluate() const
 {
     if (!mLabel) {
         if (!mCurrentAddress)
-            throw CompilerError(location(), "current address is not available at this point.");
+            throw CompilerError(location(), "current address is not available in this context.");
         return Value(*mCurrentAddress);
     } else {
         if (!mLabel->hasAddress()) {
             std::stringstream ss;
-            ss << "value of '$' in EQU is not available at this point.";
+            ss << "value of '$' in EQU is not available in this context.";
             throw CompilerError(location(), ss.str());
         }
         return Value(mLabel->addressValue(), Sign::Unsigned, SignificantBits::NoMoreThan16);
@@ -268,10 +273,12 @@ bool ExprIdentifier::canEvaluate(std::unique_ptr<CompilerError>& resolveError) c
 
     switch (symbol->type()) {
         case Symbol::Constant:
-            return static_cast<ConstantSymbol*>(symbol)->value()->canEvaluateValue(mCurrentAddress, resolveError);
+            return static_cast<ConstantSymbol*>(symbol)->value()->
+                canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 
         case Symbol::ConditionalConstant:
-            return static_cast<ConditionalConstantSymbol*>(symbol)->canEvaluateValue(mCurrentAddress, resolveError);
+            return static_cast<ConditionalConstantSymbol*>(symbol)->
+                canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 
         case Symbol::Label: {
             auto label = static_cast<LabelSymbol*>(symbol)->label();
@@ -286,9 +293,9 @@ bool ExprIdentifier::canEvaluate(std::unique_ptr<CompilerError>& resolveError) c
 
         case Symbol::ConditionalLabel: {
             auto labelSymbol = static_cast<ConditionalLabelSymbol*>(symbol);
-            if (!labelSymbol->canEvaluateValue(mCurrentAddress, resolveError))
+            if (!labelSymbol->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError))
                 return false;
-            Label* label = labelSymbol->label(location(), mCurrentAddress);
+            Label* label = labelSymbol->label(location(), mCurrentAddress, mSectionResolver);
             if (!label) {
                 std::stringstream ss;
                 ss << "unable to resolve label \"" << labelSymbol->name() << "\".";
@@ -319,16 +326,17 @@ Value ExprIdentifier::evaluate() const
 
     switch (symbol->type()) {
         case Symbol::Constant:
-            return static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(mCurrentAddress);
+            return static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(mCurrentAddress, mSectionResolver);
 
         case Symbol::ConditionalConstant: {
-            Expr* expr = static_cast<ConditionalConstantSymbol*>(symbol)->expr(location(), mCurrentAddress);
+            Expr* expr = static_cast<ConditionalConstantSymbol*>(symbol)->
+                expr(location(), mCurrentAddress, mSectionResolver);
             if (!expr) {
                 std::stringstream ss;
                 ss << "unable to resolve symbol \"" << symbol->name() << "\".";
                 throw CompilerError(location(), ss.str());
             }
-            return expr->evaluateValue(mCurrentAddress);
+            return expr->evaluateValue(mCurrentAddress, mSectionResolver);
         }
 
         case Symbol::Label: {
@@ -342,7 +350,8 @@ Value ExprIdentifier::evaluate() const
         }
 
         case Symbol::ConditionalLabel: {
-            auto label = static_cast<ConditionalLabelSymbol*>(symbol)->label(location(), mCurrentAddress);
+            auto label = static_cast<ConditionalLabelSymbol*>(symbol)->
+                label(location(), mCurrentAddress, mSectionResolver);
             if (!label) {
                 std::stringstream ss;
                 ss << "unable to resolve label \"" << symbol->name() << "\".";
@@ -373,15 +382,17 @@ void ExprIdentifier::replaceCurrentAddressWithLabel(AssemblerContext*)
 
 bool ExprConditional::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mCondition->canEvaluateValue(mCurrentAddress, resolveError)
-        && mThen->canEvaluateValue(mCurrentAddress, resolveError)
-        && mElse->canEvaluateValue(mCurrentAddress, resolveError);
+    return mCondition->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mThen->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mElse->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprConditional::evaluate() const
 {
-    Value a = mCondition->evaluateValue(mCurrentAddress);
-    return (a.number != 0 ? mThen->evaluateValue(mCurrentAddress) : mElse->evaluateValue(mCurrentAddress));
+    Value a = mCondition->evaluateValue(mCurrentAddress, mSectionResolver);
+    return (a.number != 0
+        ? mThen->evaluateValue(mCurrentAddress, mSectionResolver)
+        : mElse->evaluateValue(mCurrentAddress, mSectionResolver));
 }
 
 void ExprConditional::toString(std::stringstream& ss) const
@@ -402,6 +413,96 @@ void ExprConditional::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ExprAddressOfSection::toString(std::stringstream& ss) const
+{
+    ss << "addressof(" << mSectionName << ")";
+}
+
+void ExprAddressOfSection::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+}
+
+bool ExprAddressOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+{
+    uint64_t value = 0;
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionAddress(mSectionName, value)) {
+        resolveError = std::make_unique<CompilerError>(location(),
+            "section address is not available in this context.");
+        return false;
+    }
+    return true;
+}
+
+Value ExprAddressOfSection::evaluate() const
+{
+    uint64_t value = 0;
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionAddress(mSectionName, value))
+        throw CompilerError(location(), "section address is not available in this context.");
+    return Value(value);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ExprBaseOfSection::toString(std::stringstream& ss) const
+{
+    ss << "baseof(" << mSectionName << ")";
+}
+
+void ExprBaseOfSection::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+}
+
+bool ExprBaseOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+{
+    uint64_t value = 0;
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionBase(mSectionName, value)) {
+        resolveError = std::make_unique<CompilerError>(location(),
+            "section base is not available in this context.");
+        return false;
+    }
+    return true;
+}
+
+Value ExprBaseOfSection::evaluate() const
+{
+    uint64_t value = 0;
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionBase(mSectionName, value))
+        throw CompilerError(location(), "section base is not available in this context.");
+    return Value(value);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ExprSizeOfSection::toString(std::stringstream& ss) const
+{
+    ss << "sizeof(" << mSectionName << ")";
+}
+
+void ExprSizeOfSection::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+}
+
+bool ExprSizeOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+{
+    uint64_t value = 0;
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionSize(mSectionName, value)) {
+        resolveError = std::make_unique<CompilerError>(location(),
+            "section size is not available in this context.");
+        return false;
+    }
+    return true;
+}
+
+Value ExprSizeOfSection::evaluate() const
+{
+    uint64_t value = 0;
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionSize(mSectionName, value))
+        throw CompilerError(location(), "section size is not available in this context.");
+    return Value(value);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 bool ExprNegate::isNegate() const
 {
     return true;
@@ -409,12 +510,12 @@ bool ExprNegate::isNegate() const
 
 bool ExprNegate::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprNegate::evaluate() const
 {
-    Value value = mOperand->evaluateValue(mCurrentAddress);
+    Value value = mOperand->evaluateValue(mCurrentAddress, mSectionResolver);
     switch (value.bits) {
         case SignificantBits::NoMoreThan8:
             if (value.sign == Sign::Unsigned) {
@@ -462,12 +563,12 @@ void ExprNegate::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprBitwiseNot::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprBitwiseNot::evaluate() const
 {
-    Value operand = mOperand->evaluateValue(mCurrentAddress);
+    Value operand = mOperand->evaluateValue(mCurrentAddress, mSectionResolver);
     if (operand.sign == Sign::Unsigned)
         return Value(~operand.number & 0x7fffffffffffffffll, operand.sign, operand.bits);
     return Value(~operand.number, operand.sign, operand.bits);
@@ -488,12 +589,12 @@ void ExprBitwiseNot::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprLogicNot::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprLogicNot::evaluate() const
 {
-    Value operand = mOperand->evaluateValue(mCurrentAddress);
+    Value operand = mOperand->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(!operand.number, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
@@ -512,14 +613,14 @@ void ExprLogicNot::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprAdd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprAdd::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a + b; }, a, b);
 }
 
@@ -540,14 +641,14 @@ void ExprAdd::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprSubtract::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprSubtract::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return smartEvaluate<true>([](int64_t a, int64_t b){ return a - b; }, a, b);
 }
 
@@ -568,14 +669,14 @@ void ExprSubtract::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprMultiply::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprMultiply::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a * b; }, a, b);
 }
 
@@ -596,14 +697,14 @@ void ExprMultiply::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprDivide::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprDivide::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a / b; }, a, b);
 }
 
@@ -624,14 +725,14 @@ void ExprDivide::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprModulo::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprModulo::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a % b; }, a, b);
 }
 
@@ -652,14 +753,14 @@ void ExprModulo::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprShiftLeft::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprShiftLeft::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
 
     if (b.number < 0) {
         b.truncateToSignificantBits();
@@ -693,14 +794,14 @@ void ExprShiftLeft::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprShiftRight::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprShiftRight::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
 
     if (b.number < 0) {
         b.truncateToSignificantBits();
@@ -734,14 +835,14 @@ void ExprShiftRight::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprLess::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprLess::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(a.number < b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
@@ -762,14 +863,14 @@ void ExprLess::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprLessEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprLessEqual::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(a.number <= b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
@@ -790,14 +891,14 @@ void ExprLessEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprGreater::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprGreater::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(a.number > b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
@@ -818,14 +919,14 @@ void ExprGreater::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprGreaterEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprGreaterEqual::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(a.number >= b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
@@ -846,14 +947,14 @@ void ExprGreaterEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprEqual::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(a.number == b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
@@ -874,14 +975,14 @@ void ExprEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprNotEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprNotEqual::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(a.number != b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
@@ -902,14 +1003,14 @@ void ExprNotEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprBitwiseAnd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprBitwiseAnd::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     auto bits = (a.bits > b.bits ? a.bits : b.bits);
     auto sign = (a.sign == Sign::Signed || b.sign == Sign::Signed ? Sign::Signed : Sign::Unsigned);
     return Value(a.number & b.number, sign, bits);
@@ -932,14 +1033,14 @@ void ExprBitwiseAnd::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprBitwiseOr::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprBitwiseOr::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     auto bits = (a.bits > b.bits ? a.bits : b.bits);
     auto sign = (a.sign == Sign::Signed || b.sign == Sign::Signed ? Sign::Signed : Sign::Unsigned);
     return Value(a.number | b.number, sign, bits);
@@ -962,14 +1063,14 @@ void ExprBitwiseOr::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprBitwiseXor::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprBitwiseXor::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     auto bits = (a.bits > b.bits ? a.bits : b.bits);
     auto sign = (a.sign == Sign::Signed || b.sign == Sign::Signed ? Sign::Signed : Sign::Unsigned);
     return Value(a.number ^ b.number, sign, bits);
@@ -992,14 +1093,14 @@ void ExprBitwiseXor::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprLogicAnd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprLogicAnd::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(a.number && b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 
@@ -1020,14 +1121,14 @@ void ExprLogicAnd::replaceCurrentAddressWithLabel(AssemblerContext* context)
 
 bool ExprLogicOr::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, resolveError);
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
 Value ExprLogicOr::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress);
-    Value b = mOperand2->evaluateValue(mCurrentAddress);
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
     return Value(a.number || b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }
 

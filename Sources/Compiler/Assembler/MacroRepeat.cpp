@@ -27,13 +27,13 @@ bool MacroRepeat::calculateSizeInBytes(size_t& outSize, std::unique_ptr<Compiler
     return false;
 }
 
-bool MacroRepeat::canEmitCodeWithoutBaseAddress() const
+bool MacroRepeat::canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const
 {
     // FIXME
     return true;
 }
 
-bool MacroRepeat::emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+bool MacroRepeat::emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
     std::unique_ptr<CompilerError>& resolveError) const
 {
     // FIXME

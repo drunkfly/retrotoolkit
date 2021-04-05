@@ -101,12 +101,12 @@ bool Label::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>
     return true;
 }
 
-bool Label::canEmitCodeWithoutBaseAddress() const
+bool Label::canEmitCodeWithoutBaseAddress(ISectionResolver*) const
 {
     return true;
 }
 
-bool Label::emitCode(CodeEmitter*, int64_t&, std::unique_ptr<CompilerError>&) const
+bool Label::emitCode(CodeEmitter*, int64_t&, ISectionResolver*, std::unique_ptr<CompilerError>&) const
 {
     return true;
 }

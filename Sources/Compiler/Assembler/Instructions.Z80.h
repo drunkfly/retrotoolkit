@@ -20,7 +20,8 @@ namespace Z80
             struct NAME { \
                 static void toString(std::stringstream& ss) { ss << #NAME; } \
                 static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
-                static bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) { return true; } \
+                static bool canEvaluate(const int64_t*, \
+                    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>&) { return true; } \
             }
 
         Z80_MNEMONIC(ADC);
@@ -100,8 +101,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int value(int64_t currentAddress, uint8_t baseByte) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, ISectionResolver* sectionResolver, uint8_t baseByte) const;
     private:
         Expr* mValue;
     };
@@ -111,8 +113,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int value(int64_t currentAddress) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
     private:
         Expr* mValue;
     };
@@ -122,8 +125,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int low(int64_t currentAddress, int& high) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int low(int64_t currentAddress, ISectionResolver* sectionResolver, int& high) const;
     private:
         Expr* mValue;
     };
@@ -132,42 +136,42 @@ namespace Z80
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
+        bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memDE
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
+        bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memHL
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
+        bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memIX
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
+        bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memIY
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
+        bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memSP
     {
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
+        bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     class memAddr
@@ -175,8 +179,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int low(int64_t currentAddress, int& high) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int low(int64_t currentAddress, ISectionResolver* sectionResolver, int& high) const;
     private:
         Expr* mValue;
     };
@@ -186,8 +191,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int value(int64_t currentAddress) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
     private:
         Expr* mValue;
     };
@@ -197,8 +203,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int value(int64_t currentAddress) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
     private:
         Expr* mValue;
     };
@@ -208,8 +215,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int value(int64_t currentAddress, int64_t nextAddress) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, ISectionResolver* sectionResolver, int64_t nextAddress) const;
     private:
         Expr* mValue;
     };
@@ -219,7 +227,7 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) const { return true; }
+        bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     class portAddr
@@ -227,8 +235,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int value(int64_t currentAddress) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
     private:
         Expr* mValue;
     };
@@ -238,8 +247,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int value(int64_t currentAddress) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
     private:
         Expr* mValue;
     };
@@ -249,8 +259,9 @@ namespace Z80
     public:
         void toString(std::stringstream& ss) const;
         bool tryParse(ParsingContext* c);
-        bool canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const;
-        int value(int64_t currentAddress, uint8_t baseByte) const;
+        bool canEvaluate(const int64_t* nextAddress,
+            ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+        int value(int64_t currentAddress, ISectionResolver* sectionResolver, uint8_t baseByte) const;
     private:
         Expr* mValue;
     };
@@ -259,14 +270,14 @@ namespace Z80
         struct NAME { \
             static void toString(std::stringstream& ss) { ss << #NAME; } \
             static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
-            static bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) { return true; } \
+            static bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) { return true; } \
         }
 
     struct AF_
     {
         static void toString(std::stringstream& ss);
         static bool tryParse(ParsingContext* context);
-        static bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) { return true; }
+        static bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) { return true; }
     };
 
     Z80_REGOP(A);
@@ -296,7 +307,7 @@ namespace Z80
         struct flag##NAME { \
             static void toString(std::stringstream& ss) { ss << #NAME; } \
             static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
-            static bool canEvaluate(const int64_t*, std::unique_ptr<CompilerError>&) { return true; } \
+            static bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) { return true; } \
         }
 
     Z80_FLAGOP(C);
@@ -421,8 +432,8 @@ namespace Z80
             explicit OP(SourceLocation* location) : Opcode0(location) {} \
             bool calculateSizeInBytes(size_t& outSize, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
-            bool canEmitCodeWithoutBaseAddress() const final override; \
-            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+            bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
+            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
         private: \
             static constexpr size_t arraySizeInBytes(); \
@@ -435,8 +446,8 @@ namespace Z80
             OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
             bool calculateSizeInBytes(size_t& outSize, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
-            bool canEmitCodeWithoutBaseAddress() const final override; \
-            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+            bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
+            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
         private: \
             static constexpr size_t arraySizeInBytes(); \
@@ -449,8 +460,8 @@ namespace Z80
             OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
             bool calculateSizeInBytes(size_t& outSize, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
-            bool canEmitCodeWithoutBaseAddress() const final override; \
-            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+            bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
+            bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
         private: \
             static constexpr size_t arraySizeInBytes(); \

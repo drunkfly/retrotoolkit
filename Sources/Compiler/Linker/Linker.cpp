@@ -42,7 +42,7 @@ namespace
         bool autoFileOffset;
     };
 
-    class LinkerFile : public GCObject
+    class LinkerFile : public GCObject, public ISectionResolver
     {
     public:
         LinkerFile(SourceLocation* location, const Project::File* file, Program* program)
@@ -85,7 +85,7 @@ namespace
             bool hasSectionWithKnownFileOffset = false;
             for (auto section : mSections) {
                 if (section->base) {
-                    section->resolvedBase = section->base->evaluateUnsignedWord(nullptr);
+                    section->resolvedBase = section->base->evaluateUnsignedWord(nullptr, this);
                   #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                     { std::stringstream ss;
                     ss << "resolved base 0x" << std::hex << *section->resolvedBase
@@ -95,7 +95,8 @@ namespace
                   #endif
 
                     if (section->fileOffset && !section->autoFileOffset) {
-                        section->resolvedFileOffset = section->fileOffset->evaluateUnsignedWord(nullptr);
+                        section->resolvedFileOffset =
+                            section->fileOffset->evaluateUnsignedWord(nullptr, this);
                       #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                         { std::stringstream ss;
                         ss << "resolved file offset 0x" << std::hex << *section->resolvedFileOffset
@@ -107,7 +108,7 @@ namespace
                     }
 
                     if (section->alignment) {
-                        size_t alignment = section->alignment->evaluateUnsignedWord(nullptr);
+                        size_t alignment = section->alignment->evaluateUnsignedWord(nullptr, this);
                         if (alignment == 0) {
                             std::stringstream ss;
                             ss << "section \"" << section->programSection->name()
@@ -150,14 +151,14 @@ namespace
             // resolve addresses for sections at start of file while we can
 
             if (mFileStart) {
-                size_t address = mFileStart->evaluateUnsignedWord(nullptr);
+                size_t address = mFileStart->evaluateUnsignedWord(nullptr, this);
                 resolveSectionsFrom(address, 0);
             }
 
             // resolve addresses for sections at end of file while we can
 
             if (mFileUntil) {
-                size_t address = mFileUntil->evaluateUnsignedWord(nullptr);
+                size_t address = mFileUntil->evaluateUnsignedWord(nullptr, this);
                 resolveSectionsTo(address, mSections.size());
             }
 
@@ -267,7 +268,7 @@ namespace
                 if (section->resolvedBase)
                     baseAddress = *section->resolvedBase;
                 else {
-                    if (!section->programSection->canEmitCodeWithoutBaseAddress())
+                    if (!section->programSection->canEmitCodeWithoutBaseAddress(this))
                         continue;
                     baseAddress = 0;
                 }
@@ -275,7 +276,7 @@ namespace
                 auto compressor = Compressor::create(mLocation, section->compression);
                 auto code = std::make_unique<CodeEmitterCompressed>(std::move(compressor));
 
-                if (section->programSection->emitCode(code.get(), baseAddress, resolveError)) {
+                if (section->programSection->emitCode(code.get(), baseAddress, this, resolveError)) {
                   #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                     { std::stringstream ss;
                     ss << "generated code for section \"" << section->programSection->name()
@@ -311,7 +312,8 @@ namespace
 
                 if (!section->code && section->compression == Compression::None) {
                     auto code = std::make_unique<CodeEmitterUncompressed>();
-                    if (!section->programSection->emitCode(code.get(), section->resolvedBase.value(), resolveError))
+                    if (!section->programSection->emitCode(code.get(),
+                            section->resolvedBase.value(), this, resolveError))
                         hasUnresolved = true;
                     else {
                       #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
@@ -374,13 +376,13 @@ namespace
 
             size_t startAddress = 0;
             if (mFileStart)
-                startAddress = mFileStart->evaluateUnsignedWord(nullptr);
+                startAddress = mFileStart->evaluateUnsignedWord(nullptr, this);
             else
                 startAddress = mSections[0]->resolvedFileOffset.value();
 
             size_t endAddress = 0;
             if (mFileUntil) {
-                endAddress = mFileUntil->evaluateUnsignedWord(nullptr);
+                endAddress = mFileUntil->evaluateUnsignedWord(nullptr, this);
                 if (mFileStart && startAddress >= endAddress) {
                     std::stringstream ss;
                     ss << "file \"" << mFile->name << "\"has invalid bounds.";
@@ -420,7 +422,7 @@ namespace
                     }
 
                     std::unique_ptr<CompilerError> resolveError;
-                    if (section->programSection->emitCode(output, offset, resolveError)) {
+                    if (section->programSection->emitCode(output, offset, this, resolveError)) {
                       #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                         { std::stringstream ss;
                         ss << "generated code for section \"" << section->programSection->name()
@@ -454,6 +456,11 @@ namespace
             output->setLoadAddress(startAddress);
         }
 
+        bool isValidSectionName(const std::string& name) const override
+        {
+            return mSectionsByName.find(name) != mSectionsByName.end();
+        }
+
     private:
         SourceLocation* mLocation;
         Program* mProgram;
@@ -461,6 +468,7 @@ namespace
         std::unique_ptr<DebugInformation> mDebugInfo;
         std::unordered_set<ProgramSection*> mSectionSet;
         std::vector<LinkerSection*> mSections;
+        std::unordered_map<std::string, LinkerSection*> mSectionsByName;
         Expr* mFileStart;
         Expr* mFileUntil;
         bool mIsResolved;
@@ -489,6 +497,8 @@ namespace
             linkerSection->autoFileOffset = autoOffset;
             mSections.emplace_back(linkerSection);
 
+            mSectionsByName[sectionInfo->name] = linkerSection;
+
             if (linkerSection->fileOffset && !linkerSection->base) {
                 std::stringstream ss;
                 ss << "section \"" << sectionInfo->name << "\" has file offset without base address.";
@@ -509,7 +519,7 @@ namespace
                 resolvedSomething = true;
 
                 if (section->alignment) {
-                    size_t alignment = section->alignment->evaluateUnsignedWord(nullptr);
+                    size_t alignment = section->alignment->evaluateUnsignedWord(nullptr, this);
                     if (alignment == 0) {
                         std::stringstream ss;
                         ss << "section \"" << section->programSection->name()
@@ -566,7 +576,7 @@ namespace
                 address -= *section->resolvedSize;
 
                 if (section->alignment) {
-                    size_t alignment = section->alignment->evaluateUnsignedWord(nullptr);
+                    size_t alignment = section->alignment->evaluateUnsignedWord(nullptr, this);
                     if (alignment == 0) {
                         std::stringstream ss;
                         ss << "section \"" << section->programSection->name()
@@ -620,6 +630,48 @@ namespace
             if (!str)
                 return nullptr;
             return parseExpression(location, *str);
+        }
+
+        bool tryResolveSectionAddress(const std::string& sectionName, uint64_t& value) const override
+        {
+            auto it = mSectionsByName.find(sectionName);
+            if (it == mSectionsByName.end())
+                return false;
+
+            LinkerSection* section = it->second;
+            if (!section->resolvedFileOffset.has_value())
+                return false;
+
+            value = section->resolvedFileOffset.value();
+            return true;
+        }
+
+        bool tryResolveSectionBase(const std::string& sectionName, uint64_t& value) const override
+        {
+            auto it = mSectionsByName.find(sectionName);
+            if (it == mSectionsByName.end())
+                return false;
+
+            LinkerSection* section = it->second;
+            if (!section->resolvedBase.has_value())
+                return false;
+
+            value = section->resolvedBase.value();
+            return true;
+        }
+
+        bool tryResolveSectionSize(const std::string& sectionName, uint64_t& value) const override
+        {
+            auto it = mSectionsByName.find(sectionName);
+            if (it == mSectionsByName.end())
+                return false;
+
+            LinkerSection* section = it->second;
+            if (!section->resolvedSize.has_value())
+                return false;
+
+            value = section->resolvedSize.value();
+            return true;
         }
 
         DISABLE_COPY(LinkerFile);
@@ -693,6 +745,25 @@ CompiledOutput* Linker::link(Program* program)
     for (auto& file : files)
         file->generateCode(output->addFile(file->location(), file->file()->name, file->takeDebugInfo()));
 
+    struct TestOnlySectionResolver : public ISectionResolver
+    {
+        const std::vector<LinkerFile*>& files;
+        explicit TestOnlySectionResolver(const std::vector<LinkerFile*>& f) : files(f) {}
+
+        bool tryResolveSectionAddress(const std::string& n, uint64_t&) const override { return isValidSectionName(n); }
+        bool tryResolveSectionBase(const std::string& n, uint64_t&) const override { return isValidSectionName(n); }
+        bool tryResolveSectionSize(const std::string& n, uint64_t&) const override { return isValidSectionName(n); }
+
+        bool isValidSectionName(const std::string& name) const override
+        {
+            for (const auto& file : files) {
+                if (file->isValidSectionName(name))
+                    return true;
+            }
+            return false;
+        }
+    };
+
     for (const auto& it : mProgram->globals()->symbols()) {
         Symbol* symbol = it.second;
         switch (symbol->type()) {
@@ -706,7 +777,9 @@ CompiledOutput* Linker::link(Program* program)
 
             case Symbol::ConditionalLabel: {
                 int64_t addr = 0;
-                Label* label = static_cast<ConditionalLabelSymbol*>(symbol)->label(symbol->location(), &addr);
+                TestOnlySectionResolver testOnlyResolver(files);
+                Label* label = static_cast<ConditionalLabelSymbol*>(symbol)->
+                    label(symbol->location(), &addr, &testOnlyResolver);
                 if (label && !label->hasAddress()) {
                     std::stringstream ss;
                     ss << "unable to resolve address for label \"" << symbol->name() << "\".";
@@ -717,15 +790,18 @@ CompiledOutput* Linker::link(Program* program)
 
             case Symbol::Constant: {
                 int64_t addr = 0;
-                static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(&addr);
+                TestOnlySectionResolver testOnlyResolver(files);
+                static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(&addr, &testOnlyResolver);
                 break;
             }
 
             case Symbol::ConditionalConstant: {
                 int64_t addr = 0;
-                Expr* expr = static_cast<ConditionalConstantSymbol*>(symbol)->expr(symbol->location(), &addr);
+                TestOnlySectionResolver testOnlyResolver(files);
+                Expr* expr = static_cast<ConditionalConstantSymbol*>(symbol)->
+                    expr(symbol->location(), &addr, &testOnlyResolver);
                 if (expr)
-                    expr->evaluateValue(&addr);
+                    expr->evaluateValue(&addr, &testOnlyResolver);
                 break;
             }
         }

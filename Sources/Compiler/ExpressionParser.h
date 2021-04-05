@@ -23,6 +23,8 @@ public:
     Expr* tryParseExpression(ParsingContext* context, bool unambiguous);
 
 private:
+    static const std::unordered_map<std::string, Expr*(ExpressionParser::*)()> mBuiltInFunctions;
+
     GCHeap* mHeap;
     ParsingContext* mContext;
     const StringSet* mRegisterNames;
@@ -45,6 +47,10 @@ private:
     Expr* parseMultiplicationExpression(bool unambiguous);
     Expr* parseUnaryExpression(bool unambiguous);
     Expr* parseAtomicExpression(bool unambiguous);
+
+    Expr* parseAddressOfFunction();
+    Expr* parseBaseOfFunction();
+    Expr* parseSizeOfFunction();
 
     DISABLE_COPY(ExpressionParser);
 };

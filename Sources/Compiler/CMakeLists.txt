@@ -85,6 +85,7 @@ add(Compiler
         Linker/CompiledOutput.h
         Linker/DebugInformation.cpp
         Linker/DebugInformation.h
+        Linker/ISectionResolver.h
         Linker/Linker.cpp
         Linker/Linker.h
         Linker/Program.cpp

@@ -20,8 +20,8 @@ public:
     void unresolveLabels();
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const final override;
-    bool canEmitCodeWithoutBaseAddress() const final override;
-    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+    bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const final override;
 
 private:

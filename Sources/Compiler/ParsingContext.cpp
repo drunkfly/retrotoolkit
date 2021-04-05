@@ -78,6 +78,11 @@ bool ParsingContext::consumeIdentifierInParentheses(const char* name)
     return consumeLeftParenthesis() && consumeIdentifier(name) && consumeRightParenthesis();
 }
 
+bool ParsingContext::isAtEol() const
+{
+    return (!mAllowEol && mToken->isFirstOnLine());
+}
+
 void ParsingContext::ensureNotEol()
 {
     if (!mAllowEol && mToken->isFirstOnLine()) {

@@ -7,6 +7,7 @@
 class Instruction;
 class CodeEmitter;
 class CompilerError;
+class ISectionResolver;
 
 class ProgramSection : public GCObject
 {
@@ -23,8 +24,9 @@ public:
 
     void addInstruction(Instruction* instruction);
 
-    bool canEmitCodeWithoutBaseAddress() const;
-    bool emitCode(CodeEmitter* emitter, size_t baseAddress, std::unique_ptr<CompilerError>& resolveError) const;
+    bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const;
+    bool emitCode(CodeEmitter* emitter, size_t baseAddress,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
 
 private:
     std::string mName;

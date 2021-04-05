@@ -55,14 +55,15 @@ bool Z80::bit::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-bool Z80::bit::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::bit::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::bit::value(int64_t currentAddress, uint8_t baseByte) const
+int Z80::bit::value(int64_t currentAddress, ISectionResolver* sectionResolver, uint8_t baseByte) const
 {
-    Value value = mValue->evaluateValue(&currentAddress);
+    Value value = mValue->evaluateValue(&currentAddress, sectionResolver);
     if (value.number < 0 || value.number > 7)
         throw CompilerError(mValue->location(), "bit index is out of range.");
     return uint8_t(baseByte | (uint8_t(value.number) << 3));
@@ -80,14 +81,15 @@ bool Z80::byte::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-bool Z80::byte::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::byte::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::byte::value(int64_t currentAddress) const
+int Z80::byte::value(int64_t currentAddress, ISectionResolver* sectionResolver) const
 {
-    return mValue->evaluateByte(&currentAddress);
+    return mValue->evaluateByte(&currentAddress, sectionResolver);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,14 +104,15 @@ bool Z80::word::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-bool Z80::word::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::word::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::word::low(int64_t currentAddress, int& high) const
+int Z80::word::low(int64_t currentAddress, ISectionResolver* sectionResolver, int& high) const
 {
-    auto word = mValue->evaluateWord(&currentAddress);
+    auto word = mValue->evaluateWord(&currentAddress, sectionResolver);
     high = uint8_t((word >> 8) & 0xff);
     return uint8_t(word & 0xff);
 }
@@ -200,14 +203,15 @@ bool Z80::memAddr::tryParse(ParsingContext* c)
     return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-bool Z80::memAddr::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::memAddr::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::memAddr::low(int64_t currentAddress, int& high) const
+int Z80::memAddr::low(int64_t currentAddress, ISectionResolver* sectionResolver, int& high) const
 {
-    auto word = mValue->evaluateWord(&currentAddress);
+    auto word = mValue->evaluateWord(&currentAddress, sectionResolver);
     high = uint8_t((word >> 8) & 0xff);
     return uint8_t(word & 0xff);
 }
@@ -251,14 +255,15 @@ bool Z80::IX_byte::tryParse(ParsingContext* c)
     return c->consumeRightParenthesis();
 }
 
-bool Z80::IX_byte::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::IX_byte::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::IX_byte::value(int64_t currentAddress) const
+int Z80::IX_byte::value(int64_t currentAddress, ISectionResolver* sectionResolver) const
 {
-    return mValue->evaluateByte(&currentAddress);
+    return mValue->evaluateByte(&currentAddress, sectionResolver);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -302,14 +307,15 @@ bool Z80::IY_byte::tryParse(ParsingContext* c)
     return c->consumeRightParenthesis();
 }
 
-bool Z80::IY_byte::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::IY_byte::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::IY_byte::value(int64_t currentAddress) const
+int Z80::IY_byte::value(int64_t currentAddress, ISectionResolver* sectionResolver) const
 {
-    return mValue->evaluateByte(&currentAddress);
+    return mValue->evaluateByte(&currentAddress, sectionResolver);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -324,14 +330,15 @@ bool Z80::relOffset::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-bool Z80::relOffset::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::relOffset::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::relOffset::value(int64_t currentAddress, int64_t nextAddress) const
+int Z80::relOffset::value(int64_t currentAddress, ISectionResolver* sectionResolver, int64_t nextAddress) const
 {
-    return mValue->evaluateByteOffset(nextAddress, &currentAddress);
+    return mValue->evaluateByteOffset(nextAddress, &currentAddress, sectionResolver);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -360,14 +367,15 @@ bool Z80::portAddr::tryParse(ParsingContext* c)
     return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-bool Z80::portAddr::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::portAddr::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::portAddr::value(int64_t currentAddress) const
+int Z80::portAddr::value(int64_t currentAddress, ISectionResolver* sectionResolver) const
 {
-    return mValue->evaluateByte(&currentAddress);
+    return mValue->evaluateByte(&currentAddress, sectionResolver);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -382,14 +390,15 @@ bool Z80::intMode::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-bool Z80::intMode::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::intMode::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::intMode::value(int64_t currentAddress) const
+int Z80::intMode::value(int64_t currentAddress, ISectionResolver* sectionResolver) const
 {
-    Value value = mValue->evaluateValue(&currentAddress);
+    Value value = mValue->evaluateValue(&currentAddress, sectionResolver);
     switch (value.number) {
         case 0: return 0x46;
         case 1: return 0x56;
@@ -410,14 +419,15 @@ bool Z80::rstIndex::tryParse(ParsingContext* c)
     return c->expression(mValue, &RegisterNames, &ConditionNames, false);
 }
 
-bool Z80::rstIndex::canEvaluate(const int64_t* nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool Z80::rstIndex::canEvaluate(const int64_t* nextAddress,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mValue->canEvaluateValue(nextAddress, resolveError);
+    return mValue->canEvaluateValue(nextAddress, sectionResolver, resolveError);
 }
 
-int Z80::rstIndex::value(int64_t currentAddress, uint8_t baseByte) const
+int Z80::rstIndex::value(int64_t currentAddress, ISectionResolver* sectionResolver, uint8_t baseByte) const
 {
-    Value value = mValue->evaluateValue(&currentAddress);
+    Value value = mValue->evaluateValue(&currentAddress, sectionResolver);
     switch (value.number) {
         case 0x00:
         case 0x08:
@@ -457,18 +467,21 @@ bool Z80::AF_::tryParse(ParsingContext* context)
     bool Z80::OP::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
+        ISectionResolver* sectionResolver = nullptr; (void)sectionResolver; \
         int64_t nextAddress = 0; (void)nextAddress; \
         outSize = OP##_bytes.size(); \
         return true; \
     } \
-    bool Z80::OP::canEmitCodeWithoutBaseAddress() const \
+    bool Z80::OP::canEmitCodeWithoutBaseAddress(ISectionResolver*) const \
     { \
         return true; \
     } \
-    bool Z80::OP::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>&) const \
+    bool Z80::OP::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high;\
         (void)nextAddress; \
+        (void)sectionResolver; \
         emitter->emitBytes(location(), OP##_bytes.data(), OP##_bytes.size()); \
         nextAddress += OP##_bytes.size(); \
         return true; \
@@ -478,27 +491,30 @@ bool Z80::AF_::tryParse(ParsingContext* context)
     constexpr size_t Z80::OP##_##OP1::arraySizeInBytes() \
     { \
         int high = 0; (void)high; \
+        ISectionResolver* sectionResolver = nullptr; (void)sectionResolver; \
         int64_t nextAddress = 0; (void)nextAddress; \
         return decltype(arrayType BYTES)::Size; \
     } \
     bool Z80::OP##_##OP1::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
+        ISectionResolver* sectionResolver = nullptr; (void)sectionResolver; \
         int64_t nextAddress = 0; (void)nextAddress; \
         outSize = decltype(arrayType BYTES)::Size; \
         return true; \
     } \
-    bool Z80::OP##_##OP1::canEmitCodeWithoutBaseAddress() const \
+    bool Z80::OP##_##OP1::canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const \
     { \
         std::unique_ptr<CompilerError> resolveError; \
-        return mOp1.canEvaluate(nullptr, resolveError); \
+        return mOp1.canEvaluate(nullptr, sectionResolver, resolveError); \
     } \
     bool Z80::OP##_##OP1::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
-        std::unique_ptr<CompilerError>& resolveError) const \
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const \
     { \
         int high; (void)high;\
         (void)nextAddress; \
-        if (!mOp1.canEvaluate(&nextAddress, resolveError)) \
+        (void)sectionResolver; \
+        if (!mOp1.canEvaluate(&nextAddress, sectionResolver, resolveError)) \
             return false; \
         auto array = toArray BYTES; \
         emitter->emitBytes(location(), array.data(), array.size()); \
@@ -510,27 +526,32 @@ bool Z80::AF_::tryParse(ParsingContext* context)
     constexpr size_t Z80::OP##_##OP1##_##OP2::arraySizeInBytes() \
     { \
         int high = 0; (void)high; \
+        ISectionResolver* sectionResolver = nullptr; (void)sectionResolver; \
         int64_t nextAddress = 0; (void)nextAddress; \
         return decltype(arrayType BYTES)::Size; \
     } \
     bool Z80::OP##_##OP1##_##OP2::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
+        ISectionResolver* sectionResolver = nullptr; (void)sectionResolver; \
         int64_t nextAddress = 0; (void)nextAddress; \
         outSize = decltype(arrayType BYTES)::Size; \
         return true; \
     } \
-    bool Z80::OP##_##OP1##_##OP2::canEmitCodeWithoutBaseAddress() const \
+    bool Z80::OP##_##OP1##_##OP2::canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const \
     { \
         std::unique_ptr<CompilerError> resolveError; \
-        return mOp1.canEvaluate(nullptr, resolveError) && mOp2.canEvaluate(nullptr, resolveError); \
+        return mOp1.canEvaluate(nullptr, sectionResolver, resolveError) \
+            && mOp2.canEvaluate(nullptr, sectionResolver, resolveError); \
     } \
     bool Z80::OP##_##OP1##_##OP2::emitCode(CodeEmitter* emitter, int64_t& nextAddress, \
-        std::unique_ptr<CompilerError>& resolveError) const \
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const \
     { \
         int high; (void)high;\
         (void)nextAddress; \
-        if (!mOp1.canEvaluate(&nextAddress, resolveError) || !mOp2.canEvaluate(&nextAddress, resolveError)) \
+        (void)sectionResolver; \
+        if (!mOp1.canEvaluate(&nextAddress, sectionResolver, resolveError) \
+                || !mOp2.canEvaluate(&nextAddress, sectionResolver, resolveError)) \
             return false; \
         auto array = toArray BYTES; \
         emitter->emitBytes(location(), array.data(), array.size()); \
@@ -538,14 +559,14 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         return true; \
     }
 
-#define OP1 mOp1.value(nextAddress)
-#define OP2 mOp2.value(nextAddress)
+#define OP1 mOp1.value(nextAddress, sectionResolver)
+#define OP2 mOp2.value(nextAddress, sectionResolver)
 
-#define OP1V(X) mOp1.value(nextAddress, (X))
-#define OP2V(X) mOp2.value(nextAddress, (X))
+#define OP1V(X) mOp1.value(nextAddress, sectionResolver, (X))
+#define OP2V(X) mOp2.value(nextAddress, sectionResolver, (X))
 
-#define OP1W mOp1.low(nextAddress, high), high
-#define OP2W mOp2.low(nextAddress, high), high
+#define OP1W mOp1.low(nextAddress, sectionResolver, high), high
+#define OP2W mOp2.low(nextAddress, sectionResolver, high), high
 
 #define NEXT (nextAddress + arraySizeInBytes())
 

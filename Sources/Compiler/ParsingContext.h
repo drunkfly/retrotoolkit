@@ -39,6 +39,7 @@ public:
     bool consumeIdentifier(const char* name);
     bool consumeIdentifierInParentheses(const char* name);
 
+    bool isAtEol() const;
     void ensureNotEol();
 
     void end();

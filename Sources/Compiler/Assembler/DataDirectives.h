@@ -14,8 +14,8 @@ public:
     ~DEFB() override;
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
-    bool canEmitCodeWithoutBaseAddress() const override;
-    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+    bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
@@ -33,8 +33,8 @@ public:
     ~DEFB_STRING() override;
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
-    bool canEmitCodeWithoutBaseAddress() const override;
-    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+    bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
@@ -53,8 +53,8 @@ public:
     ~DEFW() override;
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
-    bool canEmitCodeWithoutBaseAddress() const override;
-    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+    bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
@@ -72,8 +72,8 @@ public:
     ~DEFD() override;
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
-    bool canEmitCodeWithoutBaseAddress() const override;
-    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+    bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:
@@ -91,8 +91,8 @@ public:
     ~DEFS() override;
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
-    bool canEmitCodeWithoutBaseAddress() const override;
-    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress,
+    bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const override;
+    bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
 private:

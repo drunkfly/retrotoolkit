@@ -2,6 +2,7 @@
 #define COMPILER_LINKER_LINKER_H
 
 #include "Common/Common.h"
+#include "Compiler/Linker/ISectionResolver.h"
 
 class GCHeap;
 class Project;

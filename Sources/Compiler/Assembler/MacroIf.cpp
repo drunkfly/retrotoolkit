@@ -19,10 +19,10 @@ void MacroIf::addElseInstruction(Instruction* instruction)
 
 bool MacroIf::resolveLabels(size_t& address, std::unique_ptr<CompilerError>& resolveError)
 {
-    if (!mCondition->canEvaluateValue(nullptr, resolveError))
+    if (!mCondition->canEvaluateValue(nullptr, nullptr, resolveError))
         return false;
 
-    auto result = mCondition->evaluateValue(nullptr).number;
+    auto result = mCondition->evaluateValue(nullptr, nullptr).number;
     const std::vector<Instruction*>& instructions = (result ? mThenInstructions : mElseInstructions);
 
     for (const auto& instruction : instructions) {
@@ -43,10 +43,10 @@ void MacroIf::unresolveLabels()
 
 bool MacroIf::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const
 {
-    if (!mCondition->canEvaluateValue(nullptr, resolveError))
+    if (!mCondition->canEvaluateValue(nullptr, nullptr, resolveError))
         return false;
 
-    auto result = mCondition->evaluateValue(nullptr).number;
+    auto result = mCondition->evaluateValue(nullptr, nullptr).number;
     const std::vector<Instruction*>& instructions = (result ? mThenInstructions : mElseInstructions);
 
     outSize = 0;
@@ -60,33 +60,34 @@ bool MacroIf::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerErro
     return true;
 }
 
-bool MacroIf::canEmitCodeWithoutBaseAddress() const
+bool MacroIf::canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const
 {
     std::unique_ptr<CompilerError> resolveError;
-    if (!mCondition->canEvaluateValue(nullptr, resolveError))
+    if (!mCondition->canEvaluateValue(nullptr, sectionResolver, resolveError))
         return false;
 
-    auto result = mCondition->evaluateValue(nullptr).number;
+    auto result = mCondition->evaluateValue(nullptr, sectionResolver).number;
     const std::vector<Instruction*>& instructions = (result ? mThenInstructions : mElseInstructions);
 
     for (const auto& instruction : instructions) {
-        if (!instruction->canEmitCodeWithoutBaseAddress())
+        if (!instruction->canEmitCodeWithoutBaseAddress(sectionResolver))
             return false;
     }
 
     return true;
 }
 
-bool MacroIf::emitCode(CodeEmitter* emitter, int64_t& nextAddress, std::unique_ptr<CompilerError>& resolveError) const
+bool MacroIf::emitCode(CodeEmitter* emitter,
+    int64_t& nextAddress, ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    if (!mCondition->canEvaluateValue(nullptr, resolveError))
+    if (!mCondition->canEvaluateValue(nullptr, nullptr, resolveError))
         return false;
 
-    auto result = mCondition->evaluateValue(nullptr).number;
+    auto result = mCondition->evaluateValue(nullptr, nullptr).number;
     const std::vector<Instruction*>& instructions = (result ? mThenInstructions : mElseInstructions);
 
     for (const auto& instruction : instructions) {
-        if (!instruction->emitCode(emitter, nextAddress, resolveError))
+        if (!instruction->emitCode(emitter, nextAddress, sectionResolver, resolveError))
             return false;
     }
 

@@ -6,6 +6,12 @@
 #include "Compiler/Token.h"
 #include "Compiler/Lexer.h"
 
+const std::unordered_map<std::string, Expr*(ExpressionParser::*)()> ExpressionParser::mBuiltInFunctions = {
+        { "addressof", &ExpressionParser::parseAddressOfFunction },
+        { "baseof", &ExpressionParser::parseBaseOfFunction },
+        { "sizeof", &ExpressionParser::parseSizeOfFunction },
+    };
+
 ExpressionParser::ExpressionParser(GCHeap* heap,
         const StringSet* registerNames, const StringSet* conditionNames, const std::string* localLabelsPrefix)
     : mHeap(heap)
@@ -329,8 +335,9 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
         case TOK_IDENTIFIER: {
             mContext->ensureNotEol();
 
+            std::string lowerText = toLower(mContext->token()->text());
+
             if (!unambiguous && (mRegisterNames || mConditionNames)) {
-                std::string lowerText = toLower(mContext->token()->text());
                 if (mRegisterNames && mRegisterNames->find(lowerText) != mRegisterNames->end()) {
                     std::stringstream ss;
                     ss << "'" << mContext->token()->text()
@@ -349,11 +356,32 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
                 }
             }
 
-            Expr* expr = new (mHeap) ExprIdentifier(mContext->token()->location(),
-                mContext->symbolTable(), mContext->token()->text());
+            const Token* token = mContext->token();
             mContext->nextToken();
 
-            return expr;
+            auto it = mBuiltInFunctions.find(lowerText);
+            if (it != mBuiltInFunctions.end()) {
+                if (!mContext->isAtEol() && mContext->token()->id() == TOK_LPAREN) {
+                    mContext->nextToken();
+                    mContext->ensureNotEol();
+
+                    Expr* expr = (this->*(it->second))();
+                    if (!expr)
+                        return nullptr;
+
+                    mContext->ensureNotEol();
+                    if (mContext->token()->id() != TOK_RPAREN) {
+                        mError = "expected ')'.";
+                        mErrorLocation = mContext->token()->location();
+                        return nullptr;
+                    }
+
+                    mContext->nextToken();
+                    return expr;
+                }
+            }
+
+            return new (mHeap) ExprIdentifier(token->location(), mContext->symbolTable(), token->text());
         }
 
         case TOK_LPAREN:
@@ -365,13 +393,13 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
                 if (!expr)
                     return nullptr;
 
+                mContext->ensureNotEol();
                 if (mContext->token()->id() != TOK_RPAREN) {
                     mError = "expected ')'.";
                     mErrorLocation = mContext->token()->location();
                     return nullptr;
                 }
 
-                mContext->ensureNotEol();
                 mContext->nextToken();
                 return expr;
             }
@@ -385,4 +413,52 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
             mErrorLocation = mContext->token()->location();
             return nullptr;
     }
+}
+
+Expr* ExpressionParser::parseAddressOfFunction()
+{
+    mContext->ensureNotEol();
+
+    if (mContext->token()->id() != TOK_IDENTIFIER) {
+        mError = "expected section name.";
+        mErrorLocation = mContext->token()->location();
+        return nullptr;
+    }
+
+    Expr* expr = new (mHeap) ExprAddressOfSection(mContext->token()->location(), mContext->token()->text());
+    mContext->nextToken();
+
+    return expr;
+}
+
+Expr* ExpressionParser::parseBaseOfFunction()
+{
+    mContext->ensureNotEol();
+
+    if (mContext->token()->id() != TOK_IDENTIFIER) {
+        mError = "expected section name.";
+        mErrorLocation = mContext->token()->location();
+        return nullptr;
+    }
+
+    Expr* expr = new (mHeap) ExprBaseOfSection(mContext->token()->location(), mContext->token()->text());
+    mContext->nextToken();
+
+    return expr;
+}
+
+Expr* ExpressionParser::parseSizeOfFunction()
+{
+    mContext->ensureNotEol();
+
+    if (mContext->token()->id() != TOK_IDENTIFIER) {
+        mError = "expected section name.";
+        mErrorLocation = mContext->token()->location();
+        return nullptr;
+    }
+
+    Expr* expr = new (mHeap) ExprSizeOfSection(mContext->token()->location(), mContext->token()->text());
+    mContext->nextToken();
+
+    return expr;
 }

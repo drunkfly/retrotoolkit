@@ -25,8 +25,8 @@ private:
     SymbolTable* mSymbolTable;
     const Token* mToken;
 
-    static std::unordered_map<std::string, void(AssemblerParser::*)()> mDataDirectives;
-    static std::unordered_map<std::string, void(AssemblerParser::*)()> mDirectives;
+    static const std::unordered_map<std::string, void(AssemblerParser::*)()> mDataDirectives;
+    static const std::unordered_map<std::string, void(AssemblerParser::*)()> mDirectives;
 
     template <typename T, typename... ARGS> T* pushContext(ARGS&&... args);
     void popContext();

@@ -10,6 +10,7 @@ class ExprIdentifier;
 class AssemblerContext;
 class Label;
 class CompilerError;
+class ISectionResolver;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -26,17 +27,20 @@ public:
 
     virtual void replaceCurrentAddressWithLabel(AssemblerContext* context) = 0;
 
-    bool canEvaluateValue(const int64_t* currentAddress, std::unique_ptr<CompilerError>& resolveError) const;
+    bool canEvaluateValue(const int64_t* currentAddress,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
 
-    uint8_t evaluateByte(const int64_t* currentAddress) const;
-    uint8_t evaluateByteOffset(int64_t nextAddress, const int64_t* currentAddress) const;
-    uint16_t evaluateWord(const int64_t* currentAddress) const;
-    uint16_t evaluateUnsignedWord(const int64_t* currentAddress) const;
-    uint32_t evaluateDWord(const int64_t* currentAddress) const;
-    Value evaluateValue(const int64_t* currentAddress) const;
+    uint8_t evaluateByte(const int64_t* currentAddress, ISectionResolver* sectionResolver) const;
+    uint8_t evaluateByteOffset(int64_t nextAddress,
+        const int64_t* currentAddress, ISectionResolver* sectionResolver) const;
+    uint16_t evaluateWord(const int64_t* currentAddress, ISectionResolver* sectionResolver) const;
+    uint16_t evaluateUnsignedWord(const int64_t* currentAddress, ISectionResolver* sectionResolver) const;
+    uint32_t evaluateDWord(const int64_t* currentAddress, ISectionResolver* sectionResolver) const;
+    Value evaluateValue(const int64_t* currentAddress, ISectionResolver* sectionResolver) const;
 
 protected:
     mutable const int64_t* mCurrentAddress;
+    mutable ISectionResolver* mSectionResolver;
 
     virtual bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const = 0;
     virtual Value evaluate() const = 0;
@@ -155,6 +159,31 @@ private:
 
     DISABLE_COPY(ExprConditional);
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define TREE_SECTION_OPERATOR(NAME) \
+    class Expr##NAME : public Expr \
+    { \
+    public: \
+        Expr##NAME(SourceLocation* location, const char* sectionName) \
+            : Expr(location) \
+            , mSectionName(sectionName) \
+        { \
+        } \
+        const char* sectionName() const noexcept { return mSectionName; } \
+        void toString(std::stringstream& ss) const override; \
+        void replaceCurrentAddressWithLabel(AssemblerContext* context) override; \
+    private: \
+        const char* mSectionName; \
+        bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override; \
+        Value evaluate() const override; \
+        DISABLE_COPY(Expr##NAME); \
+    }
+
+TREE_SECTION_OPERATOR(AddressOfSection);
+TREE_SECTION_OPERATOR(BaseOfSection);
+TREE_SECTION_OPERATOR(SizeOfSection);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

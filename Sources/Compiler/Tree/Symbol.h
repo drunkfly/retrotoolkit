@@ -8,6 +8,7 @@ class SourceLocation;
 class Label;
 class Value;
 class CompilerError;
+class ISectionResolver;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -77,8 +78,9 @@ public:
 
     void addValue(Expr* condition, Expr* value);
 
-    bool canEvaluateValue(const int64_t* currentAddress, std::unique_ptr<CompilerError>& resolveError) const;
-    Expr* expr(SourceLocation* location, const int64_t* currentAddress) const;
+    bool canEvaluateValue(const int64_t* currentAddress,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+    Expr* expr(SourceLocation* location, const int64_t* currentAddress, ISectionResolver* sectionResolver) const;
 
 private:
     struct Entry
@@ -124,8 +126,9 @@ public:
 
     void addLabel(Expr* condition, ::Label* label);
 
-    bool canEvaluateValue(const int64_t* currentAddress, std::unique_ptr<CompilerError>& resolveError) const;
-    ::Label* label(SourceLocation* location, const int64_t* currentAddress) const;
+    bool canEvaluateValue(const int64_t* currentAddress,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
+    ::Label* label(SourceLocation* location, const int64_t* currentAddress, ISectionResolver* sectionResolver) const;
 
 private:
     struct Entry

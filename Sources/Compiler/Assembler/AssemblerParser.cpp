@@ -15,7 +15,7 @@
 #include "Common/GC.h"
 #include "Common/Strings.h"
 
-std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDataDirectives = {
+const std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDataDirectives = {
         { "db", &AssemblerParser::parseDefByte },
         { "dw", &AssemblerParser::parseDefWord },
         { "dd", &AssemblerParser::parseDefDWord },
@@ -25,7 +25,7 @@ std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDa
         { "defs", &AssemblerParser::parseDefSpace },
     };
 
-std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDirectives = {
+const std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParser::mDirectives = {
         { "section", &AssemblerParser::parseSectionDecl },
         { "repeat", &AssemblerParser::parseRepeatDecl },
         { "endrepeat", &AssemblerParser::parseEndRepeatDecl },
@@ -160,7 +160,7 @@ void AssemblerParser::parseLine()
     std::string lower;
     if (mToken->id() >= TOK_IDENTIFIER)
         lower = toLower(mToken->text());
-    std::unordered_map<std::string, void(AssemblerParser::*)()>::iterator iter;
+    std::unordered_map<std::string, void(AssemblerParser::*)()>::const_iterator iter;
     if (mToken->id() >= TOK_IDENTIFIER && (iter = mDataDirectives.find(lower)) != mDataDirectives.end()) {
         expectNotEol();
 

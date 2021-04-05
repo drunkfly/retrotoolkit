@@ -47,17 +47,17 @@ void ProgramSection::addInstruction(Instruction* instruction)
     mInstructions.emplace_back(instruction);
 }
 
-bool ProgramSection::canEmitCodeWithoutBaseAddress() const
+bool ProgramSection::canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const
 {
     for (const auto& instruction : mInstructions) {
-        if (!instruction->canEmitCodeWithoutBaseAddress())
+        if (!instruction->canEmitCodeWithoutBaseAddress(sectionResolver))
             return false;
     }
 
     return true;
 }
 
-bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
+bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress, ISectionResolver* sectionResolver,
     std::unique_ptr<CompilerError>& resolveError) const
 {
     int64_t nextAddress = int64_t(baseAddress);
@@ -69,7 +69,7 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress,
             return false;
         }
 
-        if (!instruction->emitCode(emitter, nextAddress, resolveError))
+        if (!instruction->emitCode(emitter, nextAddress, sectionResolver, resolveError))
             return false;
 
         if (nextAddress > 0x10000) {

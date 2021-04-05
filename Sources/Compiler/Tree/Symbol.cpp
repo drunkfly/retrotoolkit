@@ -25,27 +25,28 @@ void ConditionalConstantSymbol::addValue(Expr* condition, Expr* value)
     mEntries.emplace_back(entry);
 }
 
-bool ConditionalConstantSymbol::canEvaluateValue(const int64_t* currentAddress,
+bool ConditionalConstantSymbol::canEvaluateValue(const int64_t* currentAddress, ISectionResolver* sectionResolver,
     std::unique_ptr<CompilerError>& resolveError) const
 {
     for (const auto& it : mEntries) {
-        if (!it.condition->canEvaluateValue(currentAddress, resolveError))
+        if (!it.condition->canEvaluateValue(currentAddress, sectionResolver, resolveError))
             return false;
 
-        bool isThis = it.condition->evaluateValue(currentAddress).number != 0;
+        bool isThis = it.condition->evaluateValue(currentAddress, sectionResolver).number != 0;
         if (isThis) {
-            if (!it.value->canEvaluateValue(currentAddress, resolveError))
+            if (!it.value->canEvaluateValue(currentAddress, sectionResolver, resolveError))
                 return false;
         }
     }
     return true;
 }
 
-Expr* ConditionalConstantSymbol::expr(SourceLocation* location, const int64_t* currentAddress) const
+Expr* ConditionalConstantSymbol::expr(SourceLocation* location,
+    const int64_t* currentAddress, ISectionResolver* sectionResolver) const
 {
     Expr* value = nullptr;
     for (const auto& it : mEntries) {
-        bool isThis = it.condition->evaluateValue(currentAddress).number != 0;
+        bool isThis = it.condition->evaluateValue(currentAddress, sectionResolver).number != 0;
         if (isThis) {
             if (value) {
                 std::stringstream ss;
@@ -88,15 +89,15 @@ void ConditionalLabelSymbol::addLabel(Expr* condition, ::Label* label)
 }
 
 bool ConditionalLabelSymbol::canEvaluateValue(const int64_t* currentAddress,
-    std::unique_ptr<CompilerError>& resolveError) const
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
     for (const auto& it : mEntries) {
-        if (!it.condition->canEvaluateValue(currentAddress, resolveError))
+        if (!it.condition->canEvaluateValue(currentAddress, sectionResolver, resolveError))
             return false;
     }
 
     for (const auto& it : mEntries) {
-        bool isThis = it.condition->evaluateValue(currentAddress).number != 0;
+        bool isThis = it.condition->evaluateValue(currentAddress, sectionResolver).number != 0;
         if (isThis && !it.label->hasAddress())
             return false;
     }
@@ -104,11 +105,12 @@ bool ConditionalLabelSymbol::canEvaluateValue(const int64_t* currentAddress,
     return true;
 }
 
-Label* ConditionalLabelSymbol::label(SourceLocation* location, const int64_t* currentAddress) const
+Label* ConditionalLabelSymbol::label(SourceLocation* location,
+    const int64_t* currentAddress, ISectionResolver* sectionResolver) const
 {
     ::Label* label = nullptr;
     for (const auto& it : mEntries) {
-        bool isThis = it.condition->evaluateValue(currentAddress).number != 0;
+        bool isThis = it.condition->evaluateValue(currentAddress, sectionResolver).number != 0;
         if (isThis) {
             if (label) {
                 std::stringstream ss;
