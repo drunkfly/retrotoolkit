@@ -244,6 +244,9 @@ public final class SourceFiles
                 case Opcodes.F_APPEND:
                     parseFrameTypes(numLocal, local);
                     break;
+                case Opcodes.F_CHOP:
+                case Opcodes.F_SAME:
+                    break;
                 case Opcodes.F_SAME1:
                     parseFrameTypes(1, stack);
                     break;
