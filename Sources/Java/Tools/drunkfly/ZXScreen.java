@@ -9,13 +9,14 @@ public final class ZXScreen
 
     public static final int PixelWidth = 256;
     public static final int PixelHeight = 192;
-    public static final int ByteWidth = PixelWidth / CharWidth;
+    public static final int WidthInChars = PixelWidth / CharWidth;
+    public static final int HeightInChars = PixelHeight / CharHeight;
 
     public static final int AttribWidth = PixelWidth / CharWidth;
     public static final int AttribHeight = PixelHeight / CharHeight;
 
     public static final int PixelAreaOffset = 0;
-    public static final int PixelAreaSize = ByteWidth * PixelHeight;
+    public static final int PixelAreaSize = WidthInChars * PixelHeight;
     public static final int AttribAreaOffset = PixelAreaSize;
     public static final int AttribAreaSize = AttribWidth * AttribHeight;
     public static final int SizeInBytes = PixelAreaSize + AttribAreaSize;
@@ -25,7 +26,7 @@ public final class ZXScreen
 
     public ZXScreen()
     {
-        pixels = new byte[ByteWidth * PixelHeight];
+        pixels = new byte[WidthInChars * PixelHeight];
         attribs = new byte[AttribWidth * AttribHeight];
     }
 
