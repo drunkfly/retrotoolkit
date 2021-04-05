@@ -53,6 +53,26 @@ public final class RGB
         return (color & AlphaMask) >>> AlphaShift;
     }
 
+    public static float getFloatR(int color)
+    {
+        return (float)((color & RedMask) >>> RedShift) / 255.0f;
+    }
+
+    public static float getFloatG(int color)
+    {
+        return (float)((color & GreenMask) >>> GreenShift) / 255.0f;
+    }
+
+    public static float getFloatB(int color)
+    {
+        return (float)((color & BlueMask) >>> BlueShift) / 255.0f;
+    }
+
+    public static float getFloatA(int color)
+    {
+        return (float)((color & AlphaMask) >>> AlphaShift) / 255.0f;
+    }
+
     public static int setR(int color, int r)
     {
         color &= ~RedMask;
@@ -79,6 +99,53 @@ public final class RGB
         color &= ~AlphaMask;
         color |= (a & 0xff) << AlphaShift;
         return color;
+    }
+
+    public static int setFloatR(int color, float r)
+    {
+        int value = (int)(r * 255.0f);
+        return setR(color, value);
+    }
+
+    public static int setFloatG(int color, float g)
+    {
+        int value = (int)(g * 255.0f);
+        return setG(color, value);
+    }
+
+    public static int setFloatB(int color, float b)
+    {
+        int value = (int)(b * 255.0f);
+        return setB(color, value);
+    }
+
+    public static int setFloatA(int color, float a)
+    {
+        int value = (int)(a * 255.0f);
+        return setA(color, value);
+    }
+
+    public static float getFloatIntensity(int color)
+    {
+        float r = getFloatR(color);
+        float g = getFloatG(color);
+        float b = getFloatB(color);
+        return Mathf.clamp01(r * 0.2989f + g * 0.5870f + b * 0.1140f);
+    }
+
+    public static float getFloatPremultipliedIntensity(int color)
+    {
+        return getFloatIntensity(color) * getFloatA(color);
+    }
+
+    public static int getIntensity(int color)
+    {
+        return (int)(getFloatIntensity(color) * 255.0f);
+    }
+
+    public static int getPremultipliedIntensity(int color)
+    {
+        return (int)(getFloatPremultipliedIntensity(color) * 255.0f);
     }
 
     public static int distance(int color1, int color2)
