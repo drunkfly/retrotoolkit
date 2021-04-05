@@ -30,11 +30,18 @@
 
 #define QTY_BLOCKS 10000
 
-BLOCK *ghost_root = NULL;
-BLOCK *dead_array = NULL;
-int dead_array_size = 0;
+struct ZX0Context {
+BLOCK *ghost_root/* = NULL*/;
+BLOCK *dead_array/* = NULL*/;
+int dead_array_size/* = 0*/;
+};
+#define ghost_root (C->ghost_root)
+#define dead_array (C->dead_array)
+#define dead_array_size (C->dead_array_size)
+ZX0Context* zx0_new() { return calloc(1, sizeof(ZX0Context)); }
+void zx0_delete(ZX0Context* C) { if (C) { if (dead_array) free(dead_array); free(C); } }
 
-BLOCK *allocate(int bits, int index, int offset, int length, BLOCK *chain) {
+BLOCK *zx0_allocate(ZX0Context* C, int bits, int index, int offset, int length, BLOCK *chain) {
     BLOCK *ptr;
 
     if (ghost_root) {
@@ -50,8 +57,9 @@ BLOCK *allocate(int bits, int index, int offset, int length, BLOCK *chain) {
         if (!dead_array_size) {
             dead_array = (BLOCK *)malloc(QTY_BLOCKS*sizeof(BLOCK));
             if (!dead_array) {
-                fprintf(stderr, "Error: Insufficient memory\n");
-                exit(1);
+                /*fprintf(stderr, "Error: Insufficient memory\n");
+                exit(1);*/
+                return NULL;
             }
             dead_array_size = QTY_BLOCKS;
         }
@@ -68,7 +76,9 @@ BLOCK *allocate(int bits, int index, int offset, int length, BLOCK *chain) {
     return ptr;
 }
 
-void assign(BLOCK **ptr, BLOCK *chain) {
+void* zx0_assign(ZX0Context* C, BLOCK **ptr, BLOCK *chain) {
+    if (!chain)
+        return NULL;
     chain->references++;
     if (*ptr) {
         if (!--(*ptr)->references) {
@@ -77,4 +87,5 @@ void assign(BLOCK **ptr, BLOCK *chain) {
         }
     }
     *ptr = chain;
+    return chain;
 }

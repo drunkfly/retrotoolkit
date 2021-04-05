@@ -767,6 +767,7 @@ CompiledOutput* Linker::link(Program* program)
     for (const auto& it : mProgram->globals()->symbols()) {
         Symbol* symbol = it.second;
         switch (symbol->type()) {
+            /* FIXME these checks cause errors for code not included in the build
             case Symbol::Label:
                 if (!static_cast<LabelSymbol*>(symbol)->label()->hasAddress()) {
                     std::stringstream ss;
@@ -787,6 +788,7 @@ CompiledOutput* Linker::link(Program* program)
                 }
                 break;
             }
+            */
 
             case Symbol::Constant: {
                 int64_t addr = 0;

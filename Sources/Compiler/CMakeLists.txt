@@ -9,6 +9,7 @@ add(Compiler
         FuseUtils
         LibSpectrum
         JavaClasspathEmbedded
+        ZX0
         ZX7
         LZSA
     DEPENDS
@@ -43,6 +44,8 @@ add(Compiler
         Compression/Compressor.h
         Compression/Lzsa2Compressor.cpp
         Compression/Lzsa2Compressor.h
+        Compression/Zx0Compressor.cpp
+        Compression/Zx0Compressor.h
         Compression/Zx7Compressor.cpp
         Compression/Zx7Compressor.h
         Java/Natives/drunkfly_Builder.cpp

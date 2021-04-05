@@ -7,6 +7,8 @@ enum class Compression
 {
     None,
     Zx7,
+    Zx0,
+    Zx0Quick,
     Lzsa2,
 };
 

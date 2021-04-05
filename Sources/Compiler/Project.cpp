@@ -81,6 +81,10 @@ static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, Xm
     if (comp) {
         if (*comp == "zx7")
             section->compression = Compression::Zx7;
+        else if (*comp == "zx0")
+            section->compression = Compression::Zx0;
+        else if (*comp == "zx0-quick")
+            section->compression = Compression::Zx0Quick;
         else if (*comp == "lzsa2")
             section->compression = Compression::Lzsa2;
         else
@@ -227,6 +231,8 @@ static void writeSection(std::stringstream& ss, const char* element, const Proje
     switch (section.compression) {
         case Compression::None: break;
         case Compression::Zx7: ss << " compression=\"" << "zx7" << '"'; break;
+        case Compression::Zx0: ss << " compression=\"" << "zx0" << '"'; break;
+        case Compression::Zx0Quick: ss << " compression=\"" << "zx0-quick" << '"'; break;
         case Compression::Lzsa2: ss << " compression=\"" << "lzsa2" << '"'; break;
     }
     ss << " />\n";

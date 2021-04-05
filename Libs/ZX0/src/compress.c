@@ -36,6 +36,7 @@ int bit_mask;
 int diff;
 int backtrack;
 
+static
 void read_bytes(int n, int *delta) {
     input_index += n;
     diff += n;
@@ -43,11 +44,13 @@ void read_bytes(int n, int *delta) {
         *delta = diff;
 }
 
+static
 void write_byte(int value) {
     output_data[output_index++] = value;
     diff--;
 }
 
+static
 void write_bit(int value) {
     if (backtrack) {
         if (value)
@@ -65,6 +68,7 @@ void write_bit(int value) {
     }
 }
 
+static
 void write_interlaced_elias_gamma(int value, int backwards_mode) {
     int i;
 
@@ -78,7 +82,7 @@ void write_interlaced_elias_gamma(int value, int backwards_mode) {
     write_bit(!backwards_mode);
 }
 
-unsigned char *compress(BLOCK *optimal, unsigned char *input_data, int input_size, int skip, int backwards_mode, int *output_size, int *delta) {
+unsigned char *zx0_compress(BLOCK *optimal, unsigned char *input_data, int input_size, int skip, int backwards_mode, int *output_size, int *delta) {
     BLOCK *next;
     BLOCK *prev;
     int last_offset = INITIAL_OFFSET;
@@ -89,8 +93,9 @@ unsigned char *compress(BLOCK *optimal, unsigned char *input_data, int input_siz
     *output_size = (optimal->bits+18+7)/8;
     output_data = (unsigned char *)malloc(*output_size);
     if (!output_data) {
-         fprintf(stderr, "Error: Insufficient memory\n");
-         exit(1);
+         /*fprintf(stderr, "Error: Insufficient memory\n");
+         exit(1);*/
+         return NULL;
     }
 
     /* initialize delta */

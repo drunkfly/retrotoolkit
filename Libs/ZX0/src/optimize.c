@@ -31,11 +31,15 @@
 #define MAX_SCALE 50
 
 #define minimum(a,b) (a < b ? a : b)
+#define allocate(a, b, c, d, e) zx0_allocate(C, (a), (b), (c), (d), (e))
+#define assign(a, b) do { if (!zx0_assign(C, (a), (b))) goto error; } while(0)
 
+static
 int offset_ceiling(int index, int offset_limit) {
     return index > offset_limit ? offset_limit : index < INITIAL_OFFSET ? INITIAL_OFFSET : index;
 }
 
+static
 int elias_gamma_bits(int value) {
     int bits = 1;
     while (value > 1) {
@@ -45,7 +49,7 @@ int elias_gamma_bits(int value) {
     return bits;
 }
 
-BLOCK* optimize(unsigned char *input_data, int input_size, int skip, int offset_limit) {
+BLOCK** zx0_optimize(ZX0Context* C, unsigned char *input_data, int input_size, int skip, int offset_limit) {
     BLOCK **last_literal;
     BLOCK **last_match;
     BLOCK **optimal;
@@ -67,15 +71,22 @@ BLOCK* optimize(unsigned char *input_data, int input_size, int skip, int offset_
     match_length = (int *)calloc(max_offset+1, sizeof(int));
     best_length = (int *)malloc((input_size+1)*sizeof(int));
     if (!last_literal || !last_match || !optimal || !match_length || !best_length) {
-         fprintf(stderr, "Error: Insufficient memory\n");
-         exit(1);
+      error:
+        if (last_literal) free(last_literal);
+        if (last_match) free(last_match);
+        if (optimal) free(optimal);
+        if (match_length) free(match_length);
+        if (best_length) free(best_length);
+         /*fprintf(stderr, "Error: Insufficient memory\n");
+         exit(1);*/
+         return NULL;
     }
     best_length[2] = 2;
 
     /* start with fake block */
     assign(&(last_match[INITIAL_OFFSET]), allocate(-1, skip-1, INITIAL_OFFSET, 0, NULL));
 
-    printf("[");
+    /*printf("[");*/
 
     /* process remaining bytes */
     for (index = skip; index < input_size; index++) {
@@ -128,13 +139,17 @@ BLOCK* optimize(unsigned char *input_data, int input_size, int skip, int offset_
         }
 
         if (index*MAX_SCALE/input_size > dots) {
-            printf(".");
-            fflush(stdout);
+            /*printf(".");
+            fflush(stdout);*/
             dots++;
         }
     }
 
-    printf("]\n");
+    /*printf("]\n");*/
 
-    return optimal[input_size-1];
+    free(last_literal);
+    free(last_match);
+    free(match_length);
+    free(best_length);
+    return optimal/*[input_size-1]*/;
 }

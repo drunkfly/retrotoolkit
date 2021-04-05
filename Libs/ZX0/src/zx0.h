@@ -28,6 +28,12 @@
 #define FALSE 0
 #define TRUE 1
 
+struct ZX0Context;
+typedef struct ZX0Context ZX0Context;
+ZX0Context* zx0_new(void);
+void zx0_delete(ZX0Context* C);
+#define BLOCK ZX0Block
+#define block_t zx0block_t
 typedef struct block_t {
     struct block_t *chain;
     struct block_t *ghost_chain;
@@ -38,10 +44,10 @@ typedef struct block_t {
     int references;
 } BLOCK;
 
-BLOCK *allocate(int bits, int index, int offset, int length, BLOCK *chain);
+BLOCK *zx0_allocate(ZX0Context* C, int bits, int index, int offset, int length, BLOCK *chain);
 
-void assign(BLOCK **ptr, BLOCK *chain);
+void* zx0_assign(ZX0Context* C, BLOCK **ptr, BLOCK *chain);
 
-BLOCK *optimize(unsigned char *input_data, int input_size, int skip, int offset_limit);
+BLOCK **zx0_optimize(ZX0Context* C, unsigned char *input_data, int input_size, int skip, int offset_limit);
 
-unsigned char *compress(BLOCK *optimal, unsigned char *input_data, int input_size, int skip, int backwards_mode, int *output_size, int *delta);
+unsigned char *zx0_compress(BLOCK *optimal, unsigned char *input_data, int input_size, int skip, int backwards_mode, int *output_size, int *delta);
