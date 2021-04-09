@@ -2,7 +2,7 @@
 add(Common
     STATIC_LIBRARY
     LIBS
-        RapidXML
+        TinyXML
     SOURCES
         Common.h
         GC.cpp

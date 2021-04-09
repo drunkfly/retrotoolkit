@@ -3,7 +3,7 @@ add(Compiler
     STATIC_LIBRARY
     LIBS
         Common
-        RapidXML
+        TinyXML
         Bas2Tap
         AudioFile
         FuseUtils
@@ -113,6 +113,8 @@ add(Compiler
         Tree/Expr.cpp
         Tree/Expr.h
         Tree/SourceLocation.h
+        Tree/SourceLocationFactory.cpp
+        Tree/SourceLocationFactory.h
         Tree/Symbol.cpp
         Tree/Symbol.h
         Tree/SymbolTable.cpp

@@ -531,11 +531,11 @@ TiXmlElement::TiXmlElement (const char * _value)
 
 
 #ifdef TIXML_USE_STL
-TiXmlElement::TiXmlElement( const std::string& _value ) 
+TiXmlElement::TiXmlElement( std::string _value )
 	: TiXmlNode( TiXmlNode::TINYXML_ELEMENT )
 {
 	firstChild = lastChild = 0;
-	value = _value;
+	value = std::move(_value);
 }
 #endif
 
@@ -747,9 +747,9 @@ void TiXmlElement::SetAttribute( const char * name, int val )
 
 
 #ifdef TIXML_USE_STL
-void TiXmlElement::SetAttribute( const std::string& name, int val )
+void TiXmlElement::SetAttribute( std::string name, int val )
 {	
-	TiXmlAttribute* attrib = attributeSet.FindOrCreate( name );
+	TiXmlAttribute* attrib = attributeSet.FindOrCreate( std::move(name) );
 	if ( attrib ) {
 		attrib->SetIntValue( val );
 	}
@@ -767,9 +767,9 @@ void TiXmlElement::SetDoubleAttribute( const char * name, double val )
 
 
 #ifdef TIXML_USE_STL
-void TiXmlElement::SetDoubleAttribute( const std::string& name, double val )
+void TiXmlElement::SetDoubleAttribute( std::string name, double val )
 {	
-	TiXmlAttribute* attrib = attributeSet.FindOrCreate( name );
+	TiXmlAttribute* attrib = attributeSet.FindOrCreate( std::move(name) );
 	if ( attrib ) {
 		attrib->SetDoubleValue( val );
 	}
@@ -787,11 +787,11 @@ void TiXmlElement::SetAttribute( const char * cname, const char * cvalue )
 
 
 #ifdef TIXML_USE_STL
-void TiXmlElement::SetAttribute( const std::string& _name, const std::string& _value )
+void TiXmlElement::SetAttribute( std::string _name, std::string _value )
 {
-	TiXmlAttribute* attrib = attributeSet.FindOrCreate( _name );
+	TiXmlAttribute* attrib = attributeSet.FindOrCreate( std::move(_name) );
 	if ( attrib ) {
-		attrib->SetValue( _value );
+		attrib->SetValue( std::move(_value) );
 	}
 }
 #endif
@@ -927,11 +927,11 @@ TiXmlDocument::TiXmlDocument( const char * documentName ) : TiXmlNode( TiXmlNode
 
 
 #ifdef TIXML_USE_STL
-TiXmlDocument::TiXmlDocument( const std::string& documentName ) : TiXmlNode( TiXmlNode::TINYXML_DOCUMENT )
+TiXmlDocument::TiXmlDocument( std::string documentName ) : TiXmlNode( TiXmlNode::TINYXML_DOCUMENT )
 {
 	tabsize = 4;
 	useMicrosoftBOM = false;
-    value = documentName;
+    value = std::move(documentName);
 	ClearError();
 }
 #endif
@@ -1049,6 +1049,14 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
     //		* CR+LF: DEC RT-11 and most other early non-Unix, non-IBM OSes, CP/M, MP/M, DOS, OS/2, Microsoft Windows, Symbian OS
     //		* CR:    Commodore 8-bit machines, Apple II family, Mac OS up to version 9 and OS-9
 
+	bool result = LoadMemory(buf, encoding);
+	delete [] buf;
+
+	return result;
+}
+
+bool TiXmlDocument::LoadMemory( char* buf, long length, TiXmlEncoding encoding )
+{
 	const char* p = buf;	// the read head
 	char* q = buf;			// the write head
 	const char CR = 0x0d;
@@ -1076,7 +1084,6 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 
 	Parse( buf, 0, encoding );
 
-	delete [] buf;
 	return !Error();
 }
 
@@ -1388,14 +1395,14 @@ TiXmlDeclaration::TiXmlDeclaration( const char * _version,
 
 
 #ifdef TIXML_USE_STL
-TiXmlDeclaration::TiXmlDeclaration(	const std::string& _version,
-									const std::string& _encoding,
-									const std::string& _standalone )
+TiXmlDeclaration::TiXmlDeclaration(	std::string _version,
+									std::string _encoding,
+									std::string _standalone )
 	: TiXmlNode( TiXmlNode::TINYXML_DECLARATION )
 {
-	version = _version;
-	encoding = _encoding;
-	standalone = _standalone;
+	version = std::move(_version);
+	encoding = std::move(_encoding);
+	standalone = std::move(_standalone);
 }
 #endif
 
@@ -1556,13 +1563,13 @@ TiXmlAttribute* TiXmlAttributeSet::Find( const std::string& name ) const
 	return 0;
 }
 
-TiXmlAttribute* TiXmlAttributeSet::FindOrCreate( const std::string& _name )
+TiXmlAttribute* TiXmlAttributeSet::FindOrCreate( std::string _name )
 {
 	TiXmlAttribute* attrib = Find( _name );
 	if ( !attrib ) {
 		attrib = new TiXmlAttribute();
 		Add( attrib );
-		attrib->SetName( _name );
+		attrib->SetName( std::move(_name) );
 	}
 	return attrib;
 }

@@ -1,6 +1,7 @@
 #include "Project.h"
 #include "Compiler/Tree/Expr.h"
 #include "Compiler/Tree/SourceLocation.h"
+#include "Compiler/Tree/SourceLocationFactory.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/CompilerError.h"
@@ -54,22 +55,23 @@ void Project::setVariables(SymbolTable* symbolTable, const std::string& configur
     }
 }
 
-static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, XmlNode xmlSection, Project::File* file)
+static std::unique_ptr<Project::Section> parseSection(
+    const XmlDocument& xml, XmlNode xmlSection, Project::File* file, SourceLocationFactory* locFactory)
 {
     auto section = std::make_unique<Project::Section>();
     section->file = file;
-    section->location = nullptr; // FIXME
+    section->location = (locFactory ? locFactory->createLocation(ROW(Section)) : nullptr);
     section->name = REQ_STRING(name, Section);
-    section->nameLocation = nullptr; // FIXME
+    section->nameLocation = (locFactory ? locFactory->createLocation(ATTR_ROW(name, Section)) : nullptr);
     section->base = OPT_STRING(base, Section);
-    section->baseLocation = nullptr; // FIXME
+    section->baseLocation = (locFactory ? locFactory->createLocation(ATTR_ROW(base, Section)) : nullptr);
     section->fileOffset = OPT_STRING(fileOffset, Section);
-    section->fileOffsetLocation = nullptr; // FIXME
+    section->fileOffsetLocation = (locFactory ? locFactory->createLocation(ATTR_ROW(fileOffset, Section)) : nullptr);
     section->alignment = OPT_STRING(alignment, Section);
-    section->alignmentLocation = nullptr; // FIXME
+    section->alignmentLocation = (locFactory ? locFactory->createLocation(ATTR_ROW(alignment, Section)) : nullptr);
     section->attachment = Project::Section::Attachment::Default;
     section->compression = Compression::None;
-    section->compressionLocation = nullptr; // FIXME
+    section->compressionLocation = section->location;
 
     auto attach = OPT_STRING(attachment, Section);
     if (attach) {
@@ -83,6 +85,9 @@ static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, Xm
 
     auto comp = OPT_STRING(compression, Section);
     if (comp) {
+        if (locFactory)
+            section->compressionLocation = locFactory->createLocation(ATTR_ROW(compression, Section));
+
         if (*comp == "zx7")
             section->compression = Compression::Zx7;
         else if (*comp == "zx0")
@@ -98,7 +103,7 @@ static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, Xm
     return section;
 }
 
-void Project::load(std::filesystem::path path)
+void Project::load(std::filesystem::path path, SourceLocationFactory* locationFactory)
 {
     mPath = std::move(path);
 
@@ -111,13 +116,16 @@ void Project::load(std::filesystem::path path)
     auto xml = xmlLoad(mPath);
     ROOT(RetroProject);
 
+    if (locationFactory)
+        locationFactory->setFileName(mPath.filename(), mPath);
+
     IF_HAS(OutputDirectory, RetroProject) {
         outputDirectory = OPT_STRING(path, OutputDirectory);
     }
 
     FOR_EACH(Constant, RetroProject) {
         Constant constant;
-        constant.location = nullptr; // FIXME
+        constant.location = (locationFactory ? locationFactory->createLocation(ROW(Constant)) : nullptr);
         constant.name = REQ_STRING(name, Constant);
         constant.value = REQ_STRING(value, Constant);
         constants.emplace_back(std::move(constant));
@@ -129,7 +137,7 @@ void Project::load(std::filesystem::path path)
 
         FOR_EACH(Constant, Configuration) {
             Constant constant;
-            constant.location = nullptr; // FIXME
+            constant.location = (locationFactory ? locationFactory->createLocation(ROW(Constant)) : nullptr);
             constant.name = REQ_STRING(name, Constant);
             constant.value = REQ_STRING(value, Constant);
             config->constants.emplace_back(std::move(constant));
@@ -141,16 +149,16 @@ void Project::load(std::filesystem::path path)
     IF_HAS(Files, RetroProject) {
         FOR_EACH(File, Files) {
             auto file = std::make_unique<File>();
-            file->location = nullptr; // FIXME
+            file->location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
             file->name = REQ_STRING(name, File);
-            file->nameLocation = nullptr; // FIXME
+            file->nameLocation = (locationFactory ? locationFactory->createLocation(ATTR_ROW(name, File)) : nullptr);
             file->start = OPT_STRING(start, File);
-            file->startLocation = nullptr; // FIXME
+            file->startLocation = (locationFactory ? locationFactory->createLocation(ATTR_ROW(start, File)) : nullptr);
             file->until = OPT_STRING(until, File);
-            file->untilLocation = nullptr; // FIXME
+            file->untilLocation = (locationFactory ? locationFactory->createLocation(ATTR_ROW(until, File)) : nullptr);
 
             FOR_EACH(Section, File)
-                file->sections.emplace_back(parseSection(xml, xmlSection, file.get()));
+                file->sections.emplace_back(parseSection(xml, xmlSection, file.get(), locationFactory));
 
             files.emplace_back(std::move(file));
         }
@@ -159,12 +167,12 @@ void Project::load(std::filesystem::path path)
     IF_HAS(OutputTAP, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTAP;
-        output->location = nullptr; // FIXME
+        output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputTAP)) : nullptr);
         output->enabled = OPT_STRING(enabled, OutputTAP);
 
         FOR_EACH(File, OutputTAP) {
             Output::File outputFile = {};
-            outputFile.location = nullptr; // FIXME
+            outputFile.location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
 
             auto ref = OPT_STRING(ref, File);
             auto basic = OPT_STRING(basic, File);
@@ -189,12 +197,12 @@ void Project::load(std::filesystem::path path)
     IF_HAS(OutputTRD, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTRD;
-        output->location = nullptr; // FIXME
+        output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputTRD)) : nullptr);
         output->enabled = OPT_STRING(enabled, OutputTRD);
 
         FOR_EACH(File, OutputTRD) {
             Output::File outputFile = {};
-            outputFile.location = nullptr; // FIXME
+            outputFile.location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
 
             auto ref = OPT_STRING(ref, File);
             auto basic = OPT_STRING(basic, File);

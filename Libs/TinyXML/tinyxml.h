@@ -509,7 +509,7 @@ public:
 
     #ifdef TIXML_USE_STL
 	/// STL std::string form.
-	void SetValue( const std::string& _value )	{ value = _value; }
+	void SetValue( std::string _value )	{ value = std::move(_value); }
 	#endif
 
 	/// Delete all the children of this node. Does not affect 'this'.
@@ -738,7 +738,7 @@ public:
 	virtual bool Accept( TiXmlVisitor* visitor ) const = 0;
 
 protected:
-	TiXmlNode( NodeType _type );
+	explicit TiXmlNode( NodeType _type );
 
 	// Copy to the allocated object. Shared functionality between Clone, Copy constructor,
 	// and the assignment operator.
@@ -790,10 +790,10 @@ public:
 
 	#ifdef TIXML_USE_STL
 	/// std::string constructor.
-	TiXmlAttribute( const std::string& _name, const std::string& _value )
+	TiXmlAttribute( std::string _name, std::string _value )
 	{
-		name = _name;
-		value = _value;
+		name = std::move(_name);
+		value = std::move(_value);
 		document = 0;
 		prev = next = 0;
 	}
@@ -811,6 +811,7 @@ public:
 	const char*		Name()  const		{ return name.c_str(); }		///< Return the name of this attribute.
 	const char*		Value() const		{ return value.c_str(); }		///< Return the value of this attribute.
 	#ifdef TIXML_USE_STL
+	const std::string& NameStr() const	{ return name; }
 	const std::string& ValueStr() const	{ return value; }				///< Return the value of this attribute.
 	#endif
 	int				IntValue() const;									///< Return the value of this attribute, converted to an integer.
@@ -840,9 +841,9 @@ public:
 
     #ifdef TIXML_USE_STL
 	/// STL std::string form.
-	void SetName( const std::string& _name )	{ name = _name; }	
+	void SetName( std::string _name )	{ name = std::move(_name); }	
 	/// STL std::string form.	
-	void SetValue( const std::string& _value )	{ value = _value; }
+	void SetValue( std::string _value )	{ value = std::move(_value); }
 	#endif
 
 	/// Get the next sibling attribute in the DOM. Returns null at end.
@@ -919,7 +920,7 @@ public:
 
 #	ifdef TIXML_USE_STL
 	TiXmlAttribute*	Find( const std::string& _name ) const;
-	TiXmlAttribute* FindOrCreate( const std::string& _name );
+	TiXmlAttribute* FindOrCreate( std::string _name );
 #	endif
 
 
@@ -941,11 +942,11 @@ class TiXmlElement : public TiXmlNode
 {
 public:
 	/// Construct an element.
-	TiXmlElement (const char * in_value);
+	explicit TiXmlElement (const char * in_value);
 
 	#ifdef TIXML_USE_STL
 	/// std::string constructor.
-	TiXmlElement( const std::string& _value );
+	explicit TiXmlElement( std::string _value );
 	#endif
 
 	TiXmlElement( const TiXmlElement& );
@@ -1057,11 +1058,11 @@ public:
 	int QueryDoubleAttribute( const std::string& name, double* _value ) const;
 
 	/// STL std::string form.
-	void SetAttribute( const std::string& name, const std::string& _value );
+	void SetAttribute( std::string name, std::string _value );
 	///< STL std::string form.
-	void SetAttribute( const std::string& name, int _value );
+	void SetAttribute( std::string name, int _value );
 	///< STL std::string form.
-	void SetDoubleAttribute( const std::string& name, double value );
+	void SetDoubleAttribute( std::string name, double value );
 	#endif
 
 	/** Sets an attribute of name to a given value. The attribute
@@ -1078,7 +1079,7 @@ public:
 	*/
 	void RemoveAttribute( const char * name );
     #ifdef TIXML_USE_STL
-	void RemoveAttribute( const std::string& name )	{	RemoveAttribute (name.c_str ());	}	///< STL std::string form.
+	void RemoveAttribute( std::string name )	{	RemoveAttribute (name.c_str ());	}	///< STL std::string form.
 	#endif
 
 	const TiXmlAttribute* FirstAttribute() const	{ return attributeSet.First(); }		///< Access the first attribute in this element.
@@ -1165,7 +1166,7 @@ public:
 	/// Constructs an empty comment.
 	TiXmlComment() : TiXmlNode( TiXmlNode::TINYXML_COMMENT ) {}
 	/// Construct a comment from text.
-	TiXmlComment( const char* _value ) : TiXmlNode( TiXmlNode::TINYXML_COMMENT ) {
+	explicit TiXmlComment( const char* _value ) : TiXmlNode( TiXmlNode::TINYXML_COMMENT ) {
 		SetValue( _value );
 	}
 	TiXmlComment( const TiXmlComment& );
@@ -1217,7 +1218,7 @@ public:
 		normal, encoded text. If you want it be output as a CDATA text
 		element, set the parameter _cdata to 'true'
 	*/
-	TiXmlText (const char * initValue ) : TiXmlNode (TiXmlNode::TINYXML_TEXT)
+	explicit TiXmlText (const char * initValue ) : TiXmlNode (TiXmlNode::TINYXML_TEXT)
 	{
 		SetValue( initValue );
 		cdata = false;
@@ -1226,9 +1227,9 @@ public:
 
 	#ifdef TIXML_USE_STL
 	/// Constructor.
-	TiXmlText( const std::string& initValue ) : TiXmlNode (TiXmlNode::TINYXML_TEXT)
+	explicit TiXmlText( std::string initValue ) : TiXmlNode (TiXmlNode::TINYXML_TEXT)
 	{
-		SetValue( initValue );
+		SetValue( std::move(initValue) );
 		cdata = false;
 	}
 	#endif
@@ -1290,9 +1291,9 @@ public:
 
 #ifdef TIXML_USE_STL
 	/// Constructor.
-	TiXmlDeclaration(	const std::string& _version,
-						const std::string& _encoding,
-						const std::string& _standalone );
+	TiXmlDeclaration(	std::string _version,
+						std::string _encoding,
+						std::string _standalone );
 #endif
 
 	/// Construct.
@@ -1396,11 +1397,11 @@ public:
 	/// Create an empty document, that has no name.
 	TiXmlDocument();
 	/// Create a document with a name. The name of the document is also the filename of the xml.
-	TiXmlDocument( const char * documentName );
+	explicit TiXmlDocument( const char * documentName );
 
 	#ifdef TIXML_USE_STL
 	/// Constructor.
-	TiXmlDocument( const std::string& documentName );
+	explicit TiXmlDocument( std::string documentName );
 	#endif
 
 	TiXmlDocument( const TiXmlDocument& copy );
@@ -1438,6 +1439,8 @@ public:
 		return SaveFile( filename.c_str() );
 	}
 	#endif
+
+	bool LoadMemory( char* buf, long length, TiXmlEncoding encoding = TIXML_DEFAULT_ENCODING );
 
 	/** Parse the given null terminated block of xml data. Passing in an encoding to this
 		method (either TIXML_ENCODING_LEGACY or TIXML_ENCODING_UTF8 will force TinyXml

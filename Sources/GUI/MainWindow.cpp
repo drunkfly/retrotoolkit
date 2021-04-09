@@ -53,7 +53,7 @@ void MainWindow::openProject(const QString& file, bool mayLaunchNewInstance)
 
     auto project = std::make_unique<Project>();
     TRY {
-        project->load(toPath(file));
+        project->load(toPath(file), nullptr);
     } CATCH(e) {
         e.show(this);
         return;

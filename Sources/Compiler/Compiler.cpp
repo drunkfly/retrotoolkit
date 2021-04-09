@@ -1,5 +1,6 @@
 #include "Compiler.h"
 #include "Compiler/Tree/SourceLocation.h"
+#include "Compiler/Tree/SourceLocationFactory.h"
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Java/JNIThrowableRef.h"
 #include "Compiler/Java/JStringList.h"
@@ -72,7 +73,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
         mListener->compilerProgress(0, 0, "Reading project file...");
 
     Project project;
-    project.load(projectFile);
+    SourceLocationFactory locationFactory(mHeap);
+    project.load(projectFile, &locationFactory);
 
     std::string projectName = projectFile.stem().string();
 

@@ -4,9 +4,9 @@
 #include "Compiler/Compression/Compression.h"
 
 class Expr;
-class SymbolTable;
 class SourceLocation;
-class GCHeap;
+class SourceLocationFactory;
+class SymbolTable;
 
 class Project
 {
@@ -101,7 +101,7 @@ public:
 
     void setVariables(SymbolTable* symbolTable, const std::string& configuration) const;
 
-    void load(std::filesystem::path path);
+    void load(std::filesystem::path path, SourceLocationFactory* locationFactory);
     void save(std::filesystem::path path, bool createNew = false);
 
 private:

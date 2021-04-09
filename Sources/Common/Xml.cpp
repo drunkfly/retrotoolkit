@@ -4,18 +4,30 @@
 
 XmlDocument xmlLoad(const std::filesystem::path& path)
 {
-    auto xml = std::make_unique<RapidXmlDocument>();
-    xml->data = loadFile(path);
+    auto xml = std::make_unique<TinyXmlDocument>();
+
     xml->path = path;
-    xml->doc.parse<0>(&xml->data[0]);
+    xml->data = loadFile(path);
+    if (xml->data.empty()) {
+        std::stringstream ss;
+        ss << "File \"" << xml->path.string() << "\" is empty.";
+        throw std::runtime_error(ss.str());
+    }
+
+    if (!xml->doc.LoadMemory(&xml->data[0], xml->data.length(), TIXML_ENCODING_UTF8)) {
+        std::stringstream ss;
+        ss << "Parse error in XML file \"" << xml->path.string() << "\" at line "
+            << xml->doc.ErrorRow() << ", column " << xml->doc.ErrorCol() << ": " << xml->doc.ErrorDesc();
+        throw std::runtime_error(ss.str());
+    }
 
     return xml;
 }
 
 XmlNode xmlGetRootElement(const XmlDocument& xml, const char* name)
 {
-    auto xmlRoot = xml->doc.first_node();
-    if (strcmp(xmlRoot->name(), name) != 0) {
+    const TiXmlElement* xmlRoot = xml->doc.RootElement();
+    if (!xmlRoot || strcmp(xmlRoot->Value(), name) != 0) {
         std::stringstream ss;
         ss << "File \"" << xml->path.string() << "\" has invalid root element.";
         throw std::runtime_error(ss.str());
@@ -23,34 +35,37 @@ XmlNode xmlGetRootElement(const XmlDocument& xml, const char* name)
     return xmlRoot;
 }
 
-std::string xmlGetRequiredAttribute(const XmlDocument& xml, XmlNode node, const char* name)
+const std::string& xmlGetRequiredAttribute(const XmlDocument& xml, XmlNode node, const char* name)
 {
-    auto attr = node->first_attribute(name);
-    if (!attr)
-        xmlMissingAttributeValue(xml, node, name);
-
-    return std::string(attr->value(), attr->value_size());
+    size_t len = strlen(name);
+    for (const TiXmlAttribute* attr = node->FirstAttribute(); attr; attr = attr->Next()) {
+        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name))
+            return attr->ValueStr();
+    }
+    xmlMissingAttributeValue(xml, node, name);
 }
 
 std::optional<std::string> xmlGetOptionalAttribute(const XmlDocument& xml, XmlNode node, const char* name)
 {
     std::optional<std::string> result;
 
-    auto attr = node->first_attribute(name);
-    if (attr)
-        result = std::string(attr->value(), attr->value_size());
+    size_t len = strlen(name);
+    for (const TiXmlAttribute* attr = node->FirstAttribute(); attr; attr = attr->Next()) {
+        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name)) {
+            result = attr->ValueStr();
+            break;
+        }
+    }
 
     return result;
 }
 
 int xmlGetRequiredIntAttribute(const XmlDocument& xml, XmlNode node, const char* name)
 {
-    auto attr = node->first_attribute(name);
-    if (!attr)
-        xmlMissingAttributeValue(xml, node, name);
+    const std::string& str = xmlGetRequiredAttribute(xml, node, name);
 
     int result;
-    if (!intFromString(result, attr->value(), attr->value_size()))
+    if (!intFromString(result, str.c_str(), str.length()))
         xmlInvalidAttributeValue(xml, node, name);
 
     return result;
@@ -60,26 +75,26 @@ std::optional<int> xmlGetOptionalIntAttribute(const XmlDocument& xml, XmlNode no
 {
     std::optional<int> result;
 
-    auto attr = node->first_attribute(name);
-    if (!attr)
-        return result;
+    size_t len = strlen(name);
+    for (const TiXmlAttribute* attr = node->FirstAttribute(); attr; attr = attr->Next()) {
+        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name)) {
+            int value;
+            if (!intFromString(value, attr->Value(), attr->ValueStr().length()))
+                xmlInvalidAttributeValue(xml, node, name);
+            result = value;
+            break;
+        }
+    }
 
-    int v;
-    if (!intFromString(v, attr->value(), attr->value_size()))
-        xmlInvalidAttributeValue(xml, node, name);
-
-    result = v;
     return result;
 }
 
 bool xmlGetRequiredBoolAttribute(const XmlDocument& xml, XmlNode node, const char* name)
 {
-    auto attr = node->first_attribute(name);
-    if (!attr)
-        xmlMissingAttributeValue(xml, node, name);
+    const std::string& str = xmlGetRequiredAttribute(xml, node, name);
 
     bool result;
-    if (!boolFromString(result, attr->value(), attr->value_size()))
+    if (!boolFromString(result, str.c_str(), str.length()))
         xmlInvalidAttributeValue(xml, node, name);
 
     return result;
@@ -89,31 +104,47 @@ std::optional<bool> xmlGetOptionalBoolAttribute(const XmlDocument& xml, XmlNode 
 {
     std::optional<bool> result;
 
-    auto attr = node->first_attribute(name);
-    if (!attr)
-        return result;
+    size_t len = strlen(name);
+    for (const TiXmlAttribute* attr = node->FirstAttribute(); attr; attr = attr->Next()) {
+        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name)) {
+            bool value;
+            if (!boolFromString(value, attr->Value(), attr->ValueStr().length()))
+                xmlInvalidAttributeValue(xml, node, name);
+            result = value;
+            break;
+        }
+    }
 
-    bool b;
-    if (!boolFromString(b, attr->value(), attr->value_size()))
-        xmlInvalidAttributeValue(xml, node, name);
-
-    result = b;
     return result;
+}
+
+int xmlGetAttributeRow(XmlNode node, const char* name)
+{
+    size_t len = strlen(name);
+    for (const TiXmlAttribute* attr = node->FirstAttribute(); attr; attr = attr->Next()) {
+        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name)) {
+            return attr->Row();
+        }
+    }
+
+    return node->Row();
 }
 
 [[noreturn]] void xmlMissingAttributeValue(const XmlDocument& xml, XmlNode node, const char* name)
 {
     std::stringstream ss;
     ss << "Missing required attribute \"" << name << "\" in element \""
-        << node->value() << "\" in file \"" << xml->path.string() << "\".";
+        << node->ValueStr() << "\" in file \"" << xml->path.string() << "\" at line "
+        << node->Row() << ", column " << node->Column() << '.';
     throw std::runtime_error(ss.str());
 }
 
 [[noreturn]] void xmlInvalidAttributeValue(const XmlDocument& xml, XmlNode node, const char* name)
 {
     std::stringstream ss;
-    ss << "Invalid value \"" << node->first_attribute(name)->value() << "\" for attribute \"" << name
-        << "\" in element \"" << node->value() << "\" in file \"" << xml->path.string() << "\".";
+    ss << "Invalid value \"" << node->Attribute(name) << "\" for attribute \"" << name
+        << "\" in element \"" << node->ValueStr() << "\" in file \"" << xml->path.string() << "\" at line "
+        << node->Row() << ", column " << node->Column() << '.';
     throw std::runtime_error(ss.str());
 }
 

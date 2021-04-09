@@ -10,7 +10,7 @@ static GCHeap heap;
 static std::unique_ptr<Project> loadProject(const std::filesystem::path& path)
 {
     auto project = std::make_unique<Project>();
-    project->load(std::filesystem::path(__FILE__).parent_path().parent_path() / "Data" / path);
+    project->load(std::filesystem::path(__FILE__).parent_path().parent_path() / "Data" / path, nullptr);
     return project;
 }
 
