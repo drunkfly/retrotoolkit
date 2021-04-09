@@ -14,7 +14,7 @@ public:
     const std::vector<CompiledFile*>& files() const { return mFileList; }
 
     CompiledFile* getFile(const std::string& name);
-    CompiledFile* addFile(SourceLocation* location,
+    CompiledFile* addFile(SourceLocation* location, SourceLocation* nameLocation,
         const std::string& name, std::unique_ptr<DebugInformation> debugInfo);
 
 private:

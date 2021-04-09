@@ -9,10 +9,11 @@ class DebugInformation;
 class CompiledFile final : public GCObject, public CodeEmitterUncompressed
 {
 public:
-    CompiledFile(std::string name, std::unique_ptr<DebugInformation> debugInfo);
+    CompiledFile(SourceLocation* location, std::string name, std::unique_ptr<DebugInformation> debugInfo);
     ~CompiledFile() override;
 
     const std::string& name() const { return mName; }
+    SourceLocation* location() const { return mLocation; }
 
     DebugInformation* debugInfo() const { return mDebugInfo.get(); }
     std::unique_ptr<DebugInformation> takeDebugInfo();
@@ -30,6 +31,7 @@ private:
     std::string mName;
     std::unique_ptr<DebugInformation> mDebugInfo;
     size_t mLoadAddress;
+    SourceLocation* mLocation;
     bool mUsedByBasic;
 
     DISABLE_COPY(CompiledFile);

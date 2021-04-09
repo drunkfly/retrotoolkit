@@ -27,9 +27,11 @@ namespace
 {
     struct LinkerSection : public GCObject
     {
+        SourceLocation* location;
         ProgramSection* programSection;
         Project::Section::Attachment attachment;
         Compression compression;
+        SourceLocation* compressionLocation;
         std::unique_ptr<CodeEmitter> code;
         CodeEmitterCompressed* compressedCode;
         Expr* base;
@@ -45,22 +47,20 @@ namespace
     class LinkerFile : public GCObject, public ISectionResolver
     {
     public:
-        LinkerFile(SourceLocation* location,
-                std::unordered_set<std::string>& usedSections, const Project::File* file, Program* program)
-            : mLocation(location)
-            , mProgram(program)
+        LinkerFile(std::unordered_set<std::string>& usedSections, const Project::File* file, Program* program)
+            : mProgram(program)
             , mFile(file)
             , mDebugInfo(new DebugInformation())
             , mIsResolved(false)
         {
             registerFinalizer();
 
-            mFileStart = tryParseExpression(location, file->start);
-            mFileUntil = tryParseExpression(location, file->until);
+            mFileStart = tryParseExpression(file->startLocation, file->start);
+            mFileUntil = tryParseExpression(file->untilLocation, file->until);
 
             mSections.reserve(file->sections.size());
             for (const auto& it : file->sections)
-                addSection(location, usedSections, it.get());
+                addSection(usedSections, it.get());
 
             // try calculate size for all uncompressed sections
 
@@ -114,12 +114,12 @@ namespace
                             std::stringstream ss;
                             ss << "section \"" << section->programSection->name()
                                 << "\" has invalid alignment in file \"" << file->name << "\".";
-                            throw CompilerError(location, ss.str());
+                            throw CompilerError(section->alignment->location(), ss.str());
                         } else if ((section->resolvedBase.value() % alignment) != 0) {
                             std::stringstream ss;
                             ss << "conflicting base and alignment for section \""
                                 << section->programSection->name() << "\" in file \"" << file->name << "\".";
-                            throw CompilerError(location, ss.str());
+                            throw CompilerError(section->alignment->location(), ss.str());
                         }
                     }
                 }
@@ -189,14 +189,13 @@ namespace
                         ss << "unable to resolve addresses in file \"" << file->name
                             << "\": there is no section with known base and neither start, "
                                 "nor end addresses for file were not specified.";
-                        throw CompilerError(location, ss.str());
+                        throw CompilerError(file->location, ss.str());
                     }
                 }
             }
         }
 
         const Project::File* file() const { return mFile; }
-        SourceLocation* location() const { return mLocation; }
 
         std::unique_ptr<DebugInformation> takeDebugInfo()
         {
@@ -274,7 +273,7 @@ namespace
                     baseAddress = 0;
                 }
 
-                auto compressor = Compressor::create(mLocation, section->compression);
+                auto compressor = Compressor::create(section->compressionLocation, section->compression);
                 auto code = std::make_unique<CodeEmitterCompressed>(std::move(compressor));
 
                 if (section->programSection->emitCode(code.get(), baseAddress, this, resolveError)) {
@@ -339,7 +338,7 @@ namespace
                                 << section->programSection->name() << "\" in file \"" << file()->name
                                 << "\" differs from resolved size ("
                                 << *section->resolvedSize << " != " << code->size() << ").";
-                            throw CompilerError(mLocation, ss.str());
+                            throw CompilerError(section->location, ss.str());
                         }
 
                         section->code = std::move(code);
@@ -387,7 +386,7 @@ namespace
                 if (mFileStart && startAddress >= endAddress) {
                     std::stringstream ss;
                     ss << "file \"" << mFile->name << "\"has invalid bounds.";
-                    throw CompilerError(mLocation, ss.str());
+                    throw CompilerError(output->location(), ss.str());
                 }
             }
 
@@ -398,13 +397,13 @@ namespace
                     std::stringstream ss;
                     ss << "section \"" << section->programSection->name()
                         << "\" is out of bounds in file \"" << mFile->name << "\".";
-                    throw CompilerError(mLocation, ss.str());
+                    throw CompilerError(section->location, ss.str());
                 }
                 if (targetOffset < offset) {
                     std::stringstream ss;
                     ss << "section \"" << section->programSection->name()
                         << "\" is overlapping with previous section in file \"" << mFile->name << "\".";
-                    throw CompilerError(mLocation, ss.str());
+                    throw CompilerError(section->location, ss.str());
                 }
 
                 while (targetOffset > offset) {
@@ -419,7 +418,7 @@ namespace
                         std::stringstream ss;
                         ss << "internal compiler error: no code was generated for compressed section \""
                             << section->programSection->name() << "\" in file \"" << mFile->name << "\".";
-                        throw CompilerError(mLocation, ss.str());
+                        throw CompilerError(section->location, ss.str());
                     }
 
                     std::unique_ptr<CompilerError> resolveError;
@@ -437,7 +436,7 @@ namespace
                         std::stringstream ss;
                         ss << "unable to emit code for section \"" << section->programSection->name()
                             << "\" in file \"" << mFile->name << "\".";
-                        throw CompilerError(mLocation, ss.str());
+                        throw CompilerError(section->location, ss.str());
                     }
                 }
 
@@ -448,7 +447,7 @@ namespace
                     std::stringstream ss;
                     ss << "section \"" << section->programSection->name()
                         << "\" is out of bounds in file \"" << mFile->name << "\".";
-                    throw CompilerError(mLocation, ss.str());
+                    throw CompilerError(section->location, ss.str());
                 }
             }
 
@@ -463,7 +462,6 @@ namespace
         }
 
     private:
-        SourceLocation* mLocation;
         Program* mProgram;
         const Project::File* mFile;
         std::unique_ptr<DebugInformation> mDebugInfo;
@@ -474,15 +472,14 @@ namespace
         Expr* mFileUntil;
         bool mIsResolved;
 
-        void addSection(SourceLocation* location,
-            std::unordered_set<std::string>& usedSections, const Project::Section* sectionInfo)
+        void addSection(std::unordered_set<std::string>& usedSections, const Project::Section* sectionInfo)
         {
             auto section = mProgram->getOrAddSection(sectionInfo->name);
             if (!mSectionSet.emplace(section).second) {
                 std::stringstream ss;
                 ss << "section \"" << sectionInfo->name
                     << "\" is referenced multiple times for file \"" << sectionInfo->file->name << "\".";
-                throw CompilerError(location, ss.str());
+                throw CompilerError(sectionInfo->location, ss.str());
             }
 
             if (!usedSections.emplace(sectionInfo->name).second)
@@ -492,12 +489,14 @@ namespace
 
             auto linkerSection = new (heap()) LinkerSection();
             linkerSection->programSection = section;
-            linkerSection->base = tryParseExpression(location, sectionInfo->base);
+            linkerSection->base = tryParseExpression(sectionInfo->baseLocation, sectionInfo->base);
             linkerSection->compressedCode = nullptr;
-            linkerSection->fileOffset = (autoOffset ? nullptr : tryParseExpression(location, sectionInfo->fileOffset));
-            linkerSection->alignment = tryParseExpression(location, sectionInfo->alignment);
+            linkerSection->fileOffset =
+                (autoOffset ? nullptr : tryParseExpression(sectionInfo->fileOffsetLocation, sectionInfo->fileOffset));
+            linkerSection->alignment = tryParseExpression(sectionInfo->alignmentLocation, sectionInfo->alignment);
             linkerSection->attachment = sectionInfo->attachment;
             linkerSection->compression = sectionInfo->compression;
+            linkerSection->compressionLocation = sectionInfo->compressionLocation;
             linkerSection->labelsResolved = false;
             linkerSection->autoFileOffset = autoOffset;
             mSections.emplace_back(linkerSection);
@@ -507,7 +506,7 @@ namespace
             if (linkerSection->fileOffset && !linkerSection->base) {
                 std::stringstream ss;
                 ss << "section \"" << sectionInfo->name << "\" has file offset without base address.";
-                throw CompilerError(location, ss.str());
+                throw CompilerError(sectionInfo->nameLocation, ss.str());
             }
         }
 
@@ -529,7 +528,7 @@ namespace
                         std::stringstream ss;
                         ss << "section \"" << section->programSection->name()
                             << "\" has invalid alignment in file \"" << mFile->name << "\".";
-                        throw CompilerError(mLocation, ss.str());
+                        throw CompilerError(section->alignment->location(), ss.str());
                     }
                     address += alignment - 1;
                     address /= alignment;
@@ -586,7 +585,7 @@ namespace
                         std::stringstream ss;
                         ss << "section \"" << section->programSection->name()
                             << "\" has invalid alignment in file \"" << mFile->name << "\".";
-                        throw CompilerError(mLocation, ss.str());
+                        throw CompilerError(section->alignment->location(), ss.str());
                     }
                     address -= address % alignment;
                 }
@@ -698,9 +697,6 @@ CompiledOutput* Linker::link(Program* program)
 {
     mProgram = program;
 
-    auto fileID = new (mHeap) FileID(mProject->path().filename(), mProject->path());
-    auto location = new (mHeap) SourceLocation(fileID, 1);
-
     auto output = new (mHeap) CompiledOutput();
 
     std::unordered_set<std::string> fileNames;
@@ -712,9 +708,9 @@ CompiledOutput* Linker::link(Program* program)
         if (!fileNames.emplace(file->name).second) {
             std::stringstream ss;
             ss << "duplicate file name \"" << file->name << "\".";
-            throw CompilerError(location, ss.str());
+            throw CompilerError(file->nameLocation, ss.str());
         }
-        files.emplace_back(new (mHeap) LinkerFile(location, usedSections, file.get(), mProgram));
+        files.emplace_back(new (mHeap) LinkerFile(usedSections, file.get(), mProgram));
     }
 
     for (;;) {
@@ -740,16 +736,20 @@ CompiledOutput* Linker::link(Program* program)
                     std::stringstream ss;
                     ss << "unable to resolve section \"" << section->programSection->name()
                         << "\" in file \"" << file->file()->name << "\".";
-                    throw CompilerError(location, ss.str());
+                    throw CompilerError(section->location, ss.str());
                 }
             }
 
-            throw CompilerError(location, "unable to resolve section.");
+            auto fileID = new (mHeap) FileID(mProject->path().filename(), mProject->path());
+            auto location = new (mHeap) SourceLocation(fileID, -1);
+            throw CompilerError(location, "unable to resolve sections.");
         }
     }
 
-    for (auto& file : files)
-        file->generateCode(output->addFile(file->location(), file->file()->name, file->takeDebugInfo()));
+    for (auto& file : files) {
+        file->generateCode(output->addFile(file->file()->location, file->file()->nameLocation,
+            file->file()->name, file->takeDebugInfo()));
+    }
 
     struct TestOnlySectionResolver : public ISectionResolver
     {

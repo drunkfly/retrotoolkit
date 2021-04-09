@@ -1,8 +1,9 @@
 #include "CompiledFile.h"
 #include "Compiler/Linker/DebugInformation.h"
 
-CompiledFile::CompiledFile(std::string name, std::unique_ptr<DebugInformation> debugInfo)
-    : mName(std::move(name))
+CompiledFile::CompiledFile(SourceLocation* location, std::string name, std::unique_ptr<DebugInformation> debugInfo)
+    : mLocation(location)
+    , mName(std::move(name))
     , mDebugInfo(std::move(debugInfo))
     , mLoadAddress(0)
     , mUsedByBasic(false)

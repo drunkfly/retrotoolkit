@@ -42,16 +42,14 @@ static void addConstant(SymbolTable* symbolTable, const Project::Constant& const
 void Project::setVariables(SymbolTable* symbolTable, const std::string& configuration) const
 {
     auto heap = symbolTable->heap();
-    auto fileID = new (heap) FileID(mPath.filename(), mPath);
-    auto location = new (heap) SourceLocation(fileID, 1);
 
     for (const auto& constant : constants)
-        addConstant(symbolTable, constant, location);
+        addConstant(symbolTable, constant, constant.location);
 
     for (const auto& it : configurations) {
         if (it->name == configuration) {
             for (const auto& constant : it->constants)
-                addConstant(symbolTable, constant, location);
+                addConstant(symbolTable, constant, constant.location);
         }
     }
 }
@@ -60,12 +58,18 @@ static std::unique_ptr<Project::Section> parseSection(const XmlDocument& xml, Xm
 {
     auto section = std::make_unique<Project::Section>();
     section->file = file;
+    section->location = nullptr; // FIXME
     section->name = REQ_STRING(name, Section);
+    section->nameLocation = nullptr; // FIXME
     section->base = OPT_STRING(base, Section);
+    section->baseLocation = nullptr; // FIXME
     section->fileOffset = OPT_STRING(fileOffset, Section);
+    section->fileOffsetLocation = nullptr; // FIXME
     section->alignment = OPT_STRING(alignment, Section);
+    section->alignmentLocation = nullptr; // FIXME
     section->attachment = Project::Section::Attachment::Default;
     section->compression = Compression::None;
+    section->compressionLocation = nullptr; // FIXME
 
     auto attach = OPT_STRING(attachment, Section);
     if (attach) {
@@ -113,6 +117,7 @@ void Project::load(std::filesystem::path path)
 
     FOR_EACH(Constant, RetroProject) {
         Constant constant;
+        constant.location = nullptr; // FIXME
         constant.name = REQ_STRING(name, Constant);
         constant.value = REQ_STRING(value, Constant);
         constants.emplace_back(std::move(constant));
@@ -124,6 +129,7 @@ void Project::load(std::filesystem::path path)
 
         FOR_EACH(Constant, Configuration) {
             Constant constant;
+            constant.location = nullptr; // FIXME
             constant.name = REQ_STRING(name, Constant);
             constant.value = REQ_STRING(value, Constant);
             config->constants.emplace_back(std::move(constant));
@@ -135,9 +141,13 @@ void Project::load(std::filesystem::path path)
     IF_HAS(Files, RetroProject) {
         FOR_EACH(File, Files) {
             auto file = std::make_unique<File>();
+            file->location = nullptr; // FIXME
             file->name = REQ_STRING(name, File);
+            file->nameLocation = nullptr; // FIXME
             file->start = OPT_STRING(start, File);
+            file->startLocation = nullptr; // FIXME
             file->until = OPT_STRING(until, File);
+            file->untilLocation = nullptr; // FIXME
 
             FOR_EACH(Section, File)
                 file->sections.emplace_back(parseSection(xml, xmlSection, file.get()));
@@ -149,8 +159,8 @@ void Project::load(std::filesystem::path path)
     IF_HAS(OutputTAP, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTAP;
-        output->enabled = OPT_STRING(enabled, OutputTAP);
         output->location = nullptr; // FIXME
+        output->enabled = OPT_STRING(enabled, OutputTAP);
 
         FOR_EACH(File, OutputTAP) {
             Output::File outputFile = {};
@@ -179,8 +189,8 @@ void Project::load(std::filesystem::path path)
     IF_HAS(OutputTRD, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTRD;
-        output->enabled = OPT_STRING(enabled, OutputTRD);
         output->location = nullptr; // FIXME
+        output->enabled = OPT_STRING(enabled, OutputTRD);
 
         FOR_EACH(File, OutputTRD) {
             Output::File outputFile = {};

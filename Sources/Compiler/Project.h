@@ -18,6 +18,7 @@ public:
 
     struct Constant
     {
+        SourceLocation* location;
         std::string name;
         std::string value;
     };
@@ -38,19 +39,29 @@ public:
         };
 
         File* file;
+        SourceLocation* location;
         std::string name;
+        SourceLocation* nameLocation;
         std::optional<std::string> base;
+        SourceLocation* baseLocation;
         std::optional<std::string> fileOffset;
+        SourceLocation* fileOffsetLocation;
         std::optional<std::string> alignment;
+        SourceLocation* alignmentLocation;
         Attachment attachment;
         Compression compression;
+        SourceLocation* compressionLocation;
     };
 
     struct File
     {
+        SourceLocation* location;
         std::string name;
+        SourceLocation* nameLocation;
         std::optional<std::string> start;
+        SourceLocation* startLocation;
         std::optional<std::string> until;
+        SourceLocation* untilLocation;
         std::vector<std::unique_ptr<Section>> sections;
     };
 
@@ -70,9 +81,9 @@ public:
         };
 
         Type type;
+        SourceLocation* location;
         std::optional<std::string> enabled;
         std::vector<File> files;
-        SourceLocation* location;
 
         bool isEnabled(SymbolTable* symbolTable) const;
     };

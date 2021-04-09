@@ -17,17 +17,17 @@ CompiledFile* CompiledOutput::getFile(const std::string& name)
     return (it != mFiles.end() ? it->second : nullptr);
 }
 
-CompiledFile* CompiledOutput::addFile(SourceLocation* location,
+CompiledFile* CompiledOutput::addFile(SourceLocation* location, SourceLocation* nameLocation,
     const std::string& name, std::unique_ptr<DebugInformation> debugInfo)
 {
     auto it = mFiles.find(name);
     if (it != mFiles.end()) {
         std::stringstream ss;
         ss << "File name is not unique: \"" << name << "\".";
-        throw CompilerError(location, ss.str());
+        throw CompilerError(nameLocation, ss.str());
     }
 
-    CompiledFile* file = new (heap()) CompiledFile(name, std::move(debugInfo));
+    CompiledFile* file = new (heap()) CompiledFile(location, name, std::move(debugInfo));
     mFiles[name] = file;
     mFileList.emplace_back(file);
 
