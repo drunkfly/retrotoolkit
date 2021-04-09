@@ -45,7 +45,8 @@ namespace
     class LinkerFile : public GCObject, public ISectionResolver
     {
     public:
-        LinkerFile(SourceLocation* location, const Project::File* file, Program* program)
+        LinkerFile(SourceLocation* location,
+                std::unordered_set<std::string>& usedSections, const Project::File* file, Program* program)
             : mLocation(location)
             , mProgram(program)
             , mFile(file)
@@ -59,7 +60,7 @@ namespace
 
             mSections.reserve(file->sections.size());
             for (const auto& it : file->sections)
-                addSection(location, it.get());
+                addSection(location, usedSections, it.get());
 
             // try calculate size for all uncompressed sections
 
@@ -473,7 +474,8 @@ namespace
         Expr* mFileUntil;
         bool mIsResolved;
 
-        void addSection(SourceLocation* location, const Project::Section* sectionInfo)
+        void addSection(SourceLocation* location,
+            std::unordered_set<std::string>& usedSections, const Project::Section* sectionInfo)
         {
             auto section = mProgram->getOrAddSection(sectionInfo->name);
             if (!mSectionSet.emplace(section).second) {
@@ -482,6 +484,9 @@ namespace
                     << "\" is referenced multiple times for file \"" << sectionInfo->file->name << "\".";
                 throw CompilerError(location, ss.str());
             }
+
+            if (!usedSections.emplace(sectionInfo->name).second)
+                section = section->clone();
 
             bool autoOffset = (sectionInfo->fileOffset && *sectionInfo->fileOffset == "auto");
 
@@ -699,6 +704,7 @@ CompiledOutput* Linker::link(Program* program)
     auto output = new (mHeap) CompiledOutput();
 
     std::unordered_set<std::string> fileNames;
+    std::unordered_set<std::string> usedSections;
     std::vector<LinkerFile*> files;
 
     files.reserve(mProject->files.size());
@@ -708,7 +714,7 @@ CompiledOutput* Linker::link(Program* program)
             ss << "duplicate file name \"" << file->name << "\".";
             throw CompilerError(location, ss.str());
         }
-        files.emplace_back(new (mHeap) LinkerFile(location, file.get(), mProgram));
+        files.emplace_back(new (mHeap) LinkerFile(location, usedSections, file.get(), mProgram));
     }
 
     for (;;) {

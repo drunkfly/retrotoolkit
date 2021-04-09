@@ -435,6 +435,7 @@ namespace Z80
             bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
             bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
+            Instruction* clone() const final override; \
         private: \
             static constexpr size_t arraySizeInBytes(); \
         }
@@ -449,6 +450,7 @@ namespace Z80
             bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
             bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
+            Instruction* clone() const final override; \
         private: \
             static constexpr size_t arraySizeInBytes(); \
         }
@@ -463,6 +465,7 @@ namespace Z80
             bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
             bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
+            Instruction* clone() const final override; \
         private: \
             static constexpr size_t arraySizeInBytes(); \
         }

@@ -485,6 +485,10 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         emitter->emitBytes(location(), OP##_bytes.data(), OP##_bytes.size()); \
         nextAddress += OP##_bytes.size(); \
         return true; \
+    } \
+    Instruction* Z80::OP::clone() const \
+    { \
+        return new (heap()) OP(location()); \
     }
 
 #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
@@ -520,6 +524,10 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         emitter->emitBytes(location(), array.data(), array.size()); \
         nextAddress += array.size(); \
         return true; \
+    } \
+    Instruction* Z80::OP##_##OP1::clone() const \
+    { \
+        return new (heap()) OP##_##OP1(location(), mOp1); \
     }
 
 #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
@@ -557,6 +565,10 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         emitter->emitBytes(location(), array.data(), array.size()); \
         nextAddress += array.size(); \
         return true; \
+    } \
+    Instruction* Z80::OP##_##OP1##_##OP2::clone() const \
+    { \
+        return new (heap()) OP##_##OP1##_##OP2(location(), mOp1, mOp2); \
     }
 
 #define OP1 mOp1.value(nextAddress, sectionResolver)

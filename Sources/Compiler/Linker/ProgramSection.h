@@ -28,6 +28,8 @@ public:
     bool emitCode(CodeEmitter* emitter, size_t baseAddress,
         ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
 
+    ProgramSection* clone() const;
+
 private:
     std::string mName;
     std::vector<Instruction*> mInstructions;

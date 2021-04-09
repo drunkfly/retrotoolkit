@@ -136,3 +136,8 @@ void Label::unsetAddress()
 {
     mAddress->unsetValue();
 }
+
+Instruction* Label::clone() const
+{
+    return new (heap()) Label(location(), mName);
+}

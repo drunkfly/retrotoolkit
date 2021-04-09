@@ -18,6 +18,8 @@ public:
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
+    Instruction* clone() const override;
+
 private:
     Expr* mValue;
 
@@ -29,13 +31,15 @@ private:
 class DEFB_STRING final : public Instruction
 {
 public:
-    DEFB_STRING(SourceLocation* location, const char* text);
+    DEFB_STRING(SourceLocation* location, const char* text, size_t length);
     ~DEFB_STRING() override;
 
     bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
     bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
+
+    Instruction* clone() const override;
 
 private:
     const char* mText;
@@ -57,6 +61,8 @@ public:
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
+    Instruction* clone() const override;
+
 private:
     Expr* mValue;
 
@@ -76,6 +82,8 @@ public:
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
 
+    Instruction* clone() const override;
+
 private:
     Expr* mValue;
 
@@ -94,6 +102,8 @@ public:
     bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
+
+    Instruction* clone() const override;
 
 private:
     Expr* mValue;

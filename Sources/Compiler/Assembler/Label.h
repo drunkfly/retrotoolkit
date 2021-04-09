@@ -27,6 +27,8 @@ public:
     void setAddress(size_t address);
     void unsetAddress();
 
+    Instruction* clone() const override;
+
 private:
     class SimpleAddress;
 

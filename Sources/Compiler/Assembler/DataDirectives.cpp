@@ -37,12 +37,17 @@ bool DEFB::emitCode(CodeEmitter* emitter,
     return true;
 }
 
+Instruction* DEFB::clone() const
+{
+    return new (heap()) DEFB(location(), mValue);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DEFB_STRING::DEFB_STRING(SourceLocation* location, const char* text)
+DEFB_STRING::DEFB_STRING(SourceLocation* location, const char* text, size_t length)
     : Instruction(location)
     , mText(text)
-    , mLength(strlen(text))
+    , mLength(length)
 {
 }
 
@@ -67,6 +72,11 @@ bool DEFB_STRING::emitCode(CodeEmitter* emitter, int64_t& nextAddress,
     emitter->emitBytes(location(), reinterpret_cast<const uint8_t*>(mText), mLength);
     nextAddress += mLength;
     return true;
+}
+
+Instruction* DEFB_STRING::clone() const
+{
+    return new (heap()) DEFB_STRING(location(), mText, mLength);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,6 +115,11 @@ bool DEFW::emitCode(CodeEmitter* emitter, int64_t& nextAddress,
 
     nextAddress += 2;
     return true;
+}
+
+Instruction* DEFW::clone() const
+{
+    return new (heap()) DEFW(location(), mValue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,6 +165,11 @@ bool DEFD::emitCode(CodeEmitter* emitter, int64_t& nextAddress,
     return true;
 }
 
+Instruction* DEFD::clone() const
+{
+    return new (heap()) DEFD(location(), mValue);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DEFS::DEFS(SourceLocation* location, Expr* value)
@@ -185,4 +205,9 @@ bool DEFS::emitCode(CodeEmitter* emitter, int64_t& nextAddress,
         emitter->emitByte(location(), 0);
     nextAddress += n;
     return true;
+}
+
+Instruction* DEFS::clone() const
+{
+    return new (heap()) DEFS(location(), mValue);
 }

@@ -39,3 +39,10 @@ bool MacroRepeat::emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionR
     // FIXME
     return false;
 }
+
+Instruction* MacroRepeat::clone() const
+{
+    MacroRepeat* copy = new (heap()) MacroRepeat(location());
+    copyInstructions(copy->mInstructions, mInstructions);
+    return copy;
+}

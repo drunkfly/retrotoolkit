@@ -28,6 +28,8 @@ public:
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const final override;
 
+    Instruction* clone() const override;
+
 private:
     Expr* mCondition;
     std::vector<Instruction*> mThenInstructions;

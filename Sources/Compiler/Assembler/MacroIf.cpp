@@ -93,3 +93,11 @@ bool MacroIf::emitCode(CodeEmitter* emitter,
 
     return true;
 }
+
+Instruction* MacroIf::clone() const
+{
+    MacroIf* copy = new (heap()) MacroIf(location(), mCondition);
+    copyInstructions(copy->mThenInstructions, mThenInstructions);
+    copyInstructions(copy->mElseInstructions, mElseInstructions);
+    return copy;
+}

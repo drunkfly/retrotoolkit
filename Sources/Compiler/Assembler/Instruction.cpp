@@ -64,3 +64,10 @@ void Instruction::unresolveLabel()
             break;
     }
 }
+
+void Instruction::copyInstructions(std::vector<Instruction*>& target, const std::vector<Instruction*>& source)
+{
+    target.reserve(target.size() + source.size());
+    for (Instruction* instruction : source)
+        target.emplace_back(instruction->clone());
+}

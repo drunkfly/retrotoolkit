@@ -419,7 +419,7 @@ void AssemblerParser::parseDefByte()
         if (mToken->id() == TOK_STRING) {
             const char* text = mToken->text();
             if (*text)
-                mContext->addInstruction(new (mHeap) DEFB_STRING(mToken->location(), text));
+                mContext->addInstruction(new (mHeap) DEFB_STRING(mToken->location(), text, strlen(text)));
             mToken = mToken->next();
         } else {
             auto e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();

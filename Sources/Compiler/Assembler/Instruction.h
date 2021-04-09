@@ -37,6 +37,10 @@ public:
     virtual bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const = 0;
 
+    virtual Instruction* clone() const = 0;
+
+    static void copyInstructions(std::vector<Instruction*>& target, const std::vector<Instruction*>& source);
+
 private:
     SourceLocation* mLocation;
 

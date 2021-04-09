@@ -89,3 +89,10 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress, ISection
     emitter->addSectionDebugInfo(mName, startAddress, Compression::None, (nextAddress - startAddress), {});
     return true;
 }
+
+ProgramSection* ProgramSection::clone() const
+{
+    ProgramSection* copy = new (heap()) ProgramSection(mName);
+    Instruction::copyInstructions(copy->mInstructions, mInstructions);
+    return copy;
+}
