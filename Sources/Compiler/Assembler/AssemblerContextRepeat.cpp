@@ -1,10 +1,13 @@
 #include "AssemblerContextRepeat.h"
 #include "Compiler/Assembler/MacroRepeat.h"
+#include "Compiler/Tree/Symbol.h"
+#include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Linker/ProgramSection.h"
 #include "Compiler/Token.h"
 #include "Compiler/CompilerError.h"
 
-AssemblerContextRepeat::AssemblerContextRepeat(AssemblerContext* prev, const Token* token, std::string var, Expr* count)
+AssemblerContextRepeat::AssemblerContextRepeat(AssemblerContext* prev,
+        const Token* token, SymbolTable* symbolTable, std::string var, Expr* count)
     : AssemblerContext(prev)
     , mVariable(std::move(var))
     , mCount(count)
@@ -16,8 +19,22 @@ AssemblerContextRepeat::AssemblerContextRepeat(AssemblerContext* prev, const Tok
     if (!currentSection())
         throw CompilerError(token->location(), "code or data not in a section.");
 
-    mMacro = new (heap()) MacroRepeat(token->location());
+    mMacro = new (heap()) MacroRepeat(token->location(), count);
     prev->addInstruction(mMacro);
+
+    if (!mVariable.empty()) {
+        auto symbol = new (heap()) RepeatVariableSymbol(token->location(), mVariable.c_str(), &mMacro->value());
+        if (!symbolTable->addLocalSymbol(symbol)) {
+            std::stringstream ss;
+            ss << "duplicate identifier \"" << symbol->name() << "\".";
+            throw CompilerError(symbol->location(), ss.str());
+        }
+        if (symbolTable->parent() && symbolTable->parent()->findSymbol(mVariable) != nullptr) {
+            std::stringstream ss;
+            ss << "duplicate identifier \"" << symbol->name() << "\".";
+            throw CompilerError(symbol->location(), ss.str());
+        }
+    }
 }
 
 bool AssemblerContextRepeat::isRepeat() const

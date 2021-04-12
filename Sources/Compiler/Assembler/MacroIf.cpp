@@ -17,16 +17,17 @@ void MacroIf::addElseInstruction(Instruction* instruction)
     mElseInstructions.emplace_back(instruction);
 }
 
-bool MacroIf::resolveLabels(size_t& address, std::unique_ptr<CompilerError>& resolveError)
+bool MacroIf::resolveLabels(size_t& address,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError)
 {
-    if (!mCondition->canEvaluateValue(nullptr, nullptr, resolveError))
+    if (!mCondition->canEvaluateValue(nullptr, sectionResolver, resolveError))
         return false;
 
-    auto result = mCondition->evaluateValue(nullptr, nullptr).number;
+    auto result = mCondition->evaluateValue(nullptr, sectionResolver).number;
     const std::vector<Instruction*>& instructions = (result ? mThenInstructions : mElseInstructions);
 
     for (const auto& instruction : instructions) {
-        if (!instruction->resolveLabel(address, resolveError))
+        if (!instruction->resolveLabel(address, sectionResolver, resolveError))
             return false;
     }
 
@@ -41,18 +42,19 @@ void MacroIf::unresolveLabels()
         instruction->unresolveLabel();
 }
 
-bool MacroIf::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const
+bool MacroIf::calculateSizeInBytes(size_t& outSize,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    if (!mCondition->canEvaluateValue(nullptr, nullptr, resolveError))
+    if (!mCondition->canEvaluateValue(nullptr, sectionResolver, resolveError))
         return false;
 
-    auto result = mCondition->evaluateValue(nullptr, nullptr).number;
+    auto result = mCondition->evaluateValue(nullptr, sectionResolver).number;
     const std::vector<Instruction*>& instructions = (result ? mThenInstructions : mElseInstructions);
 
     outSize = 0;
     for (const auto& instruction : instructions) {
         size_t size;
-        if (!instruction->calculateSizeInBytes(size, resolveError))
+        if (!instruction->calculateSizeInBytes(size, sectionResolver, resolveError))
             return false;
         outSize += size;
     }

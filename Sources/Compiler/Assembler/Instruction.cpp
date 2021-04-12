@@ -14,7 +14,8 @@ bool Instruction::isZ80Opcode() const
     return false;
 }
 
-bool Instruction::resolveLabel(size_t& address, std::unique_ptr<CompilerError>& resolveError)
+bool Instruction::resolveLabel(size_t& address,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError)
 {
     if (address > 0xffff)
         throw CompilerError(location(), "address is over 64K.");
@@ -25,18 +26,18 @@ bool Instruction::resolveLabel(size_t& address, std::unique_ptr<CompilerError>& 
             break;
 
         case Type::If:
-            if (!static_cast<MacroIf*>(this)->resolveLabels(address, resolveError))
+            if (!static_cast<MacroIf*>(this)->resolveLabels(address, sectionResolver, resolveError))
                 return false;
             break;
 
         case Type::Repeat:
-            if (!static_cast<MacroRepeat*>(this)->resolveLabels(address, resolveError))
+            if (!static_cast<MacroRepeat*>(this)->resolveLabels(address, sectionResolver, resolveError))
                 return false;
             break;
 
         case Type::Default: {
             size_t size;
-            if (!calculateSizeInBytes(size, resolveError))
+            if (!calculateSizeInBytes(size, sectionResolver, resolveError))
                 return false;
             address += size;
         }
@@ -49,7 +50,7 @@ void Instruction::unresolveLabel()
 {
     switch (type()) {
         case Type::Label:
-            static_cast<Label*>(this)->unsetAddress();
+            static_cast<Label*>(this)->unsetAddresses();
             break;
 
         case Type::If:
@@ -63,6 +64,22 @@ void Instruction::unresolveLabel()
         case Type::Default:
             break;
     }
+}
+
+void Instruction::resetCounters() const
+{
+}
+
+void Instruction::saveReadCounter() const
+{
+}
+
+void Instruction::restoreReadCounter() const
+{
+}
+
+void Instruction::advanceCounters() const
+{
 }
 
 void Instruction::copyInstructions(std::vector<Instruction*>& target, const std::vector<Instruction*>& source)

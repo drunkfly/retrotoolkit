@@ -48,6 +48,7 @@ TEST_CASE("case sensitivity in names", "[case]")
 {
     static const char source[] =
         "#section main\n"
+        "db 0\n"
         "#section mAiN\n"
         "equ1 equ 1\n"
         "eQu1 equ 2\n"

@@ -9,5 +9,6 @@
 
 DataBlob assemble(ErrorConsumer& errorConsumer, const char* source);
 DataBlob assemble2(ErrorConsumer& errorConsumer, const char* source1, const char* source2);
+DataBlob assemble3(ErrorConsumer& errorConsumer, const char* source1, const char* source2, const char* source3);
 
 #endif

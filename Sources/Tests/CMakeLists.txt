@@ -24,6 +24,7 @@ add(Tests
         IfTests.cpp
         LabelTests.cpp
         OpcodeTests.cpp
+        RepeatTests.cpp
         main.cpp
     )
 

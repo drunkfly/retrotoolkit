@@ -20,10 +20,12 @@ public:
     void addThenInstruction(Instruction* instruction);
     void addElseInstruction(Instruction* instruction);
 
-    bool resolveLabels(size_t& address, std::unique_ptr<CompilerError>& resolveError);
+    bool resolveLabels(size_t& address,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError);
     void unresolveLabels();
 
-    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const final override;
+    bool calculateSizeInBytes(size_t& outSize,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const final override;
     bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const final override;

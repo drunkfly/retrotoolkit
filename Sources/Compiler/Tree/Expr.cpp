@@ -280,6 +280,9 @@ bool ExprIdentifier::canEvaluate(std::unique_ptr<CompilerError>& resolveError) c
             return static_cast<ConditionalConstantSymbol*>(symbol)->
                 canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 
+        case Symbol::RepeatVariable:
+            return true;
+
         case Symbol::Label: {
             auto label = static_cast<LabelSymbol*>(symbol)->label();
             if (!label->hasAddress()) {
@@ -327,6 +330,9 @@ Value ExprIdentifier::evaluate() const
     switch (symbol->type()) {
         case Symbol::Constant:
             return static_cast<ConstantSymbol*>(symbol)->value()->evaluateValue(mCurrentAddress, mSectionResolver);
+
+        case Symbol::RepeatVariable:
+            return *static_cast<RepeatVariableSymbol*>(symbol)->value();
 
         case Symbol::ConditionalConstant: {
             Expr* expr = static_cast<ConditionalConstantSymbol*>(symbol)->

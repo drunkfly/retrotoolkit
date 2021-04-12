@@ -68,7 +68,7 @@ namespace
                 if (section->compression == Compression::None) {
                     size_t size;
                     std::unique_ptr<CompilerError> error;
-                    if (!section->programSection->calculateSizeInBytes(size, error))
+                    if (!section->programSection->calculateSizeInBytes(size, this, error))
                         continue;
 
                     section->resolvedSize = size;
@@ -225,7 +225,7 @@ namespace
             for (auto section : mSections) {
                 if (section->compression == Compression::None && !section->resolvedSize) {
                     size_t size;
-                    if (!section->programSection->calculateSizeInBytes(size, resolveError))
+                    if (!section->programSection->calculateSizeInBytes(size, this, resolveError))
                         hasUnresolved = true;
                     else {
                         section->resolvedSize = size;
@@ -240,7 +240,7 @@ namespace
                 }
 
                 if (!section->labelsResolved && section->resolvedBase) {
-                    if (!section->programSection->resolveLabels(*section->resolvedBase, resolveError)) {
+                    if (!section->programSection->resolveLabels(*section->resolvedBase, this, resolveError)) {
                         section->programSection->unresolveLabels();
                         hasUnresolved = true;
                     } else {

@@ -29,15 +29,21 @@ public:
 
     SourceLocation* location() const { return mLocation; }
 
-    bool resolveLabel(size_t& address, std::unique_ptr<CompilerError>& resolveError);
+    bool resolveLabel(size_t& address, ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError);
     void unresolveLabel();
 
-    virtual bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const = 0;
+    virtual bool calculateSizeInBytes(size_t& outSize,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const = 0;
     virtual bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const = 0;
     virtual bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const = 0;
 
     virtual Instruction* clone() const = 0;
+
+    virtual void resetCounters() const;
+    virtual void saveReadCounter() const;
+    virtual void restoreReadCounter() const;
+    virtual void advanceCounters() const;
 
     static void copyInstructions(std::vector<Instruction*>& target, const std::vector<Instruction*>& source);
 

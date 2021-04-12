@@ -15,7 +15,7 @@ DEFB::~DEFB()
 {
 }
 
-bool DEFB::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
+bool DEFB::calculateSizeInBytes(size_t& outSize, ISectionResolver*, std::unique_ptr<CompilerError>&) const
 {
     outSize = 1;
     return true;
@@ -55,7 +55,7 @@ DEFB_STRING::~DEFB_STRING()
 {
 }
 
-bool DEFB_STRING::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
+bool DEFB_STRING::calculateSizeInBytes(size_t& outSize, ISectionResolver*, std::unique_ptr<CompilerError>&) const
 {
     outSize = mLength;
     return true;
@@ -91,7 +91,7 @@ DEFW::~DEFW()
 {
 }
 
-bool DEFW::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
+bool DEFW::calculateSizeInBytes(size_t& outSize, ISectionResolver*, std::unique_ptr<CompilerError>&) const
 {
     outSize = 2;
     return true;
@@ -134,7 +134,7 @@ DEFD::~DEFD()
 {
 }
 
-bool DEFD::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
+bool DEFD::calculateSizeInBytes(size_t& outSize, ISectionResolver*, std::unique_ptr<CompilerError>&) const
 {
     outSize = 4;
     return true;
@@ -182,7 +182,7 @@ DEFS::~DEFS()
 {
 }
 
-bool DEFS::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const
+bool DEFS::calculateSizeInBytes(size_t& outSize, ISectionResolver*, std::unique_ptr<CompilerError>& resolveError) const
 {
     if (!mValue->canEvaluateValue(nullptr, nullptr, resolveError))
         return false;

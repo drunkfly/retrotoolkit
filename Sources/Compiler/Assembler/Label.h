@@ -3,7 +3,7 @@
 
 #include "Compiler/Assembler/Instruction.h"
 
-class Label : public Instruction
+class Label final : public Instruction
 {
 public:
     class Address;
@@ -15,7 +15,8 @@ public:
 
     const char* name() const { return mName; }
 
-    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const override;
+    bool calculateSizeInBytes(size_t& outSize,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const override;
     bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const override;
     bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
         std::unique_ptr<CompilerError>& resolveError) const override;
@@ -25,15 +26,21 @@ public:
     size_t addressValue() const;
 
     void setAddress(size_t address);
-    void unsetAddress();
+    void unsetAddresses();
+
+    void resetCounters() const final override;
+    void saveReadCounter() const final override;
+    void restoreReadCounter() const final override;
+    void advanceCounters() const final override;
 
     Instruction* clone() const override;
 
 private:
-    class SimpleAddress;
-
     const char* mName;
-    Address* mAddress;
+    mutable Address* mFirstAddress;
+    mutable Address* mCurrentReadAddress;
+    mutable Address* mCurrentWriteAddress;
+    mutable Address* mSavedReadAddress;
 
     DISABLE_COPY(Label);
 };

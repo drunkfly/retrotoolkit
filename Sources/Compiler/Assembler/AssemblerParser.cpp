@@ -224,14 +224,10 @@ void AssemblerParser::parseRepeatDecl()
         expectNotEol();
 
         variable = consumeIdentifier();
-        //if (!symbolTable->mContext->hasVariable(variable) || mProgram->isDeclared(variable))
-        //    error(tr("duplicate identifier '%1'").arg(variable.c_str()));
     }
 
-    //auto parentCodeEmitter = mContext->codeEmitter();
-
-    auto context = pushContext<AssemblerContextRepeat>(token, std::move(variable), e);
-    //parentCodeEmitter->emit<RepeatMacro>(token, context->codeEmitterSharedPtr());
+    mSymbolTable = new (mHeap) SymbolTable(mSymbolTable, true);
+    pushContext<AssemblerContextRepeat>(token, mSymbolTable, std::move(variable), e);
 
     expectEol();
 }
@@ -242,6 +238,7 @@ void AssemblerParser::parseEndRepeatDecl()
         throw CompilerError(mToken->location(), "mismatched 'endrepeat'.");
 
     popContext();
+    mSymbolTable = mSymbolTable->parent();
 
     mToken = mToken->next();
     expectEol();

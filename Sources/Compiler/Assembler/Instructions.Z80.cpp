@@ -464,10 +464,11 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         int64_t nextAddress = 0; (void)nextAddress; \
         return OP##_bytes.size(); \
     } \
-    bool Z80::OP::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
+    bool Z80::OP::calculateSizeInBytes(size_t& outSize, \
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
-        ISectionResolver* sectionResolver = nullptr; (void)sectionResolver; \
+        (void)sectionResolver; \
         int64_t nextAddress = 0; (void)nextAddress; \
         outSize = OP##_bytes.size(); \
         return true; \
@@ -499,10 +500,11 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         int64_t nextAddress = 0; (void)nextAddress; \
         return decltype(arrayType BYTES)::Size; \
     } \
-    bool Z80::OP##_##OP1::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
+    bool Z80::OP##_##OP1::calculateSizeInBytes(size_t& outSize, \
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
-        ISectionResolver* sectionResolver = nullptr; (void)sectionResolver; \
+        (void)sectionResolver; \
         int64_t nextAddress = 0; (void)nextAddress; \
         outSize = decltype(arrayType BYTES)::Size; \
         return true; \
@@ -538,10 +540,11 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         int64_t nextAddress = 0; (void)nextAddress; \
         return decltype(arrayType BYTES)::Size; \
     } \
-    bool Z80::OP##_##OP1##_##OP2::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const \
+    bool Z80::OP##_##OP1##_##OP2::calculateSizeInBytes(size_t& outSize, \
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>&) const \
     { \
         int high; (void)high; \
-        ISectionResolver* sectionResolver = nullptr; (void)sectionResolver; \
+        (void)sectionResolver; \
         int64_t nextAddress = 0; (void)nextAddress; \
         outSize = decltype(arrayType BYTES)::Size; \
         return true; \

@@ -9,7 +9,8 @@ class MacroRepeat;
 class AssemblerContextRepeat final : public AssemblerContext
 {
 public:
-    AssemblerContextRepeat(AssemblerContext* prev, const Token* token, std::string var, Expr* count);
+    AssemblerContextRepeat(AssemblerContext* prev,
+        const Token* token, SymbolTable* symbolTable, std::string var, Expr* count);
 
     bool isRepeat() const final override;
     bool hasVariable(const std::string& name) const override;

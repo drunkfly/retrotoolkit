@@ -14,25 +14,35 @@ ProgramSection::~ProgramSection()
 {
 }
 
-bool ProgramSection::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const
+bool ProgramSection::calculateSizeInBytes(size_t& outSize,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
+    for (const auto& instruction : mInstructions)
+        instruction->resetCounters();
+
     outSize = 0;
     for (const auto& instruction : mInstructions) {
         size_t size;
-        if (!instruction->calculateSizeInBytes(size, resolveError))
+        if (!instruction->calculateSizeInBytes(size, sectionResolver, resolveError))
             return false;
         outSize += size;
     }
+
     mCalculatedSize = outSize;
     return true;
 }
 
-bool ProgramSection::resolveLabels(size_t address, std::unique_ptr<CompilerError>& resolveError)
+bool ProgramSection::resolveLabels(size_t address,
+    ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError)
 {
+    for (const auto& instruction : mInstructions)
+        instruction->resetCounters();
+
     for (const auto& instruction : mInstructions) {
-        if (!instruction->resolveLabel(address, resolveError))
+        if (!instruction->resolveLabel(address, sectionResolver, resolveError))
             return false;
     }
+
     return true;
 }
 
@@ -62,6 +72,9 @@ bool ProgramSection::emitCode(CodeEmitter* emitter, size_t baseAddress, ISection
 {
     int64_t nextAddress = int64_t(baseAddress);
     int64_t startAddress = nextAddress;
+
+    for (const auto& instruction : mInstructions)
+        instruction->resetCounters();
 
     for (const auto& instruction : mInstructions) {
         if (nextAddress > 0xffff) {

@@ -17,9 +17,11 @@ public:
 
     const std::string& name() const { return mName; }
 
-    bool calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>& resolveError) const;
+    bool calculateSizeInBytes(size_t& outSize,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
 
-    bool resolveLabels(size_t address, std::unique_ptr<CompilerError>& resolveError);
+    bool resolveLabels(size_t address,
+        ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError);
     void unresolveLabels();
 
     void addInstruction(Instruction* instruction);

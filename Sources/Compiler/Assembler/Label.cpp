@@ -1,53 +1,26 @@
 #include "Label.h"
 #include "Compiler/CompilerError.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class Label::Address : public GCObject
+class Label::Address final : public GCObject
 {
 public:
-    Address() = default;
-    virtual ~Address() = default;
+    Address* next;
+    Address* prevRead;
 
-    virtual bool isValid() const = 0;
-    virtual size_t value() const = 0;
-    virtual void setValue(size_t value) = 0;
-    virtual void unsetValue() = 0;
-
-protected:
-    virtual Address* clone() const = 0;
-
-    friend class Label;
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class Label::SimpleAddress final : public Address
-{
-public:
-    SimpleAddress()
-        : mValue(0)
+    Address()
+        : next(nullptr)
+        , prevRead(nullptr)
+        , mValue(0)
         , mIsValid(false)
     {
     }
 
-    SimpleAddress(const SimpleAddress& other)
-        : mValue(other.mValue)
-        , mIsValid(other.mIsValid)
-    {
-    }
-
-    Address* clone() const final override
-    {
-        return new (heap()) SimpleAddress(*this);
-    }
-
-    bool isValid() const final override
+    bool isValid() const
     {
         return mIsValid;
     }
 
-    size_t value() const final override
+    size_t value() const
     {
         if (!mIsValid) {
             assert(false);
@@ -56,7 +29,7 @@ public:
         return mValue;
     }
 
-    void setValue(size_t value) final override
+    void setValue(size_t value)
     {
         if (mIsValid) {
             assert(false);
@@ -66,7 +39,7 @@ public:
         mIsValid = true;
     }
 
-    void unsetValue() final override
+    void unsetValue()
     {
         mIsValid = false;
     }
@@ -74,6 +47,8 @@ public:
 private:
     size_t mValue;
     bool mIsValid;
+
+    DISABLE_COPY(Address);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,7 +56,10 @@ private:
 Label::Label(SourceLocation* location, const char* name)
     : Instruction(location)
     , mName(name)
-    , mAddress(new (heap()) SimpleAddress())
+    , mFirstAddress(new (heap()) Address())
+    , mCurrentReadAddress(mFirstAddress)
+    , mCurrentWriteAddress(mFirstAddress)
+    , mSavedReadAddress(nullptr)
 {
     registerFinalizer();
 }
@@ -95,7 +73,7 @@ Instruction::Type Label::type() const
     return Type::Label;
 }
 
-bool Label::calculateSizeInBytes(size_t& outSize, std::unique_ptr<CompilerError>&) const
+bool Label::calculateSizeInBytes(size_t& outSize, ISectionResolver*, std::unique_ptr<CompilerError>&) const
 {
     outSize = 0;
     return true;
@@ -113,28 +91,62 @@ bool Label::emitCode(CodeEmitter*, int64_t&, ISectionResolver*, std::unique_ptr<
 
 bool Label::hasAddress() const
 {
-    return mAddress->isValid();
+    return mCurrentReadAddress->isValid();
 }
 
 Label::Address* Label::address() const
 {
-    return mAddress;
+    return mCurrentReadAddress;
 }
 
 size_t Label::addressValue() const
 {
-    assert(mAddress && mAddress->isValid());
-    return mAddress->value();
+    assert(mCurrentReadAddress && mCurrentReadAddress->isValid());
+    return mCurrentReadAddress->value();
 }
 
 void Label::setAddress(size_t address)
 {
-    mAddress->setValue(address);
+    mCurrentWriteAddress->setValue(address);
 }
 
-void Label::unsetAddress()
+void Label::unsetAddresses()
 {
-    mAddress->unsetValue();
+    for (Address* addr = mFirstAddress; addr; addr = addr->next)
+        addr->unsetValue();
+}
+
+void Label::resetCounters() const
+{
+    mCurrentReadAddress = mFirstAddress;
+    mCurrentWriteAddress = mFirstAddress;
+    mSavedReadAddress = nullptr;
+}
+
+void Label::saveReadCounter() const
+{
+    mCurrentReadAddress->prevRead = mSavedReadAddress;
+    mSavedReadAddress = mCurrentReadAddress;
+}
+
+void Label::restoreReadCounter() const
+{
+    mCurrentReadAddress = mSavedReadAddress;
+    mSavedReadAddress = mCurrentReadAddress->prevRead;
+}
+
+void Label::advanceCounters() const
+{
+    if (mCurrentWriteAddress->next)
+        mCurrentWriteAddress = mCurrentWriteAddress->next;
+    else {
+        auto addr = new (heap()) Address();
+        mCurrentWriteAddress->next = addr;
+        mCurrentWriteAddress = addr;
+    }
+
+    assert(mCurrentReadAddress->next);
+    mCurrentReadAddress = mCurrentReadAddress->next;
 }
 
 Instruction* Label::clone() const

@@ -430,7 +430,7 @@ namespace Z80
         { \
         public: \
             explicit OP(SourceLocation* location) : Opcode0(location) {} \
-            bool calculateSizeInBytes(size_t& outSize, \
+            bool calculateSizeInBytes(size_t& outSize, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
             bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
             bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
@@ -445,7 +445,7 @@ namespace Z80
         { \
         public: \
             OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
-            bool calculateSizeInBytes(size_t& outSize, \
+            bool calculateSizeInBytes(size_t& outSize, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
             bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
             bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
@@ -460,7 +460,7 @@ namespace Z80
         { \
         public: \
             OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
-            bool calculateSizeInBytes(size_t& outSize, \
+            bool calculateSizeInBytes(size_t& outSize, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
             bool canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) const final override; \
             bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
