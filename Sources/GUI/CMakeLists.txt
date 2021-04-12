@@ -12,6 +12,7 @@ add(RetroToolkit
         Compiler
         RunTests
     SOURCES
+        Resources/resources.qrc
         Util/ComboBox.cpp
         Util/ComboBox.h
         Util/Conversion.cpp

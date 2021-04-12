@@ -34,6 +34,8 @@ private:
     void updateUi();
     void updateConfigCombo();
 
+    void openUsefulLink();
+
     Q_SLOT void on_actionNewProject_triggered();
     Q_SLOT void on_actionOpenProject_triggered();
 

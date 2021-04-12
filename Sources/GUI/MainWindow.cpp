@@ -29,6 +29,11 @@ MainWindow::MainWindow()
             /* FIXME */
         });
 
+    for (QMenu* menu : { mUi->menuTutorials, mUi->menuReferences, mUi->menuBooks, mUi->menuCodeSnippets }) {
+        for (QAction* action : menu->actions())
+            connect(action, &QAction::triggered, this, &MainWindow::openUsefulLink);
+    }
+
     updateUi();
 }
 
@@ -142,6 +147,13 @@ void MainWindow::updateConfigCombo()
         if (!selected.isValid() || !comboSelectItem(mConfigCombo, selected))
             mConfigCombo->setCurrentIndex(0);
     }
+}
+
+void MainWindow::openUsefulLink()
+{
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (action)
+        QDesktopServices::openUrl(action->whatsThis());
 }
 
 void MainWindow::on_actionNewProject_triggered()

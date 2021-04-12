@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="resources">
+    <file>fatcow16x16/external.png</file>
+    <file>fatcow16x16/world_link.png</file>
+  </qresource>
+</RCC>
