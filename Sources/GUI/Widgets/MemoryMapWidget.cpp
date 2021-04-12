@@ -2,6 +2,7 @@
 #include "Compiler/Linker/CompiledOutput.h"
 #include "Compiler/Linker/DebugInformation.h"
 #include "GUI/Util/Conversion.h"
+#include <QFontDatabase>
 
 MemoryMapWidget::MemoryMapWidget(QWidget* parent)
     : QTreeWidget(parent)

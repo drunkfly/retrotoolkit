@@ -2,6 +2,7 @@
 #define GUI_WIDGETS_LOGWIDGET_H
 
 #include "GUI/Common.h"
+#include <QPlainTextEdit>
 
 class LogWidget : public QPlainTextEdit
 {

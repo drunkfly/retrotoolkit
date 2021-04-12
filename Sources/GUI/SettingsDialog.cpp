@@ -4,6 +4,7 @@
 #include "GUI/Util/Conversion.h"
 #include "GUI/Settings.h"
 #include "ui_SettingsDialog.h"
+#include <QFileDialog>
 
 enum class SettingsDialog::JdkError : int
 {

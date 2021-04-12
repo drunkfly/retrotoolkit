@@ -11,6 +11,8 @@
 #include "Compiler/Project.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "ui_MainWindow.h"
+#include <QFileDialog>
+#include <QDesktopServices>
 
 MainWindow::MainWindow()
     : mUi(new Ui_MainWindow)

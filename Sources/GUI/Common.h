@@ -11,14 +11,9 @@
 #include <QApplication>
 #include <QProcess>
 #include <QFileInfo>
-#include <QFileDialog>
 #include <QComboBox>
-#include <QMediaPlayer>
 #include <QLabel>
-#include <QPlainTextEdit>
-#include <QScrollBar>
 #include <QHeaderView>
-#include <QFontDatabase>
 #include <QVariant>
 #include <QTreeWidget>
 #include <QString>

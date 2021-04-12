@@ -1,5 +1,6 @@
 #include "LogWidget.h"
 #include "GUI/Util/Conversion.h"
+#include <QScrollBar>
 
 LogWidget::LogWidget(QWidget* parent)
     : QPlainTextEdit(parent)
