@@ -283,7 +283,7 @@ TEST_CASE("equ with label in repeat 2", "[repeat]")
 
     ErrorConsumer errorConsumer;
     DataBlob actual = assemble(errorConsumer, source);
-    REQUIRE(errorConsumer.errorMessage() == "source:3: value for label \"label2\" is not available in this context.");
+    REQUIRE(errorConsumer.errorMessage() == "source:3: unable to resolve address for label \"label2\".");
 }
 
 TEST_CASE("equ with label in repeat 3", "[repeat]")

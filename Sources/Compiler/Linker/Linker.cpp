@@ -66,10 +66,49 @@ namespace
 
             for (auto section : mSections) {
                 if (section->compression == Compression::None) {
-                    size_t size;
-                    std::unique_ptr<CompilerError> error;
-                    if (!section->programSection->calculateSizeInBytes(size, this, error))
-                        continue;
+                    size_t size = 0;
+                    bool sizeResolved = false;
+                    if (section->resolvedBase.has_value()) {
+                        std::unique_ptr<CompilerError> error;
+                        size_t address = *section->resolvedBase;
+                        if (!section->programSection->resolveLabels(address, this, error))
+                            section->programSection->unresolveLabels();
+                        else {
+                            section->labelsResolved = true;
+                            size = address - *section->resolvedBase;
+                            sizeResolved = true;
+                          #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                            { std::stringstream ss;
+                            ss << "resolved labels in \"" << section->programSection->name()
+                                << "\" in file \"" << file()->name << "\".\n";
+                            OutputDebugStringA(ss.str().c_str()); }
+                          #endif
+                        }
+                    }
+
+                    if (!sizeResolved) {
+                        std::unique_ptr<CompilerError> error;
+                        if (!section->programSection->calculateSizeInBytes(size, this, error))
+                            continue;
+                    } else {
+                      #ifndef NDEBUG
+                        std::unique_ptr<CompilerError> error;
+                        size_t calculatedSize = 0;
+                        if (!section->programSection->calculateSizeInBytes(calculatedSize, this, error)) {
+                            assert(false);
+                            throw* error;
+                        }
+                        if (calculatedSize != size) {
+                            assert(false);
+                            std::stringstream ss;
+                            ss << "internal compiler error: calculated size of section \""
+                                << section->programSection->name() << "\" in file \"" << file->name
+                                << "\" differs from resolved size ("
+                                << calculatedSize << " != " << size << ").";
+                            throw CompilerError(section->location, ss.str());
+                        }
+                      #endif
+                    }
 
                     section->resolvedSize = size;
                   #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
@@ -224,8 +263,48 @@ namespace
 
             for (auto section : mSections) {
                 if (section->compression == Compression::None && !section->resolvedSize) {
-                    size_t size;
-                    if (!section->programSection->calculateSizeInBytes(size, this, resolveError))
+                    size_t size = 0;
+                    bool sizeResolved = false;
+                    if (section->resolvedBase.has_value()) {
+                        std::unique_ptr<CompilerError> error;
+                        size_t address = *section->resolvedBase;
+                        if (!section->programSection->resolveLabels(address, this, error))
+                            section->programSection->unresolveLabels();
+                        else {
+                            section->labelsResolved = true;
+                            size = address - *section->resolvedBase;
+                            sizeResolved = true;
+                          #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+                            { std::stringstream ss;
+                            ss << "resolved labels in \"" << section->programSection->name()
+                                << "\" in file \"" << file()->name << "\".\n";
+                            OutputDebugStringA(ss.str().c_str()); }
+                          #endif
+                        }
+                    }
+
+                    if (!sizeResolved)
+                        sizeResolved = section->programSection->calculateSizeInBytes(size, this, resolveError);
+                    else {
+                      #ifndef NDEBUG
+                        size_t calculatedSize = 0;
+                        if (!section->programSection->calculateSizeInBytes(calculatedSize, this, resolveError)) {
+                            assert(false);
+                            throw* resolveError;
+                        }
+                        if (calculatedSize != size) {
+                            assert(false);
+                            std::stringstream ss;
+                            ss << "internal compiler error: calculated size of section \""
+                                << section->programSection->name() << "\" in file \"" << file()->name
+                                << "\" differs from resolved size ("
+                                << calculatedSize << " != " << size << ").";
+                            throw CompilerError(section->location, ss.str());
+                        }
+                      #endif
+                    }
+
+                    if (!sizeResolved)
                         hasUnresolved = true;
                     else {
                         section->resolvedSize = size;
@@ -240,7 +319,8 @@ namespace
                 }
 
                 if (!section->labelsResolved && section->resolvedBase) {
-                    if (!section->programSection->resolveLabels(*section->resolvedBase, this, resolveError)) {
+                    size_t address = *section->resolvedBase;
+                    if (!section->programSection->resolveLabels(address, this, resolveError)) {
                         section->programSection->unresolveLabels();
                         hasUnresolved = true;
                     } else {
@@ -488,6 +568,7 @@ namespace
             bool autoOffset = (sectionInfo->fileOffset && *sectionInfo->fileOffset == "auto");
 
             auto linkerSection = new (heap()) LinkerSection();
+            linkerSection->location = sectionInfo->location;
             linkerSection->programSection = section;
             linkerSection->base = tryParseExpression(sectionInfo->baseLocation, sectionInfo->base);
             linkerSection->compressedCode = nullptr;

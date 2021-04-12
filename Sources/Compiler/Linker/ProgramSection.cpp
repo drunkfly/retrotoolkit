@@ -32,7 +32,7 @@ bool ProgramSection::calculateSizeInBytes(size_t& outSize,
     return true;
 }
 
-bool ProgramSection::resolveLabels(size_t address,
+bool ProgramSection::resolveLabels(size_t& address,
     ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError)
 {
     for (const auto& instruction : mInstructions)

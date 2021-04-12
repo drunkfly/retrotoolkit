@@ -20,13 +20,15 @@ std::string ErrorConsumer::errorMessage() const
         return std::string();
 
     std::stringstream ss;
-    auto file = mError->location()->file();
-    if (file) {
-        ss << file->name().string();
-        ss << ':';
+    if (mError->location()) {
+        auto file = mError->location()->file();
+        if (file) {
+            ss << file->name().string();
+            ss << ':';
+        }
+        ss << mError->location()->line();
+        ss << ": ";
     }
-    ss << mError->location()->line();
-    ss << ": ";
     ss << mError->message();
     return ss.str();
 }

@@ -20,7 +20,7 @@ public:
     bool calculateSizeInBytes(size_t& outSize,
         ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
 
-    bool resolveLabels(size_t address,
+    bool resolveLabels(size_t& address,
         ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError);
     void unresolveLabels();
 
