@@ -96,6 +96,38 @@ bool MacroIf::emitCode(CodeEmitter* emitter,
     return true;
 }
 
+void MacroIf::resetCounters() const
+{
+    for (const auto& instruction : mThenInstructions)
+        instruction->resetCounters();
+    for (const auto& instruction : mElseInstructions)
+        instruction->resetCounters();
+}
+
+void MacroIf::saveReadCounter() const
+{
+    for (const auto& instruction : mThenInstructions)
+        instruction->saveReadCounter();
+    for (const auto& instruction : mElseInstructions)
+        instruction->saveReadCounter();
+}
+
+void MacroIf::restoreReadCounter() const
+{
+    for (const auto& instruction : mThenInstructions)
+        instruction->restoreReadCounter();
+    for (const auto& instruction : mElseInstructions)
+        instruction->restoreReadCounter();
+}
+
+void MacroIf::advanceCounters() const
+{
+    for (const auto& instruction : mThenInstructions)
+        instruction->advanceCounters();
+    for (const auto& instruction : mElseInstructions)
+        instruction->advanceCounters();
+}
+
 Instruction* MacroIf::clone() const
 {
     MacroIf* copy = new (heap()) MacroIf(location(), mCondition);

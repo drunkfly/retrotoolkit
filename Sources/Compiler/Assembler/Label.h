@@ -36,11 +36,13 @@ public:
     Instruction* clone() const override;
 
 private:
+    class StackEntry;
+
     const char* mName;
     mutable Address* mFirstAddress;
     mutable Address* mCurrentReadAddress;
     mutable Address* mCurrentWriteAddress;
-    mutable Address* mSavedReadAddress;
+    mutable StackEntry* mSavedReadAddresses;
 
     DISABLE_COPY(Label);
 };

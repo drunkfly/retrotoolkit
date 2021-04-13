@@ -98,8 +98,11 @@ bool ConditionalLabelSymbol::canEvaluateValue(const int64_t* currentAddress,
 
     for (const auto& it : mEntries) {
         bool isThis = it.condition->evaluateValue(currentAddress, sectionResolver).number != 0;
-        if (isThis && !it.label->hasAddress())
-            return false;
+        if (isThis && !it.label->hasAddress()) {
+            std::stringstream ss;
+            ss << "unable to resolve address for label \"" << it.label->name() << "\".";
+            resolveError = std::make_unique<CompilerError>(it.label->location(), ss.str());
+        }
     }
 
     return true;

@@ -53,9 +53,8 @@ bool MacroRepeat::calculateSizeInBytes(size_t& outSize,
         return false;
 
     auto count = mCount->evaluateValue(nullptr, sectionResolver).number;
-    if (count <= 0) {
+    if (count <= 0)
         return true;
-    }
 
     saveReadCounter();
 

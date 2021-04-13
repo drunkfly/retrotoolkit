@@ -68,7 +68,7 @@ namespace
                 if (section->compression == Compression::None) {
                     size_t size = 0;
                     bool sizeResolved = false;
-                    if (section->resolvedBase.has_value()) {
+                    if (!section->labelsResolved && section->resolvedBase.has_value()) {
                         std::unique_ptr<CompilerError> error;
                         size_t address = *section->resolvedBase;
                         if (!section->programSection->resolveLabels(address, this, error))
@@ -80,7 +80,7 @@ namespace
                           #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                             { std::stringstream ss;
                             ss << "resolved labels in \"" << section->programSection->name()
-                                << "\" in file \"" << file()->name << "\".\n";
+                                << "\" in file \"" << file->name << "\".\n";
                             OutputDebugStringA(ss.str().c_str()); }
                           #endif
                         }
@@ -265,7 +265,7 @@ namespace
                 if (section->compression == Compression::None && !section->resolvedSize) {
                     size_t size = 0;
                     bool sizeResolved = false;
-                    if (section->resolvedBase.has_value()) {
+                    if (!section->labelsResolved && section->resolvedBase.has_value()) {
                         std::unique_ptr<CompilerError> error;
                         size_t address = *section->resolvedBase;
                         if (!section->programSection->resolveLabels(address, this, error))

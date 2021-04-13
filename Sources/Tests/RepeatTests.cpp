@@ -690,6 +690,88 @@ TEST_CASE("local labels in repeat 3", "[repeat]")
     REQUIRE(!actual.hasFiles());
 }
 
+TEST_CASE("local labels in repeat 4", "[repeat]")
+{
+    static const char source[] =
+        "#section main_0xff00\n"
+        "label:\n"
+        "#repeat 2, cnt1\n"
+        "@@1 db 0x08|cnt1\n"
+        "@@2 db 0x04|cnt1\n"
+        "dw @@1\n"
+        "dw @@2\n"
+        "#repeat 2, cnt2\n"
+        "#if cnt2 == 0\n"
+        "@@3 db ((0x08|cnt1)<<4)|(cnt2|0x08)\n"
+        "    db ((0x04|cnt1)<<4)|(cnt2|0x04)\n"
+        "#endif\n"
+        "dw @@3\n"
+        "#if cnt2 == 1\n"
+        "@@3 db ((0x08|cnt1)<<4)|(cnt2|0x08)\n"
+        "    db ((0x04|cnt1)<<4)|(cnt2|0x04)\n"
+        "#endif\n"
+        "dw @@2\n"
+        "#endrepeat\n"
+        "dw @@1\n"
+        "dw @@2\n"
+        "#endrepeat\n"
+        ;
+
+    static const unsigned char binary[] = {
+        0x08, // ff00
+        0x04, // ff01
+        0x00, // ff02
+        0xff, // ff03
+        0x01, // ff04
+        0xff, // ff05
+        0x88, // ff06
+        0x44, // ff07
+        0x06, // ff08
+        0xff, // ff09
+        0x01, // ff0a
+        0xff, // ff0b
+        0x89, // ff0c
+        0x45, // ff0d
+        0x0c, // ff0e
+        0xff, // ff0f
+        0x01, // ff10
+        0xff, // ff11
+        0x00, // ff12
+        0xff, // ff13
+        0x01, // ff14
+        0xff, // ff15
+        0x09, // ff16
+        0x05, // ff17
+        0x16, // ff18
+        0xff, // ff19
+        0x17, // ff1a
+        0xff, // ff1b
+        0x98, // ff1c
+        0x54, // ff1d
+        0x1c, // ff1e
+        0xff, // ff1f
+        0x17, // ff20
+        0xff, // ff21
+        0x99, // ff22
+        0x55, // ff23
+        0x22, // ff24
+        0xff, // ff25
+        0x17, // ff26
+        0xff, // ff27
+        0x16, // ff28
+        0xff, // ff29
+        0x17, // ff2a
+        0xff, // ff2b
+    };
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    DataBlob expected(binary, sizeof(binary));
+    REQUIRE(errorConsumer.errorMessage() == "");
+    REQUIRE(actual == expected);
+    REQUIRE(!actual.hasFiles());
+}
+
 TEST_CASE("global labels in repeat 1", "[repeat]")
 {
     static const char source[] =
