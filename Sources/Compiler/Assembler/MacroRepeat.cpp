@@ -22,7 +22,8 @@ bool MacroRepeat::resolveLabels(size_t& address,
     if (count <= 0)
         return true;
 
-    saveReadCounter();
+    for (const auto& instruction : mInstructions)
+        instruction->saveReadCounter();
 
     for (uint64_t i = 0; i < count; i++) {
         mValue = Value(int64_t(i));
@@ -30,10 +31,14 @@ bool MacroRepeat::resolveLabels(size_t& address,
             if (!instruction->resolveLabel(address, sectionResolver, resolveError))
                 return false;
         }
-        advanceCounters();
+
+        for (const auto& instruction : mInstructions)
+            instruction->advanceCounters();
     }
 
-    restoreReadCounter();
+    mValue = Value(0);
+    for (const auto& instruction : mInstructions)
+        instruction->restoreReadCounter();
 
     return true;
 }
@@ -56,7 +61,8 @@ bool MacroRepeat::calculateSizeInBytes(size_t& outSize,
     if (count <= 0)
         return true;
 
-    saveReadCounter();
+    for (const auto& instruction : mInstructions)
+        instruction->saveReadCounter();
 
     for (uint64_t i = 0; i < count; i++) {
         mValue = Value(int64_t(i));
@@ -66,10 +72,14 @@ bool MacroRepeat::calculateSizeInBytes(size_t& outSize,
                 return false;
             outSize += size;
         }
-        advanceCounters();
+
+        for (const auto& instruction : mInstructions)
+            instruction->advanceCounters();
     }
 
-    restoreReadCounter();
+    mValue = Value(0);
+    for (const auto& instruction : mInstructions)
+        instruction->restoreReadCounter();
 
     return true;
 }
@@ -103,7 +113,8 @@ bool MacroRepeat::emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionR
     if (count == 0)
         return true;
 
-    saveReadCounter();
+    for (const auto& instruction : mInstructions)
+        instruction->saveReadCounter();
 
     for (uint64_t i = 0; i < count; i++) {
         mValue = Value(int64_t(i));
@@ -111,10 +122,14 @@ bool MacroRepeat::emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionR
             if (!instruction->emitCode(emitter, nextAddress, sectionResolver, resolveError))
                 return false;
         }
-        advanceCounters();
+
+        for (const auto& instruction : mInstructions)
+            instruction->advanceCounters();
     }
 
-    restoreReadCounter();
+    mValue = Value(0);
+    for (const auto& instruction : mInstructions)
+        instruction->restoreReadCounter();
 
     return true;
 }
@@ -127,20 +142,14 @@ void MacroRepeat::resetCounters() const
 
 void MacroRepeat::saveReadCounter() const
 {
-    for (const auto& instruction : mInstructions)
-        instruction->saveReadCounter();
 }
 
 void MacroRepeat::restoreReadCounter() const
 {
-    for (const auto& instruction : mInstructions)
-        instruction->restoreReadCounter();
 }
 
 void MacroRepeat::advanceCounters() const
 {
-    for (const auto& instruction : mInstructions)
-        instruction->advanceCounters();
 }
 
 Instruction* MacroRepeat::clone() const

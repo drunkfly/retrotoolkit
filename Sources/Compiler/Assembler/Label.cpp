@@ -168,6 +168,8 @@ void Label::resetCounters() const
 
 void Label::saveReadCounter() const
 {
+    mCurrentReadAddress = mCurrentWriteAddress;
+
     auto entry = new (heap()) StackEntry;
     entry->prev = mSavedReadAddresses;
     entry->address = mCurrentReadAddress;

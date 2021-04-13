@@ -209,23 +209,23 @@ TEST_CASE("equ in repeat", "[repeat]")
 
     static const unsigned char binary[] = {
         0xaa,
-        0x07,
+        0x01,
         0xbb,
-        0x07,
+        0x01,
         0xcc,
-        0x07,
+        0x01,
         0x01,
         0x03,
         0x05,
         0x07,
         0x88,
-        0x07,
+        0x01,
         0xdd,
-        0x07,
+        0x01,
         0xee,
-        0x07,
+        0x01,
         0xff,
-        0x07,
+        0x01,
         };
 
     ErrorConsumer errorConsumer;
@@ -501,49 +501,51 @@ TEST_CASE("local labels in repeat 2", "[repeat]")
         ;
 
     static const unsigned char binary[] = {
-        0x08, // ff00
-        0x04, // ff01
-        0x00, // ff02
+              // -------------------------------
+        0x08, // ff00 @@1 cnt1==0
+        0x04, // ff01 @@2 cnt1==0
+        0x00, // ff02 dw @@1
         0xff, // ff03
-        0x01, // ff04
+        0x01, // ff04 dw @@2
         0xff, // ff05
-        0x88, // ff06
-        0x44, // ff07
-        0x06, // ff08
-        0xff, // ff09
-        0x01, // ff0a
+        0x08, // ff06 dw @@3
+        0xff, // ff07
+        0x88, // ff08 @@3 cnt1==0 cnt2==0
+        0x44, // ff09
+        0x01, // ff0a dw @@2
         0xff, // ff0b
-        0x89, // ff0c
-        0x45, // ff0d
-        0x0c, // ff0e
-        0xff, // ff0f
-        0x01, // ff10
+        0x0e, // ff0c dw @@3
+        0xff, // ff0d
+        0x89, // ff0e @@3 cnt1==0 cnt2==1
+        0x45, // ff0f
+        0x01, // ff10 dw @@2
         0xff, // ff11
-        0x00, // ff12
+        0x00, // ff12 dw @@1
         0xff, // ff13
-        0x01, // ff14
+        0x01, // ff14 dw @@2
         0xff, // ff15
-        0x09, // ff16
-        0x05, // ff17
-        0x16, // ff18
+              // -------------------------------
+        0x09, // ff16 @@1 cnt1==0
+        0x05, // ff17 @@2 cnt1==0
+        0x16, // ff18 dw @@1
         0xff, // ff19
-        0x17, // ff1a
+        0x17, // ff1a dw @@2
         0xff, // ff1b
-        0x98, // ff1c
-        0x54, // ff1d
-        0x1c, // ff1e
-        0xff, // ff1f
-        0x17, // ff20
+        0x1e, // ff1c dw @@3
+        0xff, // ff1d
+        0x98, // ff1e @@3 cnt1==0 cnt2==0
+        0x54, // ff1f
+        0x17, // ff20 dw @@2
         0xff, // ff21
-        0x99, // ff22
-        0x55, // ff23
-        0x22, // ff24
-        0xff, // ff25
-        0x17, // ff26
+        0x24, // ff22 dw @@3
+        0xff, // ff23
+        0x99, // ff24 @@3 cnt1==0 cnt2==1
+        0x55, // ff25
+        0x17, // ff26 dw @@2
         0xff, // ff27
-        0x16, // ff28
+        0x16, // ff28 dw @@1
         0xff, // ff29
-        0x17, // ff2a
+        0x17, // ff2a dw @@2
         0xff, // ff2b
     };
 
@@ -693,74 +695,76 @@ TEST_CASE("local labels in repeat 3", "[repeat]")
 TEST_CASE("local labels in repeat 4", "[repeat]")
 {
     static const char source[] =
-        "#section main_0xff00\n"
-        "label:\n"
-        "#repeat 2, cnt1\n"
-        "@@1 db 0x08|cnt1\n"
-        "@@2 db 0x04|cnt1\n"
-        "dw @@1\n"
-        "dw @@2\n"
-        "#repeat 2, cnt2\n"
-        "#if cnt2 == 0\n"
-        "@@3 db ((0x08|cnt1)<<4)|(cnt2|0x08)\n"
-        "    db ((0x04|cnt1)<<4)|(cnt2|0x04)\n"
-        "#endif\n"
-        "dw @@3\n"
-        "#if cnt2 == 1\n"
-        "@@3 db ((0x08|cnt1)<<4)|(cnt2|0x08)\n"
-        "    db ((0x04|cnt1)<<4)|(cnt2|0x04)\n"
-        "#endif\n"
-        "dw @@2\n"
-        "#endrepeat\n"
-        "dw @@1\n"
-        "dw @@2\n"
-        "#endrepeat\n"
+        /* 1*/ "#section main_0xff00\n"
+        /* 2*/ "label:\n"
+        /* 3*/ "#repeat 2, cnt1\n"
+        /* 4*/ "@@1 db 0x08|cnt1\n"
+        /* 5*/ "@@2 db 0x04|cnt1\n"
+        /* 6*/ "dw @@1\n"
+        /* 7*/ "dw @@2\n"
+        /* 8*/ "#repeat 2, cnt2\n"
+        /* 9*/ "#if cnt2 == 0\n"
+        /*10*/ "@@3 db ((0x08|cnt1)<<4)|(cnt2|0x08)\n"
+        /*11*/ "    db ((0x04|cnt1)<<4)|(cnt2|0x04)\n"
+        /*12*/ "#endif\n"
+        /*13*/ "dw @@3\n"
+        /*14*/ "#if cnt2 == 1\n"
+        /*15*/ "@@3 db ((0x08|cnt1)<<4)|(cnt2|0x08)\n"
+        /*16*/ "    db ((0x04|cnt1)<<4)|(cnt2|0x04)\n"
+        /*17*/ "#endif\n"
+        /*18*/ "dw @@2\n"
+        /*19*/ "#endrepeat\n"
+        /*20*/ "dw @@1\n"
+        /*21*/ "dw @@3\n"
+        /*22*/ "#endrepeat\n"
         ;
 
     static const unsigned char binary[] = {
-        0x08, // ff00
-        0x04, // ff01
-        0x00, // ff02
+              // -------------------------------
+        0x08, // ff00 @@1 cnt1==0
+        0x04, // ff01 @@2 cnt1==0
+        0x00, // ff02 dw @@1
         0xff, // ff03
-        0x01, // ff04
+        0x01, // ff04 dw @@2
         0xff, // ff05
-        0x88, // ff06
+        0x88, // ff06 @@3 cnt1==0 cnt2==0
         0x44, // ff07
-        0x06, // ff08
+        0x06, // ff08 dw @@3
         0xff, // ff09
-        0x01, // ff0a
+        0x01, // ff0a dw @@2
         0xff, // ff0b
-        0x89, // ff0c
-        0x45, // ff0d
-        0x0c, // ff0e
-        0xff, // ff0f
-        0x01, // ff10
+        0x0e, // ff0c dw @@3
+        0xff, // ff0d
+        0x89, // ff0e @@3 cnt1==0 cnt2==1
+        0x45, // ff0f
+        0x01, // ff10 dw @@2
         0xff, // ff11
-        0x00, // ff12
+        0x00, // ff12 dw @@1
         0xff, // ff13
-        0x01, // ff14
+        0x06, // ff14 dw @@3
         0xff, // ff15
-        0x09, // ff16
-        0x05, // ff17
-        0x16, // ff18
+              // -------------------------------
+        0x09, // ff16 @@1 cnt1==1
+        0x05, // ff17 @@2 cnt1==1
+        0x16, // ff18 dw @@1
         0xff, // ff19
-        0x17, // ff1a
+        0x17, // ff1a dw @@2
         0xff, // ff1b
-        0x98, // ff1c
+        0x98, // ff1c @@3 cnt1==1 cnt2==0
         0x54, // ff1d
-        0x1c, // ff1e
+        0x1c, // ff1e dw @@3
         0xff, // ff1f
-        0x17, // ff20
+        0x17, // ff20 dw @@2
         0xff, // ff21
-        0x99, // ff22
-        0x55, // ff23
-        0x22, // ff24
-        0xff, // ff25
-        0x17, // ff26
+        0x24, // ff22 dw @@3
+        0xff, // ff23
+        0x99, // ff24 @@3 cnt1==1 cnt2==1
+        0x55, // ff25
+        0x17, // ff26 dw @@2
         0xff, // ff27
-        0x16, // ff28
+        0x16, // ff28 dw @@1
         0xff, // ff29
-        0x17, // ff2a
+        0x1c, // ff2a dw @@3
         0xff, // ff2b
     };
 
