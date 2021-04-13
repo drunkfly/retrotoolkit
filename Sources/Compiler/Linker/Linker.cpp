@@ -257,7 +257,6 @@ namespace
                 return true;
 
             bool hasUnresolved = false;
-            didResolve = false;
 
             // Try to resolve size and labels for sections
 
@@ -786,6 +785,11 @@ CompiledOutput* Linker::link(Program* program)
 
     files.reserve(mProject->files.size());
     for (const auto& file : mProject->files) {
+      #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+        { std::stringstream ss;
+        ss << ">>> initializing file \"" << file->name << "\".\n";
+        OutputDebugStringA(ss.str().c_str()); }
+      #endif
         if (!fileNames.emplace(file->name).second) {
             std::stringstream ss;
             ss << "duplicate file name \"" << file->name << "\".";
@@ -800,6 +804,11 @@ CompiledOutput* Linker::link(Program* program)
         std::unique_ptr<CompilerError> resolveError;
 
         for (const auto& file : files) {
+          #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+            { std::stringstream ss;
+            ss << ">>> resolving file \"" << file->file()->name << "\".\n";
+            OutputDebugStringA(ss.str().c_str()); }
+          #endif
             if (!file->tryResolve(didResolve, resolveError))
                 resolvedAll = false;
         }
@@ -828,6 +837,11 @@ CompiledOutput* Linker::link(Program* program)
     }
 
     for (auto& file : files) {
+      #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
+        { std::stringstream ss;
+        ss << ">>> generating code for file \"" << file->file()->name << "\".\n";
+        OutputDebugStringA(ss.str().c_str()); }
+      #endif
         file->generateCode(output->addFile(file->file()->location, file->file()->nameLocation,
             file->file()->name, file->takeDebugInfo()));
     }
