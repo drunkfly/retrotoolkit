@@ -21,12 +21,15 @@ Known Issues
 
 * Generation of output files in `_out/files` can't be disabled
 
-License
--------
+Legal
+-----
 
-License is GNU GPL v2 or any later version.
+Compiler and IDE
+================
 
-    Copyright (c) 2019 Nikolay Zapolnov
+License for the compiler and IDE is GNU GPL v2 or any later version.
+
+    Copyright (c) 2021 Drunk Fly
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,8 +45,36 @@ License is GNU GPL v2 or any later version.
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-Please note that the license covers only the toolkit itself. Any programs you would create with the toolkit belong to
+This license does not cover the code you write. Any programs you would create with the toolkit belong to
 you and can be distributed under your own terms.
+
+Runtimes
+========
+
+Runtimes for various platforms (code in `Sources/Runtime`) are licensed under the MIT license.
+
+    Copyright (c) 2021 Drunk Fly
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+Third Party Software
+====================
 
 This software also includes a bunch of third party software. Please consult licensing for this software in the
 corresponding directories inside `Libs`.
