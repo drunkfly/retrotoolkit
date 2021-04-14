@@ -43,10 +43,7 @@ License is GNU GPL v2 or any later version.
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 Please note that the license covers only the toolkit itself. Any programs you would create with the toolkit belong to
-you and can be distributed under your own terms. As a special exception to GPL, Author explicitly gives permission
-to use any generated source files that toolkit may produce in the project directory (for example, files in the
-`generated` directory) for any purpose, including (but not limited to) personal, commercial and
-educational use, modification and redistribution, free of charge and without duration and territory limitations.
+you and can be distributed under your own terms.
 
 This software also includes a bunch of third party software. Please consult licensing for this software in the
 corresponding directories inside `Libs`.
@@ -56,6 +53,6 @@ These icon sets are licensed under a Creative Commons Attribution 3.0 License. T
 sub-licensed, rented, transferred or otherwise made available for use. Please link to the page on
 fatcow.com if you would like to spread the word.
 
-Please note that Apache Ant included into source distribution uses the Apache 2 license which is incompatible with
+Note that Apache Ant included into source distribution uses the Apache 2 license which is incompatible with
 GNU GPL v2. Apache Ant is only used during the compilation process as an external tool and is not included into
 the final distribution.
