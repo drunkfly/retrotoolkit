@@ -39,6 +39,7 @@ private:
     void parseIfDecl();
     void parseElseDecl();
     void parseEndIfDecl();
+    void parseEnsureDecl();
     /*
     void parseAllowWrite();
     void parseDisallowWrite();

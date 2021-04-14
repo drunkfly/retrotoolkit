@@ -37,6 +37,8 @@ add(Compiler
         Assembler/Label.h
         Assembler/MacroIf.cpp
         Assembler/MacroIf.h
+        Assembler/MacroEnsure.cpp
+        Assembler/MacroEnsure.h
         Assembler/MacroRepeat.cpp
         Assembler/MacroRepeat.h
         Compression/Compression.h

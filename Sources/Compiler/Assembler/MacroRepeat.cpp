@@ -105,7 +105,10 @@ bool MacroRepeat::canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolve
 bool MacroRepeat::emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver,
     std::unique_ptr<CompilerError>& resolveError) const
 {
-    auto count = mCount->evaluateValue(nullptr, nullptr).number;
+    if (!mCount->canEvaluateValue(nullptr, sectionResolver, resolveError))
+        return false;
+
+    auto count = mCount->evaluateValue(nullptr, sectionResolver).number;
     if (count < 0)
         throw CompilerError(location(), "repeat counter is negative.");
     if (count > 0xffff)

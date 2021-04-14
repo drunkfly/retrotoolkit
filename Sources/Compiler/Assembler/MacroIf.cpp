@@ -82,10 +82,10 @@ bool MacroIf::canEmitCodeWithoutBaseAddress(ISectionResolver* sectionResolver) c
 bool MacroIf::emitCode(CodeEmitter* emitter,
     int64_t& nextAddress, ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
-    if (!mCondition->canEvaluateValue(nullptr, nullptr, resolveError))
+    if (!mCondition->canEvaluateValue(nullptr, sectionResolver, resolveError))
         return false;
 
-    auto result = mCondition->evaluateValue(nullptr, nullptr).number;
+    auto result = mCondition->evaluateValue(nullptr, sectionResolver).number;
     const std::vector<Instruction*>& instructions = (result ? mThenInstructions : mElseInstructions);
 
     for (const auto& instruction : instructions) {

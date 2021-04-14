@@ -7,6 +7,7 @@
 #include "Compiler/Assembler/AssemblerContext.h"
 #include "Compiler/Assembler/AssemblerContextRepeat.h"
 #include "Compiler/Assembler/AssemblerContextIf.h"
+#include "Compiler/Assembler/MacroEnsure.h"
 #include "Compiler/Assembler/Label.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
@@ -32,6 +33,7 @@ const std::unordered_map<std::string, void(AssemblerParser::*)()> AssemblerParse
         { "if", &AssemblerParser::parseIfDecl },
         { "else", &AssemblerParser::parseElseDecl },
         { "endif", &AssemblerParser::parseEndIfDecl },
+        { "ensure", &AssemblerParser::parseEnsureDecl },
         /*
         { "allowwrite", &AssemblerParser::parseAllowWrite },
         { "disallowwrite", &AssemblerParser::parseDisallowWrite },
@@ -275,6 +277,17 @@ void AssemblerParser::parseEndIfDecl()
 
     popContext();
     mToken = mToken->next();
+
+    expectEol();
+}
+
+void AssemblerParser::parseEnsureDecl()
+{
+    mToken = mToken->next();
+    expectNotEol();
+
+    auto e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+    mContext->addInstruction(new (mHeap) MacroEnsure(e->location(), e));
 
     expectEol();
 }
