@@ -431,7 +431,7 @@ void ExprAddressOfSection::replaceCurrentAddressWithLabel(AssemblerContext* cont
 bool ExprAddressOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     uint64_t value = 0;
-    if (!mSectionResolver || !mSectionResolver->tryResolveSectionAddress(mSectionName, value)) {
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionAddress(location(), mSectionName, value)) {
         resolveError = std::make_unique<CompilerError>(location(),
             "section address is not available in this context.");
         return false;
@@ -442,7 +442,7 @@ bool ExprAddressOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveEr
 Value ExprAddressOfSection::evaluate() const
 {
     uint64_t value = 0;
-    if (!mSectionResolver || !mSectionResolver->tryResolveSectionAddress(mSectionName, value))
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionAddress(location(), mSectionName, value))
         throw CompilerError(location(), "section address is not available in this context.");
     return Value(value);
 }
@@ -461,7 +461,7 @@ void ExprBaseOfSection::replaceCurrentAddressWithLabel(AssemblerContext* context
 bool ExprBaseOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     uint64_t value = 0;
-    if (!mSectionResolver || !mSectionResolver->tryResolveSectionBase(mSectionName, value)) {
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionBase(location(), mSectionName, value)) {
         resolveError = std::make_unique<CompilerError>(location(),
             "section base is not available in this context.");
         return false;
@@ -472,7 +472,7 @@ bool ExprBaseOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveError
 Value ExprBaseOfSection::evaluate() const
 {
     uint64_t value = 0;
-    if (!mSectionResolver || !mSectionResolver->tryResolveSectionBase(mSectionName, value))
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionBase(location(), mSectionName, value))
         throw CompilerError(location(), "section base is not available in this context.");
     return Value(value);
 }
@@ -491,7 +491,7 @@ void ExprSizeOfSection::replaceCurrentAddressWithLabel(AssemblerContext* context
 bool ExprSizeOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     uint64_t value = 0;
-    if (!mSectionResolver || !mSectionResolver->tryResolveSectionSize(mSectionName, value)) {
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionSize(location(), mSectionName, value)) {
         resolveError = std::make_unique<CompilerError>(location(),
             "section size is not available in this context.");
         return false;
@@ -502,7 +502,7 @@ bool ExprSizeOfSection::canEvaluate(std::unique_ptr<CompilerError>& resolveError
 Value ExprSizeOfSection::evaluate() const
 {
     uint64_t value = 0;
-    if (!mSectionResolver || !mSectionResolver->tryResolveSectionSize(mSectionName, value))
+    if (!mSectionResolver || !mSectionResolver->tryResolveSectionSize(location(), mSectionName, value))
         throw CompilerError(location(), "section size is not available in this context.");
     return Value(value);
 }

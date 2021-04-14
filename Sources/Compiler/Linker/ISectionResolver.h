@@ -3,14 +3,16 @@
 
 #include "Common/Common.h"
 
+class SourceLocation;
+
 class ISectionResolver
 {
 public:
     virtual ~ISectionResolver() = default;
-    virtual bool isValidSectionName(const std::string& sectionName) const = 0;
-    virtual bool tryResolveSectionAddress(const std::string& sectionName, uint64_t& value) const = 0;
-    virtual bool tryResolveSectionBase(const std::string& sectionName, uint64_t& value) const = 0;
-    virtual bool tryResolveSectionSize(const std::string& sectionName, uint64_t& value) const = 0;
+    virtual bool isValidSectionName(SourceLocation* location, const std::string& name) const = 0;
+    virtual bool tryResolveSectionAddress(SourceLocation* location, const std::string& name, uint64_t& value) const = 0;
+    virtual bool tryResolveSectionBase(SourceLocation* location, const std::string& name, uint64_t& value) const = 0;
+    virtual bool tryResolveSectionSize(SourceLocation* location, const std::string& name, uint64_t& value) const = 0;
 };
 
 #endif
