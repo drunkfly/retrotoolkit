@@ -145,6 +145,8 @@ void SpectrumTapeWriter::addCodeFile(std::string name, const CodeEmitter::Byte* 
     codeFile->setStartAddress(startAddress);
     for (size_t i = 0; i < size; i++)
         codeFile->appendByte(data[i].value);
+    if (size == 0)
+        codeFile->appendByte(0);
     mFiles.emplace_back(std::move(codeFile));
 }
 
