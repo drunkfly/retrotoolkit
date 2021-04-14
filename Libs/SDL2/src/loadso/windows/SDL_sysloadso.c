@@ -67,7 +67,7 @@ SDL_LoadFunction(void *handle, const char *name)
     void *symbol = (void *) GetProcAddress((HMODULE) handle, name);
     if (symbol == NULL) {
         char errbuf[512];
-        SDL_strlcpy(errbuf, "Failed loading ", SDL_arraysize(errbuf));
+        SDL_strlcpy(errbuf, "Failed loading procedure ", SDL_arraysize(errbuf));
         SDL_strlcat(errbuf, name, SDL_arraysize(errbuf));
         WIN_SetError(errbuf);
     }

@@ -1317,7 +1317,7 @@ D3D_RunCommandQueue(SDL_Renderer * renderer, SDL_RenderCommand *cmd, void *verti
                 const int backw = istarget ? renderer->target->w : data->pparams.BackBufferWidth;
                 const int backh = istarget ? renderer->target->h : data->pparams.BackBufferHeight;
 
-                if (data->drawstate.cliprect_enabled) {
+                if (data->drawstate.cliprect_enabled || data->drawstate.cliprect_enabled_dirty) {
                     IDirect3DDevice9_SetRenderState(data->device, D3DRS_SCISSORTESTENABLE, FALSE);
                     data->drawstate.cliprect_enabled_dirty = SDL_TRUE;
                 }

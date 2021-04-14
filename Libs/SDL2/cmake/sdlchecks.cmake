@@ -24,8 +24,10 @@ macro(FindLibraryAndSONAME _LIB)
       message_warn("DYNLIB REGEX'd LIB: ${_LIB} ... ${_LIB_REGEXD}")
     endif()
 
-    message(STATUS "dynamic lib${_LIB} -> ${_LIB_REGEXD}")
+    #message(STATUS "dynamic lib${_LIB} -> ${_LIB_REGEXD}")
     set(${_LNAME}_LIB_SONAME ${_LIB_REGEXD})
+  else()
+    message(FATAL_ERROR "Library \"${_LIB}\" was not found!")
   endif()
 endmacro()
 
@@ -575,11 +577,31 @@ macro(WaylandProtocolGen _SCANNER _XML _PROTL)
         ARGS client-header "${_XML}" "${_WAYLAND_PROT_H_CODE}"
     )
 
+    if(NOT _SDL2_WAYLAND_CODE)
+        execute_process(COMMAND "${_SCANNER}" private-code "${_XML}" "${_WAYLAND_PROT_C_CODE}"
+            RESULT_VARIABLE ret
+            OUTPUT_QUIET ERROR_QUIET
+        )
+        if(ret EQUAL 0)
+            set(_SDL2_WAYLAND_CODE private-code CACHE INTERNAL "")
+        else()
+            execute_process(COMMAND "${_SCANNER}" code "${_XML}" "${_WAYLAND_PROT_C_CODE}"
+                RESULT_VARIABLE ret
+                OUTPUT_QUIET ERROR_QUIET
+            )
+            if(ret EQUAL 0)
+                set(_SDL2_WAYLAND_CODE code CACHE INTERNAL "")
+            else()
+                message(FATAL_ERROR "Can't run ${_SCANNER}!")
+            endif()
+        endif()
+    endif()
+
     add_custom_command(
         OUTPUT "${_WAYLAND_PROT_C_CODE}"
         DEPENDS "${_WAYLAND_PROT_H_CODE}"
         COMMAND "${_SCANNER}"
-        ARGS code "${_XML}" "${_WAYLAND_PROT_C_CODE}"
+        ARGS "${_SDL2_WAYLAND_CODE}" "${_XML}" "${_WAYLAND_PROT_C_CODE}"
     )
 
     set(SOURCE_FILES ${SOURCE_FILES} "${_WAYLAND_PROT_C_CODE}")
@@ -593,7 +615,7 @@ endmacro()
 # - HAVE_DLOPEN opt
 macro(CheckWayland)
   if(VIDEO_WAYLAND)
-    pkg_check_modules(WAYLAND wayland-client wayland-scanner wayland-egl wayland-cursor egl xkbcommon)
+    pkg_check_modules(WAYLAND wayland-client wayland-scanner wayland-protocols wayland-egl wayland-cursor egl xkbcommon)
 
     if(WAYLAND_FOUND)
       execute_process(
@@ -962,6 +984,10 @@ macro(CheckUSBHID)
     if(LIBUSB)
       set(USB_LIBS ${USB_LIBS} usb)
     endif()
+    check_library_exists(hidapi-libusb hid_init "" LIBHIDAPI_LIBUSB)
+    if(HIDAPI_LIBUSB)
+      set(USB_LIBS ${USB_LIBS} hidapi-libusb)
+    endif()
   endif()
 
   set(ORIG_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
@@ -1091,7 +1117,8 @@ macro(CheckHIDAPI)
       set(HAVE_SDL_JOYSTICK TRUE)
       file(GLOB HIDAPI_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/hidapi/*.c)
       set(SOURCE_FILES ${SOURCE_FILES} ${HIDAPI_SOURCES})
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBUSB_CFLAGS} \"-I${SDL2_SOURCE_DIR}/src/hidapi/hidapi\"")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBUSB_CFLAGS}")
+      include_directories("${SDL2_SOURCE_DIR}/src/hidapi/hidapi")
       if(NOT HIDAPI_SKIP_LIBUSB)
         if(HIDAPI_ONLY_LIBUSB)
           set(SOURCE_FILES ${SOURCE_FILES} ${SDL2_SOURCE_DIR}/src/hidapi/libusb/hid.c)

@@ -69,7 +69,7 @@ SDL_LoadFunction(void *handle, const char *name)
         symbol = dlsym(handle, _name);
         SDL_small_free(_name, isstack);
         if (symbol == NULL) {
-            SDL_SetError("Failed loading %s: %s", name,
+            SDL_SetError("Failed loading procedure %s: %s", name,
                          (const char *) dlerror());
         }
     }

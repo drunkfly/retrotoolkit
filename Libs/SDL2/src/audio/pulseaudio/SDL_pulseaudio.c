@@ -348,15 +348,18 @@ PULSEAUDIO_WaitDevice(_THIS)
     struct SDL_PrivateAudioData *h = this->hidden;
 
     while (SDL_AtomicGet(&this->enabled)) {
+        int n = 0;
         if (PULSEAUDIO_pa_context_get_state(h->context) != PA_CONTEXT_READY ||
             PULSEAUDIO_pa_stream_get_state(h->stream) != PA_STREAM_READY ||
-            PULSEAUDIO_pa_mainloop_iterate(h->mainloop, 1, NULL) < 0) {
+            (n = PULSEAUDIO_pa_mainloop_iterate(h->mainloop, 0, NULL)) < 0) {
             SDL_OpenedAudioDeviceDisconnected(this);
             return;
         }
         if (PULSEAUDIO_pa_stream_writable_size(h->stream) >= h->mixlen) {
             return;
         }
+        if (n == 0)
+            SDL_Delay(1);
     }
 }
 

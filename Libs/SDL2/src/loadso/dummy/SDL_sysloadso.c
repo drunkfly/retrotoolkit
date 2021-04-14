@@ -39,7 +39,7 @@ void *
 SDL_LoadFunction(void *handle, const char *name)
 {
     const char *loaderror = "SDL_LoadFunction() not implemented";
-    SDL_SetError("Failed loading %s: %s", name, loaderror);
+    SDL_SetError("Failed loading procedure %s: %s", name, loaderror);
     return (NULL);
 }
 

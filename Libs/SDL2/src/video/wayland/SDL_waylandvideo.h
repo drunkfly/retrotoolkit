@@ -33,6 +33,7 @@
 !!! FIXME:  in Ubuntu 18.04 (and other distros).
 */
 
+#define EGL_NO_X11
 #define MESA_EGL_NO_X11_HEADERS
 #include <EGL/egl.h>
 #include "wayland-util.h"

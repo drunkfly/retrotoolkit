@@ -415,6 +415,7 @@ JACK_Init(SDL_AudioDriverImpl * impl)
         jack_status_t status;
         jack_client_t *client = JACK_jack_client_open("SDL", JackNoStartServer, &status, NULL);
         if (client == NULL) {
+            SDL_SetError("jack_client_open() failed.");
             UnloadJackLibrary();
             return 0;
         }

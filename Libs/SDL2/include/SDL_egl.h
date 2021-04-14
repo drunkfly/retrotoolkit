@@ -442,7 +442,7 @@ typedef MirEGLNativeWindowType  EGLNativeWindowType;
 
 #elif defined(__unix__)
 
-#ifdef MESA_EGL_NO_X11_HEADERS
+#if defined(MESA_EGL_NO_X11_HEADERS) || defined(EGL_NO_X11)
 
 typedef void            *EGLNativeDisplayType;
 typedef khronos_uintptr_t EGLNativePixmapType;

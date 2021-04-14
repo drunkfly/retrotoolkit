@@ -22,9 +22,9 @@
 
 #if SDL_AUDIO_DRIVER_ALSA
 
-#ifndef SDL_ALSA_NON_BLOCKING
-#define SDL_ALSA_NON_BLOCKING 0
-#endif
+//#ifndef SDL_ALSA_NON_BLOCKING
+#define SDL_ALSA_NON_BLOCKING 1//0
+//#endif
 
 /* Allow access to a raw mixing buffer */
 

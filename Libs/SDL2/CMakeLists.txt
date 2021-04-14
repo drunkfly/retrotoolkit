@@ -9,12 +9,16 @@ if(WINDOWS_STORE)
   enable_language(CXX)
   cmake_minimum_required(VERSION 3.11)
   add_definitions(-DSDL_BUILDING_WINRT=1 -ZW)
-  link_libraries(
-    -nodefaultlib:vccorlib$<$<CONFIG:Debug>:d>
-    -nodefaultlib:msvcrt$<$<CONFIG:Debug>:d>
-    vccorlib$<$<CONFIG:Debug>:d>.lib
-    msvcrt$<$<CONFIG:Debug>:d>.lib
-  )
+  #link_libraries(
+  #  -nodefaultlib:vccorlib$<$<CONFIG:Debug>:d>
+  #  -nodefaultlib:msvcrt$<$<CONFIG:Debug>:d>
+  #  vccorlib$<$<CONFIG:Debug>:d>.lib
+  #  msvcrt$<$<CONFIG:Debug>:d>.lib
+  #)
+endif()
+
+if(APPLE)
+    add_definitions(-Wno-deprecated-declarations)
 endif()
 
 # !!! FIXME: this should probably do "MACOSX_RPATH ON" as a target property
@@ -26,7 +30,9 @@ endif()
 # !!! FIXME:  remove it and this comment entirely once the problem is
 # !!! FIXME:  properly resolved.
 #cmake_policy(SET CMP0042 OLD)
+cmake_policy(SET CMP0063 NEW) # Honor visibility for all target types
 
+include(CheckFunctionExists)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
 include(CheckIncludeFile)
@@ -37,8 +43,10 @@ include(CheckCCompilerFlag)
 include(CheckTypeSize)
 include(CheckStructHasMember)
 include(CMakeDependentOption)
+if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 include(FindPkgConfig)
 include(GNUInstallDirs)
+endif()
 set(CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
 include(${SDL2_SOURCE_DIR}/cmake/macros.cmake)
 include(${SDL2_SOURCE_DIR}/cmake/sdlchecks.cmake)
@@ -62,8 +70,8 @@ set(DYLIB_CURRENT_VERSION 15.0.0)
 set(DYLIB_COMPATIBILITY_VERSION 1.0.0)
 
 # Set defaults preventing destination file conflicts
-set(SDL_CMAKE_DEBUG_POSTFIX "d"
-    CACHE STRING "Name suffix for debug builds")
+#set(SDL_CMAKE_DEBUG_POSTFIX "d"
+#    CACHE STRING "Name suffix for debug builds")
 
 mark_as_advanced(CMAKE_IMPORT_LIBRARY_SUFFIX SDL_CMAKE_DEBUG_POSTFIX)
 
@@ -140,7 +148,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Haiku.*")
 endif()
 
 # Don't mistake osx for unix
-if(UNIX AND NOT APPLE AND NOT RISCOS)
+if(UNIX AND NOT APPLE AND NOT RISCOS AND NOT EMSCRIPTEN)
   set(UNIX_SYS ON)
 else()
   set(UNIX_SYS OFF)
@@ -164,7 +172,7 @@ if(APPLE OR ARCH_64)
     set(OPT_DEF_SSEMATH ON)
   endif()
 endif()
-if(UNIX OR MINGW OR MSYS)
+if(1)#UNIX OR MINGW OR MSYS)
   set(OPT_DEF_LIBC ON)
 endif()
 
@@ -211,25 +219,25 @@ endif()
 if("$ENV{CFLAGS}" STREQUAL "")
   if(CMAKE_BUILD_TYPE STREQUAL "")
     if(USE_GCC OR USE_CLANG)
-      set(CMAKE_C_FLAGS "-g -O3")
+      #set(CMAKE_C_FLAGS "-g -O3")
     endif()
   endif()
 else()
-  set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
-  list(APPEND EXTRA_CFLAGS "$ENV{CFLAGS}")
+  #set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
+  #list(APPEND EXTRA_CFLAGS "$ENV{CFLAGS}")
 endif()
 if(NOT ("$ENV{CFLAGS}" STREQUAL "")) # Hackish, but does the trick on Win32
-  list(APPEND EXTRA_LDFLAGS "$ENV{LDFLAGS}")
+  #list(APPEND EXTRA_LDFLAGS "$ENV{LDFLAGS}")
 endif()
 
 if(MSVC)
-  option(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
+  #option(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
   if(FORCE_STATIC_VCRT)
     foreach(flag_var
         CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
         CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
       if(${flag_var} MATCHES "/MD")
-        string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        #string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
       endif()
     endforeach()
   endif()
@@ -250,7 +258,7 @@ set(SDL_CFLAGS "")
 # When building shared lib for Windows with MinGW,
 # avoid the DLL having a "lib" prefix
 if(WINDOWS)
-  set(CMAKE_SHARED_LIBRARY_PREFIX "")
+  #set(CMAKE_SHARED_LIBRARY_PREFIX "")
 endif()
 
 # Emscripten toolchain has a nonempty default value for this, and the checks
@@ -285,6 +293,10 @@ endif()
 # All these ENABLED_BY_DEFAULT vars will default to ON if not specified, so
 #  you only need to have a platform override them if they are disabling.
 set(OPT_DEF_ASM TRUE)
+set(OPT_DEF_VIDEO_OPENGL TRUE)
+if(IOS)
+  set(OPT_DEF_VIDEO_OPENGL FALSE)
+endif()
 if(EMSCRIPTEN)
   # Set up default values for the currently supported set of subsystems:
   # Emscripten/Javascript does not have assembly support, a dynamic library
@@ -296,6 +308,7 @@ if(EMSCRIPTEN)
   set(SDL_LOADSO_ENABLED_BY_DEFAULT OFF)
   set(SDL_CPUINFO_ENABLED_BY_DEFAULT OFF)
   set(SDL_DLOPEN_ENABLED_BY_DEFAULT OFF)
+  set(OPT_DEF_VIDEO_OPENGL FALSE)
 endif()
 
 # When defined, respect CMake's BUILD_SHARED_LIBS setting:
@@ -317,6 +330,9 @@ if (NOT DEFINED SDL_SHARED_ENABLED_BY_DEFAULT)
   endif()
 endif()
 
+set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
+set(SDL_STATIC_ENABLED_BY_DEFAULT ON)
+
 set(SDL_SUBSYSTEMS
     Atomic Audio Video Render Events Joystick Haptic Power Threads Timers
     File Loadso CPUinfo Filesystem Dlopen Sensor Locale)
@@ -325,8 +341,15 @@ foreach(_SUB ${SDL_SUBSYSTEMS})
   if (NOT DEFINED SDL_${_OPT}_ENABLED_BY_DEFAULT)
     set(SDL_${_OPT}_ENABLED_BY_DEFAULT ON)
   endif()
-  option(SDL_${_OPT} "Enable the ${_SUB} subsystem" ${SDL_${_OPT}_ENABLED_BY_DEFAULT})
+  #option(SDL_${_OPT} "Enable the ${_SUB} subsystem" ${SDL_${_OPT}_ENABLED_BY_DEFAULT})
+  set(SDL_${_OPT} ${SDL_${_OPT}_ENABLED_BY_DEFAULT})
 endforeach()
+
+if(UNIX_OR_MAC_SYS)
+  check_c_source_compiles("
+    #include <time.h>
+    int main() { struct timespec ts; return clock_gettime(CLOCK_REALTIME, &ts); }" HAVE_CLOCK_GETTIME)
+endif()
 
 option_string(ASSERTIONS "Enable internal sanity checks (auto/disabled/release/enabled/paranoid)" "auto")
 #set_option(DEPENDENCY_TRACKING "Use gcc -MMD -MT dependency tracking" ON)
@@ -340,14 +363,14 @@ set_option(SSE                 "Use SSE assembly routines" ${OPT_DEF_ASM})
 set_option(SSE2                "Use SSE2 assembly routines" ${OPT_DEF_SSEMATH})
 set_option(SSE3                "Use SSE3 assembly routines" ${OPT_DEF_SSEMATH})
 set_option(ALTIVEC             "Use Altivec assembly routines" ${OPT_DEF_ASM})
-set_option(ARMSIMD             "use SIMD assembly blitters on ARM" OFF)
-set_option(ARMNEON             "use NEON assembly blitters on ARM" OFF)
-set_option(DISKAUDIO           "Support the disk writer audio driver" ON)
+set_option(ARMSIMD             "use SIMD assembly blitters on ARM" ON)#OFF)
+set_option(ARMNEON             "use NEON assembly blitters on ARM" ON)#OFF)
+set_option(DISKAUDIO           "Support the disk writer audio driver" FALSE)#ON)
 set_option(DUMMYAUDIO          "Support the dummy audio driver" ON)
 set_option(VIDEO_DIRECTFB      "Use DirectFB video driver" OFF)
 dep_option(DIRECTFB_SHARED     "Dynamically load directfb support" ON "VIDEO_DIRECTFB" OFF)
 set_option(VIDEO_DUMMY         "Use dummy video driver" ON)
-set_option(VIDEO_OPENGL        "Include OpenGL support" ON)
+set_option(VIDEO_OPENGL        "Include OpenGL support" ${OPT_DEF_VIDEO_OPENGL})#ON)
 set_option(VIDEO_OPENGLES      "Include OpenGL ES support" ON)
 set_option(PTHREADS            "Use POSIX threads for multi-threading" ${SDL_PTHREADS_ENABLED_BY_DEFAULT})
 dep_option(PTHREADS_SEM        "Use pthread semaphores" ON "PTHREADS" OFF)
@@ -357,11 +380,11 @@ set_option(ALSA                "Support the ALSA audio API" ${UNIX_SYS})
 dep_option(ALSA_SHARED         "Dynamically load ALSA audio support" ON "ALSA" OFF)
 set_option(JACK                "Support the JACK audio API" ${UNIX_SYS})
 dep_option(JACK_SHARED         "Dynamically load JACK audio support" ON "JACK" OFF)
-set_option(ESD                 "Support the Enlightened Sound Daemon" ${UNIX_SYS})
+set_option(ESD                 "Support the Enlightened Sound Daemon" OFF)#${UNIX_SYS})
 dep_option(ESD_SHARED          "Dynamically load ESD audio support" ON "ESD" OFF)
 set_option(PULSEAUDIO          "Use PulseAudio" ${UNIX_SYS})
 dep_option(PULSEAUDIO_SHARED   "Dynamically load PulseAudio support" ON "PULSEAUDIO" OFF)
-set_option(ARTS                "Support the Analog Real Time Synthesizer" ${UNIX_SYS})
+set_option(ARTS                "Support the Analog Real Time Synthesizer" OFF)#${UNIX_SYS})
 dep_option(ARTS_SHARED         "Dynamically load aRts audio support" ON "ARTS" OFF)
 set_option(NAS                 "Support the NAS audio API" ${UNIX_SYS})
 set_option(NAS_SHARED          "Dynamically load NAS audio API" ${UNIX_SYS})
@@ -372,12 +395,12 @@ dep_option(FUSIONSOUND_SHARED  "Dynamically load fusionsound audio support" ON "
 set_option(LIBSAMPLERATE       "Use libsamplerate for audio rate conversion" ${UNIX_SYS})
 dep_option(LIBSAMPLERATE_SHARED "Dynamically load libsamplerate" ON "LIBSAMPLERATE" OFF)
 set_option(RPATH               "Use an rpath when linking SDL" ${UNIX_SYS})
-set_option(CLOCK_GETTIME       "Use clock_gettime() instead of gettimeofday()" OFF)
+set_option(CLOCK_GETTIME       "Use clock_gettime() instead of gettimeofday()" ${HAVE_CLOCK_GETTIME})#OFF)
 set_option(VIDEO_X11           "Use X11 video driver" ${UNIX_SYS})
 set_option(VIDEO_WAYLAND       "Use Wayland video driver" ${UNIX_SYS})
 dep_option(WAYLAND_SHARED      "Dynamically load Wayland support" ON "VIDEO_WAYLAND" OFF)
 dep_option(VIDEO_WAYLAND_QT_TOUCH  "QtWayland server support for Wayland video driver" ON "VIDEO_WAYLAND" OFF)
-set_option(VIDEO_RPI           "Use Raspberry Pi video driver" ${UNIX_SYS})
+set_option(VIDEO_RPI           "Use Raspberry Pi video driver" OFF)#${UNIX_SYS})
 dep_option(X11_SHARED          "Dynamically load X11 support" ON "VIDEO_X11" OFF)
 set(SDL_X11_OPTIONS Xcursor Xinerama XInput Xrandr Xscrnsaver XShape Xvm)
 foreach(_SUB ${SDL_X11_OPTIONS})
@@ -389,7 +412,7 @@ set_option(DIRECTX             "Use DirectX for Windows audio/video" ${WINDOWS})
 set_option(WASAPI              "Use the Windows WASAPI audio driver" ${WINDOWS})
 set_option(RENDER_D3D          "Enable the Direct3D render driver" ${WINDOWS})
 set_option(RENDER_METAL        "Enable the Metal render driver" ${APPLE})
-set_option(VIDEO_VIVANTE       "Use Vivante EGL video driver" ${UNIX_SYS})
+set_option(VIDEO_VIVANTE       "Use Vivante EGL video driver" FALSE)#${UNIX_SYS})
 dep_option(VIDEO_VULKAN        "Enable Vulkan support" ON "ANDROID OR APPLE OR LINUX OR WINDOWS" OFF)
 set_option(VIDEO_METAL         "Enable Metal support" ${APPLE})
 set_option(VIDEO_KMSDRM        "Use KMS DRM video driver" ${UNIX_SYS})
@@ -400,8 +423,8 @@ option_string(FOREGROUNDING_SIGNAL "number to use for magic foregrounding signal
 set_option(HIDAPI              "Use HIDAPI for low level joystick drivers" ${OPT_DEF_HIDAPI})
 set_option(JOYSTICK_VIRTUAL    "Enable the virtual-joystick driver" ON)
 
-set(SDL_SHARED ${SDL_SHARED_ENABLED_BY_DEFAULT} CACHE BOOL "Build a shared version of the library")
-set(SDL_STATIC ${SDL_STATIC_ENABLED_BY_DEFAULT} CACHE BOOL "Build a static version of the library")
+set(SDL_SHARED ${SDL_SHARED_ENABLED_BY_DEFAULT})# CACHE BOOL "Build a shared version of the library")
+set(SDL_STATIC ${SDL_STATIC_ENABLED_BY_DEFAULT})# CACHE BOOL "Build a static version of the library")
 
 dep_option(SDL_STATIC_PIC      "Static version of the library should be built with Position Independent Code" OFF "SDL_STATIC" OFF)
 set_option(SDL_TEST            "Build the test directory" OFF)
@@ -521,7 +544,7 @@ if(USE_GCC OR USE_CLANG)
 
   check_c_compiler_flag(-Wshadow HAVE_GCC_WSHADOW)
   if(HAVE_GCC_WSHADOW)
-    list(APPEND EXTRA_CFLAGS "-Wshadow")
+    #list(APPEND EXTRA_CFLAGS "-Wshadow")
   endif()
 
   if(APPLE)
@@ -529,11 +552,13 @@ if(USE_GCC OR USE_CLANG)
     list(APPEND EXTRA_LDFLAGS "-Wl,-compatibility_version,${DYLIB_COMPATIBILITY_VERSION}")
     list(APPEND EXTRA_LDFLAGS "-Wl,-current_version,${DYLIB_CURRENT_VERSION}")
   else()
+    if(NOT EMSCRIPTEN)
     set(CMAKE_REQUIRED_FLAGS "-Wl,--no-undefined")
     check_c_compiler_flag("" HAVE_NO_UNDEFINED)
     set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
     if(HAVE_NO_UNDEFINED)
       list(APPEND EXTRA_LDFLAGS "-Wl,--no-undefined")
+    endif()
     endif()
   endif()
 endif()
@@ -752,6 +777,7 @@ if(ASSEMBLY)
       set(HAVE_MMX TRUE)
       set(HAVE_3DNOW TRUE)
     endif()
+    set(HAVE_ASSEMBLY TRUE)
     set(HAVE_SSE TRUE)
     set(HAVE_SSE2 TRUE)
     set(HAVE_SSE3 TRUE)
@@ -788,6 +814,10 @@ if(LIBC)
       string(TOUPPER ${_FN} _UPPER)
       set(HAVE_${_UPPER} 1)
     endforeach()
+    check_c_source_compiles(
+        "#include <wchar.h>\nint main() { wchar_t buf[32]; return (int)wcslcpy(buf, L\"\", 0); }\n" HAVE_WCSLCPY)
+    check_c_source_compiles(
+        "#include <wchar.h>\nint main() { wchar_t buf[32]; return (int)wcslcat(buf, L\"\", 0); }\n" HAVE_WCSLCAT)
     if(NOT CYGWIN AND NOT MINGW)
       set(HAVE_ALLOCA 1)
     endif()
@@ -799,7 +829,7 @@ if(LIBC)
     check_include_file(sys/types.h HAVE_SYS_TYPES_H)
     foreach(_HEADER
             stdio.h stdlib.h stddef.h stdarg.h malloc.h memory.h string.h limits.h
-            strings.h wchar.h inttypes.h stdint.h ctype.h math.h iconv.h signal.h libunwind.h)
+            strings.h wchar.h inttypes.h stdint.h ctype.h math.h iconv.h signal.h)# libunwind.h)
       string(TOUPPER "HAVE_${_HEADER}" _UPPER)
       string(REPLACE "." "_" _HAVE_H ${_UPPER})
       check_include_file("${_HEADER}" ${_HAVE_H})
@@ -836,6 +866,19 @@ if(LIBC)
     check_symbol_exists(getauxval "sys/auxv.h" HAVE_GETAUXVAL)
     check_symbol_exists(elf_aux_info "sys/auxv.h" HAVE_ELF_AUX_INFO)
     check_symbol_exists(poll "poll.h" HAVE_POLL)
+
+    if(IOS)
+      set(HAVE_FSEEKO64 FALSE)
+      set(HAVE__STRREV FALSE)
+      set(HAVE__STRUPR FALSE)
+      set(HAVE__STRLWR FALSE)
+      set(HAVE__LTOA FALSE)
+      set(HAVE__I64TOA FALSE)
+      set(HAVE__UITOA FALSE)
+      set(HAVE__ULTOA FALSE)
+      set(HAVE__UI64TOA FALSE)
+      set(HAVE_ITOA FALSE)
+    endif()
 
     check_library_exists(m pow "" HAVE_LIBM)
     if(HAVE_LIBM)
@@ -936,6 +979,7 @@ endif()
 if(SDL_JOYSTICK)
   if(JOYSTICK_VIRTUAL)
     set(SDL_JOYSTICK_VIRTUAL 1)
+    set(HAVE_JOYSTICK_VIRTUAL 1)
     file(GLOB JOYSTICK_VIRTUAL_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/virtual/*.c)
     set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_VIRTUAL_SOURCES})
   endif()
@@ -1253,9 +1297,9 @@ elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT RISCOS)
       endif()
       if(HAVE_LIBUNWIND_H)
         # We've already found the header, so REQUIRE the lib to be present
-        pkg_search_module(UNWIND REQUIRED libunwind)
-        pkg_search_module(UNWIND_GENERIC REQUIRED libunwind-generic)
-        list(APPEND EXTRA_LIBS ${UNWIND_LIBRARIES} ${UNWIND_GENERIC_LIBRARIES})
+        #pkg_search_module(UNWIND REQUIRED libunwind)
+        #pkg_search_module(UNWIND_GENERIC REQUIRED libunwind-generic)
+        #list(APPEND EXTRA_LIBS ${UNWIND_LIBRARIES} ${UNWIND_GENERIC_LIBRARIES})
       endif()
     endif()
 
@@ -1474,6 +1518,7 @@ elseif(WINDOWS)
     endif()
 
     if(WASAPI AND HAVE_AUDIOCLIENT_H AND HAVE_MMDEVICEAPI_H AND NOT WINDOWS_STORE)
+      set(HAVE_WASAPI 1)
       set(SDL_AUDIO_DRIVER_WASAPI 1)
       file(GLOB WASAPI_AUDIO_SOURCES ${SDL2_SOURCE_DIR}/src/audio/wasapi/*.c)
       set(SOURCE_FILES ${SOURCE_FILES} ${WASAPI_AUDIO_SOURCES})
@@ -1606,6 +1651,11 @@ elseif(WINDOWS)
     if(HAVE_DINPUT_H)
       set(SDL_JOYSTICK_DINPUT 1)
       list(APPEND EXTRA_LIBS dinput8)
+      if(CMAKE_COMPILER_IS_MINGW)
+        list(APPEND EXTRA_LIBS dxerr8)
+      elseif (NOT USE_WINSDK_DIRECTX)
+        list(APPEND EXTRA_LIBS dxerr)
+      endif()
     endif()
     if(HAVE_XINPUT_H)
       set(SDL_JOYSTICK_XINPUT 1)
@@ -1633,7 +1683,7 @@ elseif(WINDOWS)
     endif()
   endif()
 
-  file(GLOB VERSION_SOURCES ${SDL2_SOURCE_DIR}/src/main/windows/*.rc)
+  #file(GLOB VERSION_SOURCES ${SDL2_SOURCE_DIR}/src/main/windows/*.rc)
   file(GLOB SDLMAIN_SOURCES ${SDL2_SOURCE_DIR}/src/main/windows/*.c)
   if(MINGW OR CYGWIN)
     list(APPEND EXTRA_LIBS mingw32)
@@ -1783,6 +1833,15 @@ elseif(APPLE)
       set(SDL_IPHONE_LAUNCHSCREEN 1)
       file(GLOB UIKITVIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/uikit/*.m)
       set(SOURCE_FILES ${SOURCE_FILES} ${UIKITVIDEO_SOURCES})
+      if(VIDEO_COCOA)
+        set(HAVE_VIDEO_COCOA TRUE)
+      endif()
+      if(VIDEO_OPENGLES)
+        set(SDL_VIDEO_OPENGL_EGL 1)
+        set(SDL_VIDEO_OPENGL_ES2 1)
+        set(SDL_VIDEO_RENDER_OGL_ES2 1)
+        set(HAVE_VIDEO_OPENGLES TRUE)
+      endif()
     else()
       CheckCOCOA()
       if(VIDEO_OPENGL)
@@ -2081,12 +2140,12 @@ listtostr(EXTRA_CFLAGS _EXTRA_CFLAGS)
 set(EXTRA_CFLAGS ${_EXTRA_CFLAGS})
 
 # Compat helpers for the configuration files
-if(NOT CMAKE_HOST_WIN32)
+if(FALSE)#NOT CMAKE_HOST_WIN32)
   # TODO: we need a Windows script, too
   execute_process(COMMAND sh ${SDL2_SOURCE_DIR}/build-scripts/updaterev.sh
     WORKING_DIRECTORY ${SDL2_BINARY_DIR})
 endif()
-if(NOT WINDOWS OR CYGWIN)
+if(FALSE)#NOT WINDOWS OR CYGWIN)
   set(prefix ${CMAKE_INSTALL_PREFIX})
   set(exec_prefix "\${prefix}")
   set(libdir "\${exec_prefix}/lib${LIB_SUFFIX}")
@@ -2133,20 +2192,20 @@ Libs.private:")
 endif()
 
 ##### Info output #####
-message(STATUS "")
-message(STATUS "SDL2 was configured with the following options:")
-message(STATUS "")
-message(STATUS "Platform: ${CMAKE_SYSTEM}")
-message(STATUS "64-bit:   ${ARCH_64}")
-message(STATUS "Compiler: ${CMAKE_C_COMPILER}")
-message(STATUS "")
-message(STATUS "Subsystems:")
+#message(STATUS "")
+#message(STATUS "SDL2 was configured with the following options:")
+#message(STATUS "")
+#message(STATUS "Platform: ${CMAKE_SYSTEM}")
+#message(STATUS "64-bit:   ${ARCH_64}")
+#message(STATUS "Compiler: ${CMAKE_C_COMPILER}")
+#message(STATUS "")
+#message(STATUS "Subsystems:")
 foreach(_SUB ${SDL_SUBSYSTEMS})
   string(TOUPPER ${_SUB} _OPT)
-  message_bool_option(${_SUB} SDL_${_OPT})
+  #message_bool_option(${_SUB} SDL_${_OPT})
 endforeach()
-message(STATUS "")
-message(STATUS "Options:")
+#message(STATUS "")
+#message(STATUS "Options:")
 list(SORT ALLOPTIONS)
 foreach(_OPT ${ALLOPTIONS})
   # Longest option is VIDEO_X11_XSCREENSAVER = 22 characters
@@ -2156,41 +2215,41 @@ foreach(_OPT ${ALLOPTIONS})
   string(RANDOM LENGTH ${_PADLEN} ALPHABET " " _PADDING)
   message_tested_option(${_OPT} ${_PADDING})
 endforeach()
-message(STATUS "")
-message(STATUS " CFLAGS:        ${CMAKE_C_FLAGS}")
-message(STATUS " EXTRA_CFLAGS:  ${EXTRA_CFLAGS}")
-message(STATUS " EXTRA_LDFLAGS: ${EXTRA_LDFLAGS}")
-message(STATUS " EXTRA_LIBS:    ${EXTRA_LIBS}")
-message(STATUS "")
-message(STATUS " Build Shared Library: ${SDL_SHARED}")
-message(STATUS " Build Static Library: ${SDL_STATIC}")
+#message(STATUS "")
+#message(STATUS " CFLAGS:        ${CMAKE_C_FLAGS}")
+#message(STATUS " EXTRA_CFLAGS:  ${EXTRA_CFLAGS}")
+#message(STATUS " EXTRA_LDFLAGS: ${EXTRA_LDFLAGS}")
+#message(STATUS " EXTRA_LIBS:    ${EXTRA_LIBS}")
+#message(STATUS "")
+#message(STATUS " Build Shared Library: ${SDL_SHARED}")
+#message(STATUS " Build Static Library: ${SDL_STATIC}")
 if(SDL_STATIC)
-    message(STATUS " Build Static Library with Position Independent Code: ${SDL_STATIC_PIC}")
+    #message(STATUS " Build Static Library with Position Independent Code: ${SDL_STATIC_PIC}")
 endif()
-message(STATUS "")
+#message(STATUS "")
 if(UNIX)
-  message(STATUS "If something was not detected, although the libraries")
-  message(STATUS "were installed, then make sure you have set the")
-  message(STATUS "CFLAGS and LDFLAGS environment variables correctly.")
-  message(STATUS "")
+  #message(STATUS "If something was not detected, although the libraries")
+  #message(STATUS "were installed, then make sure you have set the")
+  #message(STATUS "CFLAGS and LDFLAGS environment variables correctly.")
+  #message(STATUS "")
 endif()
 
 if(WARN_ABOUT_ARM_SIMD_ASM_MIT)
-  message(STATUS "")
-  message(STATUS "SDL is being built with ARM SIMD optimizations, which")
-  message(STATUS "uses code licensed under the MIT license. If this is a")
-  message(STATUS "problem, please disable that code by rerunning CMake with:")
-  message(STATUS "")
-  message(STATUS "    -DARMSIMD=OFF")
+  #message(STATUS "")
+  #message(STATUS "SDL is being built with ARM SIMD optimizations, which")
+  #message(STATUS "uses code licensed under the MIT license. If this is a")
+  #message(STATUS "problem, please disable that code by rerunning CMake with:")
+  #message(STATUS "")
+  #message(STATUS "    -DARMSIMD=OFF")
 endif()
 
 if(WARN_ABOUT_ARM_NEON_ASM_MIT)
-  message(STATUS "")
-  message(STATUS "SDL is being built with ARM NEON optimizations, which")
-  message(STATUS "uses code licensed under the MIT license. If this is a")
-  message(STATUS "problem, please disable that code by rerunning CMake with:")
-  message(STATUS "")
-  message(STATUS "    -DARMNEON=OFF")
+  #message(STATUS "")
+  #message(STATUS "SDL is being built with ARM NEON optimizations, which")
+  #message(STATUS "uses code licensed under the MIT license. If this is a")
+  #message(STATUS "problem, please disable that code by rerunning CMake with:")
+  #message(STATUS "")
+  #message(STATUS "    -DARMNEON=OFF")
 endif()
 
 # Ensure that the extra cflags are used at compile time
@@ -2202,7 +2261,7 @@ add_library(SDL2main STATIC ${SDLMAIN_SOURCES})
 target_include_directories(SDL2main PUBLIC "$<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>" $<INSTALL_INTERFACE:include> $<INSTALL_INTERFACE:include/SDL2>)
 set(_INSTALL_LIBS "SDL2main")
 if (NOT ANDROID)
-  set_target_properties(SDL2main PROPERTIES DEBUG_POSTFIX "${SDL_CMAKE_DEBUG_POSTFIX}")
+  #set_target_properties(SDL2main PROPERTIES DEBUG_POSTFIX "${SDL_CMAKE_DEBUG_POSTFIX}")
 endif()
 endif()
 
@@ -2269,34 +2328,39 @@ endif()
 
 if(SDL_STATIC)
   set (BUILD_SHARED_LIBS FALSE)
-  add_library(SDL2-static STATIC ${SOURCE_FILES})
+  add_library(SDL2 STATIC ${SOURCE_FILES})
   if (NOT SDL_SHARED OR NOT WIN32)
-    set_target_properties(SDL2-static PROPERTIES OUTPUT_NAME "SDL2")
+    #set_target_properties(SDL2-static PROPERTIES OUTPUT_NAME "SDL2")
     # Note: Apparently, OUTPUT_NAME must really be unique; even when
     # CMAKE_IMPORT_LIBRARY_SUFFIX or the like are given. Otherwise
     # the static build may race with the import lib and one will get
     # clobbered, when the suffix is realized via subsequent rename.
   endif()
-  set_target_properties(SDL2-static PROPERTIES POSITION_INDEPENDENT_CODE ${SDL_STATIC_PIC})
+  #set_target_properties(SDL2-static PROPERTIES POSITION_INDEPENDENT_CODE ${SDL_STATIC_PIC})
   if(MSVC AND NOT LIBC)
-    set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB")
-    set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB")
-    set_target_properties(SDL2-static PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
+    #set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB")
+    #set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB")
+    #set_target_properties(SDL2-static PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
   endif()
   # TODO: Win32 platforms keep the same suffix .lib for import and static
   # libraries - do we need to consider this?
   set(_INSTALL_LIBS "SDL2-static" ${_INSTALL_LIBS})
-  target_link_libraries(SDL2-static ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
-  target_include_directories(SDL2-static PUBLIC "$<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>" $<INSTALL_INTERFACE:include> $<INSTALL_INTERFACE:include/SDL2>)
+  target_link_libraries(SDL2 ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
+  target_include_directories(SDL2 PUBLIC "$<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>" $<INSTALL_INTERFACE:include> $<INSTALL_INTERFACE:include/SDL2>)
   if(ANDROID)
-    target_include_directories(SDL2-static PRIVATE ${ANDROID_NDK}/sources/android/cpufeatures)
+    target_include_directories(SDL2 PRIVATE ${ANDROID_NDK}/sources/android/cpufeatures)
   else()
-    set_target_properties(SDL2-static PROPERTIES DEBUG_POSTFIX "${SDL_CMAKE_DEBUG_POSTFIX}")
+    #set_target_properties(SDL2-static PROPERTIES DEBUG_POSTFIX "${SDL_CMAKE_DEBUG_POSTFIX}")
   endif()
   if(IOS OR TVOS)
-    set_property(TARGET SDL2-static APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
+    set_property(TARGET SDL2 APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
   endif()
 endif()
+
+set_target_properties(SDL2main PROPERTIES FOLDER "Libraries")
+set_target_properties(SDL2 PROPERTIES FOLDER "Libraries")
+target_compile_definitions(SDL2 PUBLIC "DECLSPEC=")
+target_link_libraries(SDL2main SDL2 Engine)
 
 ##### Tests #####
 
@@ -2308,10 +2372,10 @@ if(SDL_TEST)
 endif()
 
 ##### Installation targets #####
-install(TARGETS ${_INSTALL_LIBS} EXPORT SDL2Targets
-  LIBRARY DESTINATION "lib${LIB_SUFFIX}"
-  ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
-  RUNTIME DESTINATION bin)
+#install(TARGETS ${_INSTALL_LIBS} EXPORT SDL2Targets
+#  LIBRARY DESTINATION "lib${LIB_SUFFIX}"
+#  ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
+#  RUNTIME DESTINATION bin)
 
 ##### Export files #####
 if (WINDOWS)
@@ -2321,23 +2385,23 @@ else ()
 endif ()
 
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file("${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake"
-  VERSION ${SDL_VERSION}
-  COMPATIBILITY AnyNewerVersion
-)
+#write_basic_package_version_file("${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake"
+#  VERSION ${SDL_VERSION}
+#  COMPATIBILITY AnyNewerVersion
+#)
 
-install(EXPORT SDL2Targets
-  FILE SDL2Targets.cmake
-  NAMESPACE SDL2::
-  DESTINATION ${PKG_PREFIX}
-)
-install(
-  FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/SDL2Config.cmake
-    ${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake
-  DESTINATION ${PKG_PREFIX}
-  COMPONENT Devel
-)
+#install(EXPORT SDL2Targets
+#  FILE SDL2Targets.cmake
+#  NAMESPACE SDL2::
+#  DESTINATION ${PKG_PREFIX}
+#)
+#install(
+#  FILES
+#    ${CMAKE_CURRENT_SOURCE_DIR}/SDL2Config.cmake
+#    ${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake
+#  DESTINATION ${PKG_PREFIX}
+#  COMPONENT Devel
+#)
 
 file(GLOB INCLUDE_FILES ${SDL2_SOURCE_DIR}/include/*.h)
 file(GLOB BIN_INCLUDE_FILES ${SDL2_BINARY_DIR}/include/*.h)
@@ -2346,7 +2410,7 @@ foreach(_FNAME ${BIN_INCLUDE_FILES})
   list(REMOVE_ITEM INCLUDE_FILES ${SDL2_SOURCE_DIR}/include/${_INCNAME})
 endforeach()
 list(APPEND INCLUDE_FILES ${BIN_INCLUDE_FILES})
-install(FILES ${INCLUDE_FILES} DESTINATION include/SDL2)
+#install(FILES ${INCLUDE_FILES} DESTINATION include/SDL2)
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" UPPER_BUILD_TYPE)
 if (UPPER_BUILD_TYPE MATCHES DEBUG)
@@ -2355,7 +2419,7 @@ else()
   set(SOPOSTFIX "")
 endif()
 
-if(NOT (WINDOWS OR CYGWIN))
+if(FALSE)#NOT (WINDOWS OR CYGWIN))
   if(SDL_SHARED)
     set(SOEXT ${CMAKE_SHARED_LIBRARY_SUFFIX}) # ".so", ".dylib", etc.
     get_target_property(SONAME SDL2 OUTPUT_NAME)
@@ -2381,7 +2445,7 @@ endif()
 
 ##### Uninstall target #####
 
-if(NOT TARGET uninstall)
+if(FALSE)#NOT TARGET uninstall)
   configure_file(
       "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
       "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
