@@ -20,7 +20,7 @@ public:
     SourceLocation* errorLocation() const { return mErrorLocation; }
 
     Expr* tryParseExpression(SourceLocation* location, const char* str, SymbolTable* variables = nullptr);
-    Expr* tryParseExpression(ParsingContext* context, bool unambiguous);
+    Expr* tryParseExpression(ParsingContext* context, bool unambiguous, bool allowHereVariable);
 
 private:
     static const std::unordered_map<std::string, Expr*(ExpressionParser::*)()> mBuiltInFunctions;
@@ -33,20 +33,20 @@ private:
     std::string mError;
     SourceLocation* mErrorLocation;
 
-    Expr* parseExpression(bool unambiguous);
-    Expr* parseConditionalExpression(bool unambiguous);
-    Expr* parseLogicOrExpression(bool unambiguous);
-    Expr* parseLogicAndExpression(bool unambiguous);
-    Expr* parseBitwiseOrExpression(bool unambiguous);
-    Expr* parseBitwiseXorExpression(bool unambiguous);
-    Expr* parseBitwiseAndExpression(bool unambiguous);
-    Expr* parseEqualityExpression(bool unambiguous);
-    Expr* parseRelationalExpression(bool unambiguous);
-    Expr* parseShiftExpression(bool unambiguous);
-    Expr* parseAdditionExpression(bool unambiguous);
-    Expr* parseMultiplicationExpression(bool unambiguous);
-    Expr* parseUnaryExpression(bool unambiguous);
-    Expr* parseAtomicExpression(bool unambiguous);
+    Expr* parseExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseConditionalExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseLogicOrExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseLogicAndExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseBitwiseOrExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseBitwiseXorExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseBitwiseAndExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseEqualityExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseRelationalExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseShiftExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseAdditionExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseMultiplicationExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseUnaryExpression(bool unambiguous, bool allowHereVariable);
+    Expr* parseAtomicExpression(bool unambiguous, bool allowHereVariable);
 
     Expr* parseAddressOfFunction();
     Expr* parseBaseOfFunction();

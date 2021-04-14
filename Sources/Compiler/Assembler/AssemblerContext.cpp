@@ -90,11 +90,11 @@ void AssemblerContext::addConstant(SymbolTable* symbolTable, SourceLocation* loc
     }
 }
 
-void AssemblerContext::addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name)
+void AssemblerContext::addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name, size_t offset)
 {
     if (!mSection)
         throw CompilerError(location, "label not in a section.");
-    auto label = new (heap()) Label(location, name);
+    auto label = new (heap()) Label(location, name, offset);
     if (!symbolTable->addSymbol(new (heap()) LabelSymbol(location, label))) {
         std::stringstream ss;
         ss << "duplicate identifier \"" << label->name() << "\".";
@@ -111,7 +111,7 @@ Label* AssemblerContext::addEphemeralLabel(SourceLocation* location)
     std::stringstream ss;
     ss << '$' << allocEphemeralLabelCounter();
     std::string str = ss.str();
-    auto label = new (heap()) Label(location, heap()->allocString(str.c_str(), str.length()));
+    auto label = new (heap()) Label(location, heap()->allocString(str.c_str(), str.length()), 0);
     addInstruction(label);
 
     return label;

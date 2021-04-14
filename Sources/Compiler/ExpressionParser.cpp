@@ -2,6 +2,7 @@
 #include "Common/Strings.h"
 #include "Compiler/Tree/Expr.h"
 #include "Compiler/ParsingContext.h"
+#include "Compiler/CompilerError.h"
 #include "Compiler/ExpressionParser.h"
 #include "Compiler/Token.h"
 #include "Compiler/Lexer.h"
@@ -35,17 +36,17 @@ Expr* ExpressionParser::tryParseExpression(SourceLocation* location, const char*
         variables = new (mHeap) SymbolTable(nullptr);
 
     const Token* token = lexer.firstToken();
-    ParsingContext context(mHeap, token, variables, mLocalLabelsPrefix, false);
-    return tryParseExpression(&context, true);
+    ParsingContext context(mHeap, token, nullptr, variables, mLocalLabelsPrefix, false);
+    return tryParseExpression(&context, true, false);
 }
 
-Expr* ExpressionParser::tryParseExpression(ParsingContext* context, bool unambiguous)
+Expr* ExpressionParser::tryParseExpression(ParsingContext* context, bool unambiguous, bool allowHereVariable)
 {
     mContext = context;
     mError.clear();
     mErrorLocation = nullptr;
 
-    auto expr = parseExpression(unambiguous);
+    auto expr = parseExpression(unambiguous, allowHereVariable);
     if (!expr)
         return nullptr;
 
@@ -53,14 +54,14 @@ Expr* ExpressionParser::tryParseExpression(ParsingContext* context, bool unambig
     return expr;
 }
 
-Expr* ExpressionParser::parseExpression(bool unambiguous)
+Expr* ExpressionParser::parseExpression(bool unambiguous, bool allowHereVariable)
 {
-    return parseConditionalExpression(unambiguous);
+    return parseConditionalExpression(unambiguous, allowHereVariable);
 }
 
-Expr* ExpressionParser::parseConditionalExpression(bool unambiguous)
+Expr* ExpressionParser::parseConditionalExpression(bool unambiguous, bool allowHereVariable)
 {
-    auto expr = parseLogicOrExpression(unambiguous);
+    auto expr = parseLogicOrExpression(unambiguous, allowHereVariable);
     if (!expr)
         return nullptr;
 
@@ -69,7 +70,7 @@ Expr* ExpressionParser::parseConditionalExpression(bool unambiguous)
         auto location = mContext->token()->location();
 
         mContext->nextToken();
-        auto opThen = parseExpression(true);
+        auto opThen = parseExpression(true, allowHereVariable);
         if (!opThen)
             return nullptr;
 
@@ -81,7 +82,7 @@ Expr* ExpressionParser::parseConditionalExpression(bool unambiguous)
 
         mContext->ensureNotEol();
         mContext->nextToken();
-        auto opElse = parseConditionalExpression(true);
+        auto opElse = parseConditionalExpression(true, allowHereVariable);
         if (!opElse)
             return nullptr;
 
@@ -92,9 +93,9 @@ Expr* ExpressionParser::parseConditionalExpression(bool unambiguous)
 }
 
 #define BINARY_OPERATOR_METHOD(NAME, TOKEN, OPERAND) \
-    Expr* ExpressionParser::parse##NAME##Expression(bool unambiguous) \
+    Expr* ExpressionParser::parse##NAME##Expression(bool unambiguous, bool allowHereVariable) \
     { \
-        auto expr = parse##OPERAND##Expression(unambiguous); \
+        auto expr = parse##OPERAND##Expression(unambiguous, allowHereVariable); \
         if (!expr) \
             return nullptr; \
         \
@@ -104,7 +105,7 @@ Expr* ExpressionParser::parseConditionalExpression(bool unambiguous)
             auto location = mContext->token()->location(); \
             mContext->nextToken(); \
             \
-            auto op2 = parse##OPERAND##Expression(true); \
+            auto op2 = parse##OPERAND##Expression(true, allowHereVariable); \
             if (!op2) \
                 return nullptr; \
             \
@@ -120,9 +121,9 @@ BINARY_OPERATOR_METHOD(BitwiseOr, TOK_VBAR, BitwiseXor)
 BINARY_OPERATOR_METHOD(BitwiseXor, TOK_CARET, BitwiseAnd)
 BINARY_OPERATOR_METHOD(BitwiseAnd, TOK_AMPERSAND, Equality)
 
-Expr* ExpressionParser::parseEqualityExpression(bool unambiguous)
+Expr* ExpressionParser::parseEqualityExpression(bool unambiguous, bool allowHereVariable)
 {
-    auto expr = parseRelationalExpression(unambiguous);
+    auto expr = parseRelationalExpression(unambiguous, allowHereVariable);
     if (!expr)
         return nullptr;
 
@@ -132,7 +133,7 @@ Expr* ExpressionParser::parseEqualityExpression(bool unambiguous)
         const Token* token = mContext->token();
         mContext->nextToken();
 
-        auto op2 = parseRelationalExpression(true);
+        auto op2 = parseRelationalExpression(true, allowHereVariable);
         if (!op2)
             return nullptr;
 
@@ -145,9 +146,9 @@ Expr* ExpressionParser::parseEqualityExpression(bool unambiguous)
     return expr;
 }
 
-Expr* ExpressionParser::parseRelationalExpression(bool unambiguous)
+Expr* ExpressionParser::parseRelationalExpression(bool unambiguous, bool allowHereVariable)
 {
-    auto expr = parseShiftExpression(unambiguous);
+    auto expr = parseShiftExpression(unambiguous, allowHereVariable);
     if (!expr)
         return nullptr;
 
@@ -158,7 +159,7 @@ Expr* ExpressionParser::parseRelationalExpression(bool unambiguous)
         const Token* token = mContext->token();
         mContext->nextToken();
 
-        auto op2 = parseShiftExpression(true);
+        auto op2 = parseShiftExpression(true, allowHereVariable);
         if (!op2)
             return nullptr;
 
@@ -173,9 +174,9 @@ Expr* ExpressionParser::parseRelationalExpression(bool unambiguous)
     return expr;
 }
 
-Expr* ExpressionParser::parseShiftExpression(bool unambiguous)
+Expr* ExpressionParser::parseShiftExpression(bool unambiguous, bool allowHereVariable)
 {
-    auto expr = parseAdditionExpression(unambiguous);
+    auto expr = parseAdditionExpression(unambiguous, allowHereVariable);
     if (!expr)
         return nullptr;
 
@@ -185,7 +186,7 @@ Expr* ExpressionParser::parseShiftExpression(bool unambiguous)
         const Token* token = mContext->token();
         mContext->nextToken();
 
-        auto op2 = parseAdditionExpression(true);
+        auto op2 = parseAdditionExpression(true, allowHereVariable);
         if (!op2)
             return nullptr;
 
@@ -198,9 +199,9 @@ Expr* ExpressionParser::parseShiftExpression(bool unambiguous)
     return expr;
 }
 
-Expr* ExpressionParser::parseAdditionExpression(bool unambiguous)
+Expr* ExpressionParser::parseAdditionExpression(bool unambiguous, bool allowHereVariable)
 {
-    auto expr = parseMultiplicationExpression(unambiguous);
+    auto expr = parseMultiplicationExpression(unambiguous, allowHereVariable);
     if (!expr)
         return nullptr;
 
@@ -210,7 +211,7 @@ Expr* ExpressionParser::parseAdditionExpression(bool unambiguous)
         const Token* token = mContext->token();
         mContext->nextToken();
 
-        auto op2 = parseMultiplicationExpression(true);
+        auto op2 = parseMultiplicationExpression(true, allowHereVariable);
         if (!op2)
             return nullptr;
 
@@ -223,9 +224,9 @@ Expr* ExpressionParser::parseAdditionExpression(bool unambiguous)
     return expr;
 }
 
-Expr* ExpressionParser::parseMultiplicationExpression(bool unambiguous)
+Expr* ExpressionParser::parseMultiplicationExpression(bool unambiguous, bool allowHereVariable)
 {
-    auto expr = parseUnaryExpression(unambiguous);
+    auto expr = parseUnaryExpression(unambiguous, allowHereVariable);
     if (!expr)
         return nullptr;
 
@@ -236,7 +237,7 @@ Expr* ExpressionParser::parseMultiplicationExpression(bool unambiguous)
         const Token* token = mContext->token();
         mContext->nextToken();
 
-        auto op2 = parseUnaryExpression(true);
+        auto op2 = parseUnaryExpression(true, allowHereVariable);
         if (!op2)
             return nullptr;
 
@@ -250,14 +251,14 @@ Expr* ExpressionParser::parseMultiplicationExpression(bool unambiguous)
     return expr;
 }
 
-Expr* ExpressionParser::parseUnaryExpression(bool unambiguous)
+Expr* ExpressionParser::parseUnaryExpression(bool unambiguous, bool allowHereVariable)
 {
     switch (mContext->token()->id()) {
         case TOK_MINUS: {
             mContext->ensureNotEol();
             auto location = mContext->token()->location();
             mContext->nextToken();
-            auto operand = parseAtomicExpression(true);
+            auto operand = parseAtomicExpression(true, allowHereVariable);
             if (!operand)
                 return nullptr;
             return new (mHeap) ExprNegate(location, operand);
@@ -266,13 +267,13 @@ Expr* ExpressionParser::parseUnaryExpression(bool unambiguous)
         case TOK_PLUS:
             mContext->ensureNotEol();
             mContext->nextToken();
-            return parseAtomicExpression(true);
+            return parseAtomicExpression(true, allowHereVariable);
 
         case TOK_EXCLAMATION: {
             mContext->ensureNotEol();
             auto location = mContext->token()->location();
             mContext->nextToken();
-            auto operand = parseAtomicExpression(true);
+            auto operand = parseAtomicExpression(true, allowHereVariable);
             if (!operand)
                 return nullptr;
             return new (mHeap) ExprLogicNot(location, operand);
@@ -282,17 +283,17 @@ Expr* ExpressionParser::parseUnaryExpression(bool unambiguous)
             mContext->ensureNotEol();
             auto location = mContext->token()->location();
             mContext->nextToken();
-            auto operand = parseAtomicExpression(true);
+            auto operand = parseAtomicExpression(true, allowHereVariable);
             if (!operand)
                 return nullptr;
             return new (mHeap) ExprBitwiseNot(location, operand);
         }
     }
 
-    return parseAtomicExpression(unambiguous);
+    return parseAtomicExpression(unambiguous, allowHereVariable);
 }
 
-Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
+Expr* ExpressionParser::parseAtomicExpression(bool unambiguous, bool allowHereVariable)
 {
     switch (mContext->token()->id()) {
         case TOK_CHAR:
@@ -389,7 +390,7 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
 
             if (unambiguous) {
                 mContext->nextToken();
-                auto expr = parseExpression(true);
+                auto expr = parseExpression(true, allowHereVariable);
                 if (!expr)
                     return nullptr;
 
@@ -407,6 +408,69 @@ Expr* ExpressionParser::parseAtomicExpression(bool unambiguous)
             mError = "'(' is ambiguous in this context (could be expression or memory reference).";
             mErrorLocation = mContext->token()->location();
             return nullptr;
+
+        case TOK_LCURLY: {
+            mContext->ensureNotEol();
+            mContext->nextToken();
+
+            Expr* expr = nullptr;
+            if (mContext->token()->id() == TOK_ATHERE) {
+                mContext->ensureNotEol();
+
+                const Token* atHereToken = mContext->token();
+                mContext->nextToken();
+                mContext->ensureNotEol();
+
+                if (mContext->token()->id() < TOK_IDENTIFIER && mContext->token()->id() != TOK_LABEL_LOCAL_NAME) {
+                    mError = "expected variable name.";
+                    mErrorLocation = mContext->token()->location();
+                    return nullptr;
+                }
+
+                const Token* nameToken = mContext->token();
+                mContext->nextToken();
+
+                Expr* initializer = nullptr;
+                if (mContext->token()->id() == TOK_ASSIGN) {
+                    mContext->ensureNotEol();
+
+                    mContext->nextToken();
+                    mContext->ensureNotEol();
+
+                    initializer = parseExpression(true, true);
+                    if (!initializer)
+                        return nullptr;
+
+                    if (initializer->containsHereVariable()) {
+                        throw CompilerError(initializer->location(),
+                            "@here variable cannot be used as initializer for another @here variable.");
+                    }
+                }
+
+                if (!allowHereVariable) {
+                    // Use exception here instead of `return nullptr`, because this error is fatal
+                    throw CompilerError(atHereToken->location(), "@here is not allowed in this context.");
+                }
+
+                expr = new (mHeap) ExprVariableHere(nameToken, initializer);
+            } else {
+                std::stringstream ss;
+                ss << "unexpected " << mContext->token()->name() << '.';
+                mError = ss.str();
+                mErrorLocation = mContext->token()->location();
+                return nullptr;
+            }
+
+            mContext->ensureNotEol();
+            if (mContext->token()->id() != TOK_RCURLY) {
+                mError = "expected '}'.";
+                mErrorLocation = mContext->token()->location();
+                return nullptr;
+            }
+
+            mContext->nextToken();
+            return expr;
+        }
 
         default:
             mError = "expected expression.";

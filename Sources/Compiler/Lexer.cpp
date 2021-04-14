@@ -259,6 +259,11 @@ void Lexer::scan(const FileID* file, const char* p, int startLine)
                     }
                     continue;
                 }
+                if (p[0] == 'h' && p[1] == 'e' && p[2] == 'r' && p[3] == 'e' && !isIdentifier(p[4])) {
+                    p += 4;
+                    token(TOK_ATHERE, "'@here'");
+                    continue;
+                }
                 token(TOK_AT, "'@'");
                 continue;
             }

@@ -50,9 +50,9 @@ void Z80::bit::toString(std::stringstream& ss) const
     mValue->toString(ss);
 }
 
-bool Z80::bit::tryParse(ParsingContext* c)
+bool Z80::bit::tryParse(ParsingContext* c, size_t)
 {
-    return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+    return c->expression(mValue, &RegisterNames, &ConditionNames, false, false);
 }
 
 bool Z80::bit::canEvaluate(const int64_t* nextAddress,
@@ -76,9 +76,12 @@ void Z80::byte::toString(std::stringstream& ss) const
     mValue->toString(ss);
 }
 
-bool Z80::byte::tryParse(ParsingContext* c)
+bool Z80::byte::tryParse(ParsingContext* c, size_t offset)
 {
-    return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+    if (!c->expression(mValue, &RegisterNames, &ConditionNames, false, true))
+        return false;
+    c->setupHereVariable(mValue, offset);
+    return true;
 }
 
 bool Z80::byte::canEvaluate(const int64_t* nextAddress,
@@ -99,9 +102,12 @@ void Z80::word::toString(std::stringstream& ss) const
     mValue->toString(ss);
 }
 
-bool Z80::word::tryParse(ParsingContext* c)
+bool Z80::word::tryParse(ParsingContext* c, size_t offset)
 {
-    return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+    if (!c->expression(mValue, &RegisterNames, &ConditionNames, false, true))
+        return false;
+    c->setupHereVariable(mValue, offset);
+    return true;
 }
 
 bool Z80::word::canEvaluate(const int64_t* nextAddress,
@@ -124,7 +130,7 @@ void Z80::memBC::toString(std::stringstream& ss) const
     ss << "(BC)";
 }
 
-bool Z80::memBC::tryParse(ParsingContext* c)
+bool Z80::memBC::tryParse(ParsingContext* c, size_t)
 {
     return c->consumeIdentifierInParentheses("bc");
 }
@@ -136,7 +142,7 @@ void Z80::memDE::toString(std::stringstream& ss) const
     ss << "(DE)";
 }
 
-bool Z80::memDE::tryParse(ParsingContext* c)
+bool Z80::memDE::tryParse(ParsingContext* c, size_t)
 {
     return c->consumeIdentifierInParentheses("de");
 }
@@ -148,7 +154,7 @@ void Z80::memHL::toString(std::stringstream& ss) const
     ss << "(HL)";
 }
 
-bool Z80::memHL::tryParse(ParsingContext* c)
+bool Z80::memHL::tryParse(ParsingContext* c, size_t)
 {
     return c->consumeIdentifierInParentheses("hl");
 }
@@ -160,7 +166,7 @@ void Z80::memIX::toString(std::stringstream& ss) const
     ss << "(IX)";
 }
 
-bool Z80::memIX::tryParse(ParsingContext* c)
+bool Z80::memIX::tryParse(ParsingContext* c, size_t)
 {
     return c->consumeIdentifierInParentheses("ix");
 }
@@ -172,7 +178,7 @@ void Z80::memIY::toString(std::stringstream& ss) const
     ss << "(IY)";
 }
 
-bool Z80::memIY::tryParse(ParsingContext* c)
+bool Z80::memIY::tryParse(ParsingContext* c, size_t)
 {
     return c->consumeIdentifierInParentheses("iy");
 }
@@ -184,7 +190,7 @@ void Z80::memSP::toString(std::stringstream& ss) const
     ss << "(SP)";
 }
 
-bool Z80::memSP::tryParse(ParsingContext* c)
+bool Z80::memSP::tryParse(ParsingContext* c, size_t)
 {
     return c->consumeIdentifierInParentheses("sp");
 }
@@ -198,9 +204,12 @@ void Z80::memAddr::toString(std::stringstream& ss) const
     ss << ')';
 }
 
-bool Z80::memAddr::tryParse(ParsingContext* c)
+bool Z80::memAddr::tryParse(ParsingContext* c, size_t offset)
 {
-    return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false);
+    if (!c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false, true))
+        return false;
+    c->setupHereVariable(mValue, offset);
+    return true;
 }
 
 bool Z80::memAddr::canEvaluate(const int64_t* nextAddress,
@@ -230,7 +239,7 @@ void Z80::IX_byte::toString(std::stringstream& ss) const
     }
 }
 
-bool Z80::IX_byte::tryParse(ParsingContext* c)
+bool Z80::IX_byte::tryParse(ParsingContext* c, size_t offset)
 {
     if (!c->consumeLeftParenthesis())
         return false;
@@ -241,13 +250,15 @@ bool Z80::IX_byte::tryParse(ParsingContext* c)
 
     if (c->token()->id() == TOK_PLUS) {
         c->nextToken();
-        if (!c->expression(mValue, &RegisterNames, &ConditionNames, true))
+        if (!c->expression(mValue, &RegisterNames, &ConditionNames, true, true))
             return false;
+        c->setupHereVariable(mValue, offset);
     } else if (c->token()->id() == TOK_MINUS) {
         SourceLocation* minusLocation = c->token()->location();
         c->nextToken();
-        if (!c->expression(mValue, &RegisterNames, &ConditionNames, true))
+        if (!c->expression(mValue, &RegisterNames, &ConditionNames, true, true))
             return false;
+        c->rejectHereVariableInIXIY(mValue);
         mValue = new (c->heap()) ExprNegate(minusLocation, mValue);
     } else
         mValue = new (c->heap()) ExprNumber(registerLocation, 0);
@@ -280,7 +291,7 @@ void Z80::IY_byte::toString(std::stringstream& ss) const
     }
 }
 
-bool Z80::IY_byte::tryParse(ParsingContext* c)
+bool Z80::IY_byte::tryParse(ParsingContext* c, size_t offset)
 {
     if (!c->consumeLeftParenthesis())
         return false;
@@ -291,14 +302,16 @@ bool Z80::IY_byte::tryParse(ParsingContext* c)
 
     if (c->token()->id() == TOK_PLUS) {
         c->nextToken();
-        if (!c->expression(mValue, &RegisterNames, &ConditionNames, true))
+        if (!c->expression(mValue, &RegisterNames, &ConditionNames, true, true))
             return false;
+        c->setupHereVariable(mValue, offset);
     }
     else if (c->token()->id() == TOK_MINUS) {
         SourceLocation* minusLocation = c->token()->location();
         c->nextToken();
-        if (!c->expression(mValue, &RegisterNames, &ConditionNames, true))
+        if (!c->expression(mValue, &RegisterNames, &ConditionNames, true, true))
             return false;
+        c->rejectHereVariableInIXIY(mValue);
         mValue = new (c->heap()) ExprNegate(minusLocation, mValue);
     }
     else
@@ -325,9 +338,12 @@ void Z80::relOffset::toString(std::stringstream& ss) const
     mValue->toString(ss);
 }
 
-bool Z80::relOffset::tryParse(ParsingContext* c)
+bool Z80::relOffset::tryParse(ParsingContext* c, size_t offset)
 {
-    return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+    if (!c->expression(mValue, &RegisterNames, &ConditionNames, false, true))
+        return false;
+    c->setupHereVariable(mValue, offset);
+    return true;
 }
 
 bool Z80::relOffset::canEvaluate(const int64_t* nextAddress,
@@ -348,7 +364,7 @@ void Z80::portC::toString(std::stringstream& ss) const
     ss << "(C)";
 }
 
-bool Z80::portC::tryParse(ParsingContext* c)
+bool Z80::portC::tryParse(ParsingContext* c, size_t)
 {
     return c->consumeIdentifierInParentheses("c");
 }
@@ -362,9 +378,12 @@ void Z80::portAddr::toString(std::stringstream& ss) const
     ss << ')';
 }
 
-bool Z80::portAddr::tryParse(ParsingContext* c)
+bool Z80::portAddr::tryParse(ParsingContext* c, size_t offset)
 {
-    return c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false);
+    if (!c->expressionInParentheses(mValue, &RegisterNames, &ConditionNames, false, true))
+        return false;
+    c->setupHereVariable(mValue, offset);
+    return true;
 }
 
 bool Z80::portAddr::canEvaluate(const int64_t* nextAddress,
@@ -385,9 +404,9 @@ void Z80::intMode::toString(std::stringstream& ss) const
     mValue->toString(ss);
 }
 
-bool Z80::intMode::tryParse(ParsingContext* c)
+bool Z80::intMode::tryParse(ParsingContext* c, size_t)
 {
-    return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+    return c->expression(mValue, &RegisterNames, &ConditionNames, false, false);
 }
 
 bool Z80::intMode::canEvaluate(const int64_t* nextAddress,
@@ -414,9 +433,9 @@ void Z80::rstIndex::toString(std::stringstream& ss) const
     mValue->toString(ss);
 }
 
-bool Z80::rstIndex::tryParse(ParsingContext* c)
+bool Z80::rstIndex::tryParse(ParsingContext* c, size_t)
 {
-    return c->expression(mValue, &RegisterNames, &ConditionNames, false);
+    return c->expression(mValue, &RegisterNames, &ConditionNames, false, false);
 }
 
 bool Z80::rstIndex::canEvaluate(const int64_t* nextAddress,
@@ -449,7 +468,7 @@ void Z80::AF_::toString(std::stringstream& ss)
     ss << "AF'";
 }
 
-bool Z80::AF_::tryParse(ParsingContext* context)
+bool Z80::AF_::tryParse(ParsingContext* context, size_t)
 {
     return context->consumeIdentifier("AF'");
 }
@@ -457,7 +476,7 @@ bool Z80::AF_::tryParse(ParsingContext* context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define Z80_OPCODE_0(OP, BYTES, TSTATES) \
-    static const auto OP##_bytes = toArray BYTES; \
+    static const auto OP##_bytes = toUInt8Array BYTES; \
     constexpr size_t Z80::OP::arraySizeInBytes() \
     { \
         int high = 0; (void)high; \
@@ -522,7 +541,7 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         (void)sectionResolver; \
         if (!mOp1.canEvaluate(&nextAddress, sectionResolver, resolveError)) \
             return false; \
-        auto array = toArray BYTES; \
+        auto array = toUInt8Array BYTES; \
         emitter->emitBytes(location(), array.data(), array.size()); \
         nextAddress += array.size(); \
         return true; \
@@ -564,7 +583,7 @@ bool Z80::AF_::tryParse(ParsingContext* context)
         if (!mOp1.canEvaluate(&nextAddress, sectionResolver, resolveError) \
                 || !mOp2.canEvaluate(&nextAddress, sectionResolver, resolveError)) \
             return false; \
-        auto array = toArray BYTES; \
+        auto array = toUInt8Array BYTES; \
         emitter->emitBytes(location(), array.data(), array.size()); \
         nextAddress += array.size(); \
         return true; \

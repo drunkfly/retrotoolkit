@@ -38,7 +38,7 @@ public:
 
     virtual void addInstruction(Instruction* instruction);
     virtual void addConstant(SymbolTable* symbolTable, SourceLocation* location, const char* name, Expr* value);
-    virtual void addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name);
+    virtual void addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name, size_t offset = 0);
     virtual Label* addEphemeralLabel(SourceLocation* location);
     int allocEphemeralLabelCounter();
 

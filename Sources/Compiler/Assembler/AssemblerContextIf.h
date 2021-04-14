@@ -26,7 +26,7 @@ public:
 
     void addInstruction(Instruction* instruction) override;
     void addConstant(SymbolTable* symbolTable, SourceLocation* location, const char* name, Expr* value) override;
-    void addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name) override;
+    void addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name, size_t offset) override;
 
 private:
     MacroIf* mMacro;

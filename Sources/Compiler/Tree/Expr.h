@@ -5,6 +5,7 @@
 #include "Compiler/Tree/SymbolTable.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/Value.h"
+#include "Compiler/Token.h"
 
 class ExprIdentifier;
 class AssemblerContext;
@@ -22,6 +23,9 @@ public:
     SourceLocation* location() const { return mLocation; }
 
     virtual bool isNegate() const;
+
+    virtual bool isHereVariable() const;
+    virtual bool containsHereVariable() const = 0;
 
     virtual void toString(std::stringstream& ss) const = 0;
 
@@ -59,7 +63,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class ExprCurrentAddress : public Expr
+class ExprCurrentAddress final : public Expr
 {
 public:
     explicit ExprCurrentAddress(SourceLocation* location)
@@ -67,6 +71,8 @@ public:
         , mLabel(nullptr)
     {
     }
+
+    bool containsHereVariable() const override;
 
     void toString(std::stringstream& ss) const override;
 
@@ -83,7 +89,38 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class ExprNumber : public Expr
+class ExprVariableHere final : public Expr
+{
+public:
+    ExprVariableHere(const Token* name, Expr* initializer)
+        : Expr(name->location())
+        , mName(name)
+        , mInitializer(initializer)
+    {
+    }
+
+    const Token* variableName() const { return mName; }
+
+    bool isHereVariable() const override;
+    bool containsHereVariable() const override;
+
+    void toString(std::stringstream& ss) const override;
+
+    void replaceCurrentAddressWithLabel(AssemblerContext* context) override;
+
+private:
+    const Token* mName;
+    Expr* mInitializer;
+
+    bool canEvaluate(std::unique_ptr<CompilerError>& resolveError) const override;
+    Value evaluate() const override;
+
+    DISABLE_COPY(ExprVariableHere);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ExprNumber final : public Expr
 {
 public:
     ExprNumber(SourceLocation* location, int64_t value)
@@ -91,6 +128,8 @@ public:
         , mValue(value)
     {
     }
+
+    bool containsHereVariable() const override;
 
     void toString(std::stringstream& ss) const override;
 
@@ -107,7 +146,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class ExprIdentifier : public Expr
+class ExprIdentifier final : public Expr
 {
 public:
     ExprIdentifier(SourceLocation* location, SymbolTable* table, std::string name)
@@ -117,6 +156,8 @@ public:
     {
         registerFinalizer();
     }
+
+    bool containsHereVariable() const override;
 
     void toString(std::stringstream& ss) const override;
 
@@ -134,7 +175,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class ExprConditional : public Expr
+class ExprConditional final : public Expr
 {
 public:
     ExprConditional(SourceLocation* location, Expr* cond, Expr* opThen, Expr* opElse)
@@ -144,6 +185,8 @@ public:
         , mElse(opElse)
     {
     }
+
+    bool containsHereVariable() const override;
 
     void toString(std::stringstream& ss) const override;
 
@@ -163,7 +206,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define TREE_SECTION_OPERATOR(NAME) \
-    class Expr##NAME : public Expr \
+    class Expr##NAME final : public Expr \
     { \
     public: \
         Expr##NAME(SourceLocation* location, const char* sectionName) \
@@ -172,6 +215,7 @@ private:
         { \
         } \
         const char* sectionName() const noexcept { return mSectionName; } \
+        bool containsHereVariable() const override; \
         void toString(std::stringstream& ss) const override; \
         void replaceCurrentAddressWithLabel(AssemblerContext* context) override; \
     private: \
@@ -188,7 +232,7 @@ TREE_SECTION_OPERATOR(SizeOfSection);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define TREE_UNARY_OPERATOR(NAME) \
-    class Expr##NAME : public Expr \
+    class Expr##NAME final : public Expr \
     { \
     public: \
         Expr##NAME(SourceLocation* location, Expr* operand) \
@@ -197,6 +241,7 @@ TREE_SECTION_OPERATOR(SizeOfSection);
         { \
         } \
         Expr* operand() const noexcept { return mOperand; } \
+        bool containsHereVariable() const override; \
         void toString(std::stringstream& ss) const override; \
         void replaceCurrentAddressWithLabel(AssemblerContext* context) override; \
     private: \
@@ -207,7 +252,7 @@ TREE_SECTION_OPERATOR(SizeOfSection);
     }
 
 #define TREE_BINARY_OPERATOR(NAME) \
-    class Expr##NAME : public Expr \
+    class Expr##NAME final : public Expr \
     { \
     public: \
         Expr##NAME(SourceLocation* location, Expr* op1, Expr* op2) \
@@ -216,6 +261,7 @@ TREE_SECTION_OPERATOR(SizeOfSection);
             , mOperand2(op2) \
         { \
         } \
+        bool containsHereVariable() const override; \
         void toString(std::stringstream& ss) const override; \
         void replaceCurrentAddressWithLabel(AssemblerContext* context) override; \
     private: \
@@ -236,6 +282,7 @@ public:
     }
 
     bool isNegate() const override;
+    bool containsHereVariable() const override;
 
     Expr* operand() const noexcept { return mOperand; }
 

@@ -142,7 +142,7 @@ void AssemblerContextIf::addConstant(SymbolTable* symbolTable, SourceLocation* l
     constSymbol->addValue(condition(), value);
 }
 
-void AssemblerContextIf::addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name)
+void AssemblerContextIf::addLabel(SymbolTable* symbolTable, SourceLocation* location, const char* name, size_t offset)
 {
     if (!currentSection())
         throw CompilerError(location, "label not in a section.");
@@ -168,7 +168,7 @@ void AssemblerContextIf::addLabel(SymbolTable* symbolTable, SourceLocation* loca
         }
     }
 
-    auto label = new (heap()) Label(location, std::move(name));
+    auto label = new (heap()) Label(location, std::move(name), offset);
     labelSymbol->addLabel(condition(), label);
 
     addInstruction(label);

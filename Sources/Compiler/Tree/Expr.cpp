@@ -40,6 +40,11 @@ bool Expr::isNegate() const
     return false;
 }
 
+bool Expr::isHereVariable() const
+{
+    return false;
+}
+
 bool Expr::canEvaluateValue(const int64_t* currentAddress,
     ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -192,6 +197,23 @@ template <bool SUB, typename T> Value Expr::smartEvaluate(T&& operatr, Value a, 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+bool ExprCurrentAddress::containsHereVariable() const
+{
+    return false;
+}
+
+void ExprCurrentAddress::toString(std::stringstream& ss) const
+{
+    ss << '$';
+}
+
+void ExprCurrentAddress::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    if (mLabel)
+        throw CompilerError(location(), "internal compiler error: '$' is already replaced with label.");
+    mLabel = context->addEphemeralLabel(location());
+}
+
 bool ExprCurrentAddress::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     if (!mLabel) {
@@ -227,28 +249,62 @@ Value ExprCurrentAddress::evaluate() const
     }
 }
 
-void ExprCurrentAddress::toString(std::stringstream& ss) const
-{
-    ss << '$';
-}
-
-void ExprCurrentAddress::replaceCurrentAddressWithLabel(AssemblerContext* context)
-{
-    if (mLabel)
-        throw CompilerError(location(), "internal compiler error: '$' is already replaced with label.");
-    mLabel = context->addEphemeralLabel(location());
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ExprNumber::canEvaluate(std::unique_ptr<CompilerError>&) const
+bool ExprVariableHere::isHereVariable() const
 {
     return true;
 }
 
-Value ExprNumber::evaluate() const
+bool ExprVariableHere::containsHereVariable() const
 {
-    return Value(mValue);
+    return true;
+}
+
+void ExprVariableHere::toString(std::stringstream& ss) const
+{
+    ss << "{@here ";
+    ss << mName->text();
+    if (mInitializer) {
+        ss << '=';
+        mInitializer->toString(ss);
+    }
+    ss << '}';
+}
+
+void ExprVariableHere::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    if (mInitializer)
+        mInitializer->replaceCurrentAddressWithLabel(context);
+}
+
+bool ExprVariableHere::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+{
+    if (!mInitializer)
+        return true;
+    else if (!mInitializer->containsHereVariable())
+        return mInitializer->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
+    else {
+        // Use exception here instead of `return false`, because this error is fatal
+        throw CompilerError(location(), "@here variable cannot be used as initializer for another @here variable.");
+    }
+}
+
+Value ExprVariableHere::evaluate() const
+{
+    if (!mInitializer)
+        return Value(0);
+    else if (!mInitializer->containsHereVariable())
+        return mInitializer->evaluateValue(mCurrentAddress, mSectionResolver);
+    else
+        throw CompilerError(location(), "@here variable cannot be used as initializer for another @here variable.");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprNumber::containsHereVariable() const
+{
+    return false;
 }
 
 void ExprNumber::toString(std::stringstream& ss) const
@@ -260,7 +316,31 @@ void ExprNumber::replaceCurrentAddressWithLabel(AssemblerContext*)
 {
 }
 
+bool ExprNumber::canEvaluate(std::unique_ptr<CompilerError>&) const
+{
+    return true;
+}
+
+Value ExprNumber::evaluate() const
+{
+    return Value(mValue);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprIdentifier::containsHereVariable() const
+{
+    return false;
+}
+
+void ExprIdentifier::toString(std::stringstream& ss) const
+{
+    ss << mName;
+}
+
+void ExprIdentifier::replaceCurrentAddressWithLabel(AssemblerContext*)
+{
+}
 
 bool ExprIdentifier::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -375,30 +455,13 @@ Value ExprIdentifier::evaluate() const
     throw CompilerError(symbol->location(), "internal compiler error: invalid symbol type.");
 }
 
-void ExprIdentifier::toString(std::stringstream& ss) const
-{
-    ss << mName;
-}
-
-void ExprIdentifier::replaceCurrentAddressWithLabel(AssemblerContext*)
-{
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ExprConditional::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprConditional::containsHereVariable() const
 {
-    return mCondition->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
-        && mThen->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
-        && mElse->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
-}
-
-Value ExprConditional::evaluate() const
-{
-    Value a = mCondition->evaluateValue(mCurrentAddress, mSectionResolver);
-    return (a.number != 0
-        ? mThen->evaluateValue(mCurrentAddress, mSectionResolver)
-        : mElse->evaluateValue(mCurrentAddress, mSectionResolver));
+    return mCondition->containsHereVariable()
+        || mThen->containsHereVariable()
+        || mElse->containsHereVariable();
 }
 
 void ExprConditional::toString(std::stringstream& ss) const
@@ -417,7 +480,27 @@ void ExprConditional::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mElse->replaceCurrentAddressWithLabel(context);
 }
 
+bool ExprConditional::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+{
+    return mCondition->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mThen->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mElse->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
+}
+
+Value ExprConditional::evaluate() const
+{
+    Value a = mCondition->evaluateValue(mCurrentAddress, mSectionResolver);
+    return (a.number != 0
+        ? mThen->evaluateValue(mCurrentAddress, mSectionResolver)
+        : mElse->evaluateValue(mCurrentAddress, mSectionResolver));
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprAddressOfSection::containsHereVariable() const
+{
+    return false;
+}
 
 void ExprAddressOfSection::toString(std::stringstream& ss) const
 {
@@ -449,6 +532,11 @@ Value ExprAddressOfSection::evaluate() const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+bool ExprBaseOfSection::containsHereVariable() const
+{
+    return false;
+}
+
 void ExprBaseOfSection::toString(std::stringstream& ss) const
 {
     ss << "baseof(" << mSectionName << ")";
@@ -478,6 +566,11 @@ Value ExprBaseOfSection::evaluate() const
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprSizeOfSection::containsHereVariable() const
+{
+    return false;
+}
 
 void ExprSizeOfSection::toString(std::stringstream& ss) const
 {
@@ -512,6 +605,22 @@ Value ExprSizeOfSection::evaluate() const
 bool ExprNegate::isNegate() const
 {
     return true;
+}
+
+bool ExprNegate::containsHereVariable() const
+{
+    return mOperand->containsHereVariable();
+}
+
+void ExprNegate::toString(std::stringstream& ss) const
+{
+    ss << '-';
+    mOperand->toString(ss);
+}
+
+void ExprNegate::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand->replaceCurrentAddressWithLabel(context);
 }
 
 bool ExprNegate::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
@@ -554,18 +663,23 @@ Value ExprNegate::evaluate() const
     return Value(-value.number, Sign::Signed);
 }
 
-void ExprNegate::toString(std::stringstream& ss) const
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprBitwiseNot::containsHereVariable() const
 {
-    ss << '-';
+    return mOperand->containsHereVariable();
+}
+
+void ExprBitwiseNot::toString(std::stringstream& ss) const
+{
+    ss << '~';
     mOperand->toString(ss);
 }
 
-void ExprNegate::replaceCurrentAddressWithLabel(AssemblerContext* context)
+void ExprBitwiseNot::replaceCurrentAddressWithLabel(AssemblerContext* context)
 {
     mOperand->replaceCurrentAddressWithLabel(context);
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprBitwiseNot::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -580,28 +694,11 @@ Value ExprBitwiseNot::evaluate() const
     return Value(~operand.number, operand.sign, operand.bits);
 }
 
-void ExprBitwiseNot::toString(std::stringstream& ss) const
-{
-    ss << '~';
-    mOperand->toString(ss);
-}
-
-void ExprBitwiseNot::replaceCurrentAddressWithLabel(AssemblerContext* context)
-{
-    mOperand->replaceCurrentAddressWithLabel(context);
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ExprLogicNot::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprLogicNot::containsHereVariable() const
 {
-    return mOperand->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
-}
-
-Value ExprLogicNot::evaluate() const
-{
-    Value operand = mOperand->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(!operand.number, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return mOperand->containsHereVariable();
 }
 
 void ExprLogicNot::toString(std::stringstream& ss) const
@@ -615,19 +712,23 @@ void ExprLogicNot::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprAdd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprLogicNot::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
+    return mOperand->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprAdd::evaluate() const
+Value ExprLogicNot::evaluate() const
 {
-    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
-    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return smartEvaluate<false>([](int64_t a, int64_t b){ return a + b; }, a, b);
+    Value operand = mOperand->evaluateValue(mCurrentAddress, mSectionResolver);
+    return Value(!operand.number, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprAdd::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprAdd::toString(std::stringstream& ss) const
@@ -643,19 +744,25 @@ void ExprAdd::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprSubtract::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprAdd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprSubtract::evaluate() const
+Value ExprAdd::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return smartEvaluate<true>([](int64_t a, int64_t b){ return a - b; }, a, b);
+    return smartEvaluate<false>([](int64_t a, int64_t b){ return a + b; }, a, b);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprSubtract::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprSubtract::toString(std::stringstream& ss) const
@@ -671,19 +778,25 @@ void ExprSubtract::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprMultiply::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprSubtract::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprMultiply::evaluate() const
+Value ExprSubtract::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return smartEvaluate<false>([](int64_t a, int64_t b){ return a * b; }, a, b);
+    return smartEvaluate<true>([](int64_t a, int64_t b){ return a - b; }, a, b);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprMultiply::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprMultiply::toString(std::stringstream& ss) const
@@ -699,19 +812,25 @@ void ExprMultiply::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprDivide::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprMultiply::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprDivide::evaluate() const
+Value ExprMultiply::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return smartEvaluate<false>([](int64_t a, int64_t b){ return a / b; }, a, b);
+    return smartEvaluate<false>([](int64_t a, int64_t b){ return a * b; }, a, b);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprDivide::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprDivide::toString(std::stringstream& ss) const
@@ -727,19 +846,25 @@ void ExprDivide::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprModulo::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprDivide::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprModulo::evaluate() const
+Value ExprDivide::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return smartEvaluate<false>([](int64_t a, int64_t b){ return a % b; }, a, b);
+    return smartEvaluate<false>([](int64_t a, int64_t b){ return a / b; }, a, b);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprModulo::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprModulo::toString(std::stringstream& ss) const
@@ -755,7 +880,39 @@ void ExprModulo::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
+bool ExprModulo::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+{
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
+}
+
+Value ExprModulo::evaluate() const
+{
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
+    return smartEvaluate<false>([](int64_t a, int64_t b){ return a % b; }, a, b);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprShiftLeft::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
+}
+
+void ExprShiftLeft::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " << ";
+    mOperand2->toString(ss);
+}
+
+void ExprShiftLeft::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
 
 bool ExprShiftLeft::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -783,20 +940,26 @@ Value ExprShiftLeft::evaluate() const
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a << b; }, a, b);
 }
 
-void ExprShiftLeft::toString(std::stringstream& ss) const
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprShiftRight::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
+}
+
+void ExprShiftRight::toString(std::stringstream& ss) const
 {
     mOperand1->toString(ss);
-    ss << " << ";
+    ss << " >> ";
     mOperand2->toString(ss);
 }
 
-void ExprShiftLeft::replaceCurrentAddressWithLabel(AssemblerContext* context)
+void ExprShiftRight::replaceCurrentAddressWithLabel(AssemblerContext* context)
 {
     mOperand1->replaceCurrentAddressWithLabel(context);
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprShiftRight::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -824,32 +987,12 @@ Value ExprShiftRight::evaluate() const
     return smartEvaluate<false>([](int64_t a, int64_t b){ return a >> b; }, a, b);
 }
 
-void ExprShiftRight::toString(std::stringstream& ss) const
-{
-    mOperand1->toString(ss);
-    ss << " >> ";
-    mOperand2->toString(ss);
-}
-
-void ExprShiftRight::replaceCurrentAddressWithLabel(AssemblerContext* context)
-{
-    mOperand1->replaceCurrentAddressWithLabel(context);
-    mOperand2->replaceCurrentAddressWithLabel(context);
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ExprLess::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprLess::containsHereVariable() const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
-}
-
-Value ExprLess::evaluate() const
-{
-    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
-    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(a.number < b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprLess::toString(std::stringstream& ss) const
@@ -865,19 +1008,25 @@ void ExprLess::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprLessEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprLess::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprLessEqual::evaluate() const
+Value ExprLess::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(a.number <= b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return Value(a.number < b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprLessEqual::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprLessEqual::toString(std::stringstream& ss) const
@@ -893,19 +1042,25 @@ void ExprLessEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprGreater::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprLessEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprGreater::evaluate() const
+Value ExprLessEqual::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(a.number > b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return Value(a.number <= b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprGreater::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprGreater::toString(std::stringstream& ss) const
@@ -921,19 +1076,25 @@ void ExprGreater::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprGreaterEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprGreater::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprGreaterEqual::evaluate() const
+Value ExprGreater::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(a.number >= b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return Value(a.number > b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprGreaterEqual::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprGreaterEqual::toString(std::stringstream& ss) const
@@ -949,19 +1110,25 @@ void ExprGreaterEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprGreaterEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprEqual::evaluate() const
+Value ExprGreaterEqual::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(a.number == b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return Value(a.number >= b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprEqual::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprEqual::toString(std::stringstream& ss) const
@@ -977,19 +1144,25 @@ void ExprEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprNotEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprNotEqual::evaluate() const
+Value ExprEqual::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(a.number != b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return Value(a.number == b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprNotEqual::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprNotEqual::toString(std::stringstream& ss) const
@@ -1005,7 +1178,39 @@ void ExprNotEqual::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
+bool ExprNotEqual::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+{
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
+}
+
+Value ExprNotEqual::evaluate() const
+{
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
+    return Value(a.number != b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprBitwiseAnd::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
+}
+
+void ExprBitwiseAnd::toString(std::stringstream& ss) const
+{
+    mOperand1->toString(ss);
+    ss << " & ";
+    mOperand2->toString(ss);
+}
+
+void ExprBitwiseAnd::replaceCurrentAddressWithLabel(AssemblerContext* context)
+{
+    mOperand1->replaceCurrentAddressWithLabel(context);
+    mOperand2->replaceCurrentAddressWithLabel(context);
+}
 
 bool ExprBitwiseAnd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -1022,20 +1227,26 @@ Value ExprBitwiseAnd::evaluate() const
     return Value(a.number & b.number, sign, bits);
 }
 
-void ExprBitwiseAnd::toString(std::stringstream& ss) const
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprBitwiseOr::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
+}
+
+void ExprBitwiseOr::toString(std::stringstream& ss) const
 {
     mOperand1->toString(ss);
-    ss << " & ";
+    ss << " | ";
     mOperand2->toString(ss);
 }
 
-void ExprBitwiseAnd::replaceCurrentAddressWithLabel(AssemblerContext* context)
+void ExprBitwiseOr::replaceCurrentAddressWithLabel(AssemblerContext* context)
 {
     mOperand1->replaceCurrentAddressWithLabel(context);
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprBitwiseOr::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -1052,20 +1263,26 @@ Value ExprBitwiseOr::evaluate() const
     return Value(a.number | b.number, sign, bits);
 }
 
-void ExprBitwiseOr::toString(std::stringstream& ss) const
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprBitwiseXor::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
+}
+
+void ExprBitwiseXor::toString(std::stringstream& ss) const
 {
     mOperand1->toString(ss);
-    ss << " | ";
+    ss << " ^ ";
     mOperand2->toString(ss);
 }
 
-void ExprBitwiseOr::replaceCurrentAddressWithLabel(AssemblerContext* context)
+void ExprBitwiseXor::replaceCurrentAddressWithLabel(AssemblerContext* context)
 {
     mOperand1->replaceCurrentAddressWithLabel(context);
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ExprBitwiseXor::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
@@ -1082,32 +1299,12 @@ Value ExprBitwiseXor::evaluate() const
     return Value(a.number ^ b.number, sign, bits);
 }
 
-void ExprBitwiseXor::toString(std::stringstream& ss) const
-{
-    mOperand1->toString(ss);
-    ss << " ^ ";
-    mOperand2->toString(ss);
-}
-
-void ExprBitwiseXor::replaceCurrentAddressWithLabel(AssemblerContext* context)
-{
-    mOperand1->replaceCurrentAddressWithLabel(context);
-    mOperand2->replaceCurrentAddressWithLabel(context);
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ExprLogicAnd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprLogicAnd::containsHereVariable() const
 {
-    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
-        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
-}
-
-Value ExprLogicAnd::evaluate() const
-{
-    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
-    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(a.number && b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprLogicAnd::toString(std::stringstream& ss) const
@@ -1123,19 +1320,25 @@ void ExprLogicAnd::replaceCurrentAddressWithLabel(AssemblerContext* context)
     mOperand2->replaceCurrentAddressWithLabel(context);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ExprLogicOr::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+bool ExprLogicAnd::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
 {
     return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
         && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
 }
 
-Value ExprLogicOr::evaluate() const
+Value ExprLogicAnd::evaluate() const
 {
     Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
     Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
-    return Value(a.number || b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+    return Value(a.number && b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprLogicOr::containsHereVariable() const
+{
+    return mOperand1->containsHereVariable()
+        || mOperand2->containsHereVariable();
 }
 
 void ExprLogicOr::toString(std::stringstream& ss) const
@@ -1149,4 +1352,17 @@ void ExprLogicOr::replaceCurrentAddressWithLabel(AssemblerContext* context)
 {
     mOperand1->replaceCurrentAddressWithLabel(context);
     mOperand2->replaceCurrentAddressWithLabel(context);
+}
+
+bool ExprLogicOr::canEvaluate(std::unique_ptr<CompilerError>& resolveError) const
+{
+    return mOperand1->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError)
+        && mOperand2->canEvaluateValue(mCurrentAddress, mSectionResolver, resolveError);
+}
+
+Value ExprLogicOr::evaluate() const
+{
+    Value a = mOperand1->evaluateValue(mCurrentAddress, mSectionResolver);
+    Value b = mOperand2->evaluateValue(mCurrentAddress, mSectionResolver);
+    return Value(a.number || b.number ? 1 : 0, Sign::Unsigned, SignificantBits::NoMoreThan8);
 }

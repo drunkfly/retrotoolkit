@@ -8,7 +8,7 @@ class Label final : public Instruction
 public:
     class Address;
 
-    Label(SourceLocation* location, const char* name);
+    Label(SourceLocation* location, const char* name, size_t offset);
     ~Label() override;
 
     Type type() const final override;
@@ -43,6 +43,7 @@ private:
     mutable Address* mCurrentReadAddress;
     mutable Address* mCurrentWriteAddress;
     mutable StackEntry* mSavedReadAddresses;
+    size_t mOffset;
 
     DISABLE_COPY(Label);
 };

@@ -843,3 +843,196 @@ TEST_CASE("conditional operator", "[expr]")
     REQUIRE(actual == expected);
     REQUIRE(!actual.hasFiles());
 }
+
+TEST_CASE("@here variable", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "label:\n"
+        "ld a, {@here Var1}\n"
+        "ld hl, {@here Var2=0x1234}\n"
+        "ld de, ({@here @@Var3})\n"
+        "jp {@here Var4=label@@Var5}\n"
+        "ld a, (ix+{@here label@@Var5})\n"
+        "ld b, (iy+{@here Var6=-1})\n"
+        "ld (ix+{@here Var7=1}), {@here Var8}\n"
+        "dw Var1\n"
+        "dw Var2\n"
+        "dw @@Var3\n"
+        "dw Var4\n"
+        "dw label@@Var5\n"
+        "dw Var6\n"
+        "dw Var7\n"
+        "dw Var8\n"
+        ;
+
+    static const unsigned char binary[] = {
+        0x3e, // 0x00   ld a, #
+        0x00, // 0x01   Var1
+        0x21, // 0x02   ld hl, ##
+        0x34, // 0x03   Var2
+        0x12, // 0x04
+        0xed, // 0x05   ld de, (##)
+        0x5b, // 0x06
+        0x00, // 0x07   Var3
+        0x00, // 0x08
+        0xc3, // 0x09   jp ##
+        0x0e, // 0x0a   Var4
+        0x01, // 0x0b
+        0xdd, // 0x0c   ld a, (ix+#)
+        0x7e, // 0x0d
+        0x00, // 0x0e   Var5
+        0xfd, // 0x0f   ld b, (iy+#)
+        0x46, // 0x10
+        0xff, // 0x11   Var6
+        0xdd, // 0x12   ld (ix+#), #
+        0x36, // 0x13
+        0x01, // 0x14   Var7
+        0x00, // 0x15   Var8
+        0x01, // 0x16   dw Var1
+        0x01, // 0x17
+        0x03, // 0x18   dw Var2
+        0x01, // 0x19
+        0x07, // 0x1a   dw Var3
+        0x01, // 0x1b
+        0x0a, // 0x1c   dw Var4
+        0x01, // 0x1d
+        0x0e, // 0x1e   dw Var5
+        0x01, // 0x1f
+        0x11, // 0x20   dw Var6
+        0x01, // 0x21
+        0x14, // 0x22   dw Var7
+        0x01, // 0x23
+        0x15, // 0x24   dw Var8
+        0x01, // 0x25
+    };
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    DataBlob expected(binary, sizeof(binary));
+    REQUIRE(errorConsumer.errorMessage() == "");
+    REQUIRE(actual == expected);
+    REQUIRE(!actual.hasFiles());
+}
+
+TEST_CASE("duplicate @here variable 1", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "ld a, {@here v1}\n"
+        "ld b, {@here v1}\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:3: duplicate identifier \"v1\".");
+}
+
+TEST_CASE("duplicate @here variable 2", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "ld (ix+{@here v}), {@here v}\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: duplicate identifier \"v\".");
+}
+
+TEST_CASE("invalid @here variable 1", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "ld a, {@here v1}+1\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: @here variable cannot be used in expression.");
+}
+
+TEST_CASE("invalid @here variable 2", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "bit {@here v1}, a\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: @here is not allowed in this context.");
+}
+
+TEST_CASE("invalid @here variable 3", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "ld a, (ix-{@here q})\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: @here should not be used with IX-# or IY-#. Use IX+# or IY+# instead.");
+}
+
+TEST_CASE("invalid @here variable 4", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "y equ {@here m}\n"
+        "ld a, y\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: @here is not allowed in this context.");
+}
+
+TEST_CASE("invalid @here variable 5", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "rst {@here v1}\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: @here is not allowed in this context.");
+}
+
+TEST_CASE("invalid @here variable 6", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "im {@here v1}\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: @here is not allowed in this context.");
+}
+
+TEST_CASE("disallow @here variable as initializer", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "ld c, {@here v={@here q}}\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: @here variable cannot be used as initializer for another @here variable.");
+}
+
+TEST_CASE("local @here variable without global", "[expr]")
+{
+    static const char source[] =
+        "#section main_0x100\n"
+        "ld a, {@here @@v}\n"
+        ;
+
+    ErrorConsumer errorConsumer;
+    DataBlob actual = assemble(errorConsumer, source);
+    REQUIRE(errorConsumer.errorMessage() == "source:2: local label name without preceding global label.");
+}

@@ -73,13 +73,14 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Label::Label(SourceLocation* location, const char* name)
+Label::Label(SourceLocation* location, const char* name, size_t offset)
     : Instruction(location)
     , mName(name)
     , mFirstAddress(new (heap()) Address())
     , mCurrentReadAddress(mFirstAddress)
     , mCurrentWriteAddress(mFirstAddress)
     , mSavedReadAddresses(nullptr)
+    , mOffset(offset)
 {
     registerFinalizer();
 
@@ -134,11 +135,11 @@ void Label::setAddress(size_t address)
   #if defined(_WIN32) && defined(DEBUG_LABEL) && !defined(NDEBUG)
     { std::stringstream ss;
     ss << "set address " << mCurrentWriteAddress->index << " of "
-       << mName << ":" << location()->line() << " to " << address << "\n";
+       << mName << ":" << location()->line() << " to " << (address + mOffset) << "\n";
     OutputDebugStringA(ss.str().c_str()); }
   #endif
 
-    mCurrentWriteAddress->setValue(address);
+    mCurrentWriteAddress->setValue(address + mOffset);
 }
 
 void Label::unsetAddresses()
@@ -237,5 +238,5 @@ void Label::advanceCounters() const
 
 Instruction* Label::clone() const
 {
-    return new (heap()) Label(location(), mName);
+    return new (heap()) Label(location(), mName, mOffset);
 }

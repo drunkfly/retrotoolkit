@@ -178,7 +178,8 @@ void AssemblerParser::parseLine()
         expectNotEol();
 
         const char* rawName = mHeap->allocString(name.c_str(), name.length());
-        Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+        Expr* expr = ParsingContext(mHeap,
+            mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression(false);
 
         expr->replaceCurrentAddressWithLabel(mContext);
 
@@ -215,7 +216,8 @@ void AssemblerParser::parseRepeatDecl()
     mToken = mToken->next();
     expectNotEol();
 
-    Expr* e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+    Expr* e = ParsingContext(mHeap,
+        mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression(false);
 
     std::string variable;
 
@@ -253,7 +255,8 @@ void AssemblerParser::parseIfDecl()
     mToken = mToken->next();
     expectNotEol();
 
-    Expr* e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+    Expr* e = ParsingContext(mHeap,
+        mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression(false);
     pushContext<AssemblerContextIf>(token, e);
 
     expectEol();
@@ -286,7 +289,8 @@ void AssemblerParser::parseEnsureDecl()
     mToken = mToken->next();
     expectNotEol();
 
-    auto e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+    auto e = ParsingContext(mHeap,
+        mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression(false);
     mContext->addInstruction(new (mHeap) MacroEnsure(e->location(), e));
 
     expectEol();
@@ -432,7 +436,9 @@ void AssemblerParser::parseDefByte()
                 mContext->addInstruction(new (mHeap) DEFB_STRING(mToken->location(), text, strlen(text)));
             mToken = mToken->next();
         } else {
-            auto e = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+            ParsingContext p(mHeap, mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false);
+            auto e = p.unambiguousExpression(true);
+            p.setupHereVariable(e, 0);
             mContext->addInstruction(new (mHeap) DEFB(e->location(), e));
         }
     } while (mToken->id() == TOK_COMMA);
@@ -444,7 +450,9 @@ void AssemblerParser::parseDefWord()
     do {
         mToken = mToken->next();
         expectNotEol();
-        auto expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+        ParsingContext p(mHeap, mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false);
+        auto expr = p.unambiguousExpression(true);
+        p.setupHereVariable(expr, 0);
         mContext->addInstruction(new (mHeap) DEFW(expr->location(), expr));
     } while (mToken->id() == TOK_COMMA);
     expectEol();
@@ -455,7 +463,9 @@ void AssemblerParser::parseDefDWord()
     do {
         mToken = mToken->next();
         expectNotEol();
-        auto expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+        ParsingContext p(mHeap, mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false);
+        auto expr = p.unambiguousExpression(true);
+        p.setupHereVariable(expr, 0);
         mContext->addInstruction(new (mHeap) DEFD(expr->location(), expr));
     } while (mToken->id() == TOK_COMMA);
     expectEol();
@@ -465,7 +475,8 @@ void AssemblerParser::parseDefSpace()
 {
     mToken = mToken->next();
     expectNotEol();
-    Expr* expr = ParsingContext(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression();
+    Expr* expr = ParsingContext(mHeap,
+        mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false).unambiguousExpression(false);
     mContext->addInstruction(new (mHeap) DEFS(expr->location(), expr));
     expectEol();
 }
@@ -477,7 +488,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_0(OP, BYTES, TSTATES) \
         { \
-            ParsingContext context(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false); \
+            ParsingContext context(mHeap, mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 if (Z80::OP::tryParse(&context)) \
                     return new (mHeap) Z80::OP(location); \
@@ -487,7 +498,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
         { \
-            ParsingContext context(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false); \
+            ParsingContext context(mHeap, mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 Z80::OP1 op1; \
                 if (Z80::OP##_##OP1::tryParse(&context, op1)) \
@@ -498,7 +509,7 @@ Instruction* AssemblerParser::parseOpcode()
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
         { \
-            ParsingContext context(mHeap, mToken, mSymbolTable, &mContext->localLabelsPrefix(), false); \
+            ParsingContext context(mHeap, mToken, mContext, mSymbolTable, &mContext->localLabelsPrefix(), false); \
             if (Z80::Mnemonic::OP::tryParse(&context)) { \
                 Z80::OP1 op1; \
                 Z80::OP2 op2; \

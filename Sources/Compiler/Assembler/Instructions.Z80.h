@@ -100,7 +100,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int value(int64_t currentAddress, ISectionResolver* sectionResolver, uint8_t baseByte) const;
@@ -112,7 +112,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
@@ -124,7 +124,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int low(int64_t currentAddress, ISectionResolver* sectionResolver, int& high) const;
@@ -135,42 +135,42 @@ namespace Z80
     struct memBC
     {
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memDE
     {
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memHL
     {
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memIX
     {
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memIY
     {
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
     struct memSP
     {
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
@@ -178,7 +178,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int low(int64_t currentAddress, ISectionResolver* sectionResolver, int& high) const;
@@ -190,7 +190,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
@@ -202,7 +202,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
@@ -214,7 +214,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int value(int64_t currentAddress, ISectionResolver* sectionResolver, int64_t nextAddress) const;
@@ -226,7 +226,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) const { return true; }
     };
 
@@ -234,7 +234,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
@@ -246,7 +246,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int value(int64_t currentAddress, ISectionResolver* sectionResolver) const;
@@ -258,7 +258,7 @@ namespace Z80
     {
     public:
         void toString(std::stringstream& ss) const;
-        bool tryParse(ParsingContext* c);
+        bool tryParse(ParsingContext* c, size_t offset);
         bool canEvaluate(const int64_t* nextAddress,
             ISectionResolver* sectionResolver, std::unique_ptr<CompilerError>& resolveError) const;
         int value(int64_t currentAddress, ISectionResolver* sectionResolver, uint8_t baseByte) const;
@@ -269,14 +269,14 @@ namespace Z80
     #define Z80_REGOP(NAME) \
         struct NAME { \
             static void toString(std::stringstream& ss) { ss << #NAME; } \
-            static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
+            static bool tryParse(ParsingContext* context, size_t) { return context->consumeIdentifier(#NAME); } \
             static bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) { return true; } \
         }
 
     struct AF_
     {
         static void toString(std::stringstream& ss);
-        static bool tryParse(ParsingContext* context);
+        static bool tryParse(ParsingContext* context, size_t offset);
         static bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) { return true; }
     };
 
@@ -306,7 +306,7 @@ namespace Z80
     #define Z80_FLAGOP(NAME) \
         struct flag##NAME { \
             static void toString(std::stringstream& ss) { ss << #NAME; } \
-            static bool tryParse(ParsingContext* context) { return context->consumeIdentifier(#NAME); } \
+            static bool tryParse(ParsingContext* context, size_t) { return context->consumeIdentifier(#NAME); } \
             static bool canEvaluate(const int64_t*, ISectionResolver*, std::unique_ptr<CompilerError>&) { return true; } \
         }
 
@@ -361,7 +361,7 @@ namespace Z80
         DISABLE_COPY(Opcode0);
     };
 
-    template <typename OP, typename OP1> class Opcode1 : public Opcode
+    template <typename CHILD, typename OP, typename OP1> class Opcode1 : public Opcode
     {
     public:
         Opcode1(SourceLocation* location, OP1 op1)
@@ -379,7 +379,7 @@ namespace Z80
 
         static bool tryParse(ParsingContext* context, OP1& op1)
         {
-            if (!op1.tryParse(context)) return false;
+            if (!op1.tryParse(context, CHILD::operandOffset())) return false;
             return context->checkEnd();
         }
 
@@ -389,7 +389,7 @@ namespace Z80
         DISABLE_COPY(Opcode1);
     };
 
-    template <typename OP, typename OP1, typename OP2> class Opcode2 : public Opcode
+    template <typename CHILD, typename OP, typename OP1, typename OP2> class Opcode2 : public Opcode
     {
     public:
         Opcode2(SourceLocation* location, OP1 op1, OP2 op2)
@@ -410,9 +410,9 @@ namespace Z80
 
         static bool tryParse(ParsingContext* context, OP1& op1, OP2& op2)
         {
-            if (!op1.tryParse(context)) return false;
+            if (!op1.tryParse(context, CHILD::operand1Offset())) return false;
             if (!context->consumeComma()) return false;
-            if (!op2.tryParse(context)) return false;
+            if (!op2.tryParse(context, CHILD::operand2Offset())) return false;
             return context->checkEnd();
         }
 
@@ -441,7 +441,7 @@ namespace Z80
         }
 
     #define Z80_OPCODE_1(OP, OP1, BYTES, TSTATES) \
-        class OP##_##OP1 final : public Opcode1<Mnemonic::OP, OP1> \
+        class OP##_##OP1 final : public Opcode1<OP##_##OP1, Mnemonic::OP, OP1> \
         { \
         public: \
             OP##_##OP1(SourceLocation* location, OP1 op1) : Opcode1(location, op1) {} \
@@ -451,12 +451,21 @@ namespace Z80
             bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
             Instruction* clone() const final override; \
+            static constexpr size_t operandOffset() \
+            { \
+                constexpr auto bytes = toUInt16Array BYTES; \
+                for (size_t i = 0; i < bytes.size(); i++) { \
+                    if (bytes[i] == 0xfff1) \
+                        return i; \
+                } \
+                return 0; \
+            } \
         private: \
             static constexpr size_t arraySizeInBytes(); \
         }
 
     #define Z80_OPCODE_2(OP, OP1, OP2, BYTES, TSTATES) \
-        class OP##_##OP1##_##OP2 final : public Opcode2<Mnemonic::OP, OP1, OP2> \
+        class OP##_##OP1##_##OP2 final : public Opcode2<OP##_##OP1##_##OP2, Mnemonic::OP, OP1, OP2> \
         { \
         public: \
             OP##_##OP1##_##OP2(SourceLocation* location, OP1 op1, OP2 op2) : Opcode2(location, op1, op2) {} \
@@ -466,17 +475,35 @@ namespace Z80
             bool emitCode(CodeEmitter* emitter, int64_t& nextAddress, ISectionResolver* sectionResolver, \
                 std::unique_ptr<CompilerError>& resolveError) const final override; \
             Instruction* clone() const final override; \
+            static constexpr size_t operand1Offset() \
+            { \
+                constexpr auto bytes = toUInt16Array BYTES; \
+                for (size_t i = 0; i < bytes.size(); i++) { \
+                    if (bytes[i] == 0xfff1) \
+                        return i; \
+                } \
+                return 0; \
+            } \
+            static constexpr size_t operand2Offset() \
+            { \
+                constexpr auto bytes = toUInt16Array BYTES; \
+                for (size_t i = 0; i < bytes.size(); i++) { \
+                    if (bytes[i] == 0xfff2) \
+                        return i; \
+                } \
+                return 0; \
+            } \
         private: \
             static constexpr size_t arraySizeInBytes(); \
         }
 
-    #define OP1
-    #define OP2
-    #define OP1V(X)
-    #define OP2V(X)
-    #define OP1W
-    #define OP2W
-    #define NEXT
+    #define OP1 0xfff1
+    #define OP2 0xfff2
+    #define OP1V(X) 0xfff1
+    #define OP2V(X) 0xfff2
+    #define OP1W 0xfff1
+    #define OP2W 0xfff2
+    #define NEXT 0
 
     #include "Instructions.Z80.hh"
 
