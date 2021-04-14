@@ -78,6 +78,7 @@ public:
             SourceLocation* location;
             std::optional<std::string> ref;
             std::optional<std::string> basic;
+            std::optional<std::string> name;
         };
 
         Type type;

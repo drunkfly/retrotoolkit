@@ -176,6 +176,7 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
 
             auto ref = OPT_STRING(ref, File);
             auto basic = OPT_STRING(basic, File);
+            outputFile.name = OPT_STRING(name, File);
 
             if (ref && !basic)
                 outputFile.ref = std::move(ref);
@@ -206,6 +207,7 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
 
             auto ref = OPT_STRING(ref, File);
             auto basic = OPT_STRING(basic, File);
+            outputFile.name = OPT_STRING(name, File);
 
             if (ref && !basic)
                 outputFile.ref = std::move(ref);
@@ -273,6 +275,10 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
 
     for (const auto& file : output.files) {
         ss << "        <File";
+        if (file.name) {
+            ss << " name=";
+            xmlEncodeInQuotes(ss, *file.name);
+        }
         if (file.ref) {
             ss << " ref=";
             xmlEncodeInQuotes(ss, *file.ref);
