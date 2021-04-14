@@ -781,6 +781,8 @@ class TiXmlAttribute : public TiXmlBase
 	friend class TiXmlAttributeSet;
 
 public:
+	mutable bool accessed = false;
+
 	/// Construct an empty attribute.
 	TiXmlAttribute() : TiXmlBase()
 	{
@@ -941,6 +943,8 @@ private:
 class TiXmlElement : public TiXmlNode
 {
 public:
+	mutable bool accessed = false;
+
 	/// Construct an element.
 	explicit TiXmlElement (const char * in_value);
 

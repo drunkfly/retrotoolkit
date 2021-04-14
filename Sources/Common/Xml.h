@@ -8,9 +8,9 @@
     XmlNode xml##NAME = xmlGetRootElement(xml, #NAME)
 
 #define IF_HAS(NAME, PARENT) \
-    if (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); xml##NAME)
+    if (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); (xml##NAME ? xml##NAME->accessed = true : false))
 #define FOR_EACH(NAME, PARENT) \
-    for (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); xml##NAME; \
+    for (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); (xml##NAME ? xml##NAME->accessed = true : false); \
         xml##NAME = xml##NAME->NextSiblingElement(#NAME))
 
 #define ROW(NAME) \
@@ -63,5 +63,7 @@ int xmlGetAttributeRow(XmlNode node, const char* name);
 
 void xmlEncode(std::stringstream& ss, const std::string& str);
 void xmlEncodeInQuotes(std::stringstream& ss, const std::string& str);
+
+void xmlCheckAllAccessed(const XmlDocument& xml);
 
 #endif

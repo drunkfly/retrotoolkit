@@ -32,6 +32,7 @@ XmlNode xmlGetRootElement(const XmlDocument& xml, const char* name)
         ss << "File \"" << xml->path.string() << "\" has invalid root element.";
         throw std::runtime_error(ss.str());
     }
+    xmlRoot->accessed = true;
     return xmlRoot;
 }
 
@@ -39,8 +40,10 @@ const std::string& xmlGetRequiredAttribute(const XmlDocument& xml, XmlNode node,
 {
     size_t len = strlen(name);
     for (const TiXmlAttribute* attr = node->FirstAttribute(); attr; attr = attr->Next()) {
-        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name))
+        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name)) {
+            attr->accessed = true;
             return attr->ValueStr();
+        }
     }
     xmlMissingAttributeValue(xml, node, name);
 }
@@ -52,6 +55,7 @@ std::optional<std::string> xmlGetOptionalAttribute(const XmlDocument& xml, XmlNo
     size_t len = strlen(name);
     for (const TiXmlAttribute* attr = node->FirstAttribute(); attr; attr = attr->Next()) {
         if (attr->NameStr().length() == len && !strcmp(attr->Name(), name)) {
+            attr->accessed = true;
             result = attr->ValueStr();
             break;
         }
@@ -82,6 +86,7 @@ std::optional<int> xmlGetOptionalIntAttribute(const XmlDocument& xml, XmlNode no
             if (!intFromString(value, attr->Value(), attr->ValueStr().length()))
                 xmlInvalidAttributeValue(xml, node, name);
             result = value;
+            attr->accessed = true;
             break;
         }
     }
@@ -111,6 +116,7 @@ std::optional<bool> xmlGetOptionalBoolAttribute(const XmlDocument& xml, XmlNode 
             if (!boolFromString(value, attr->Value(), attr->ValueStr().length()))
                 xmlInvalidAttributeValue(xml, node, name);
             result = value;
+            attr->accessed = true;
             break;
         }
     }
@@ -122,9 +128,8 @@ int xmlGetAttributeRow(XmlNode node, const char* name)
 {
     size_t len = strlen(name);
     for (const TiXmlAttribute* attr = node->FirstAttribute(); attr; attr = attr->Next()) {
-        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name)) {
+        if (attr->NameStr().length() == len && !strcmp(attr->Name(), name))
             return attr->Row();
-        }
     }
 
     return node->Row();
@@ -166,4 +171,36 @@ void xmlEncodeInQuotes(std::stringstream& ss, const std::string& str)
     ss << '"';
     xmlEncode(ss, str);
     ss << '"';
+}
+
+static void xmlCheckAllAccessed(const XmlDocument& xml, const TiXmlElement* element)
+{
+    if (!element->accessed) {
+        std::stringstream ss;
+        ss << "Unknown element \"" << element->ValueStr() << "\" in file \"" << xml->path.string() << "\" at line "
+           << element->Row() << ", column " << element->Column() << '.';
+        throw std::runtime_error(ss.str());
+    }
+
+    for (const TiXmlAttribute* attr = element->FirstAttribute(); attr; attr = attr->Next()) {
+        if (!attr->accessed) {
+            std::stringstream ss;
+            ss << "Unknown attribute \"" << attr->Name() << "\" in element \"" << element->ValueStr()
+               << "\" in file \"" << xml->path.string() << "\" at line " << attr->Row()
+               << ", column " << attr->Column() << '.';
+            throw std::runtime_error(ss.str());
+        }
+    }
+
+    for (const TiXmlElement* child = element->FirstChildElement(); child; child = child->NextSiblingElement())
+        xmlCheckAllAccessed(xml, child);
+}
+
+void xmlCheckAllAccessed(const XmlDocument& xml)
+{
+    const TiXmlElement* xmlRoot = xml->doc.RootElement();
+    if (!xmlRoot)
+        return;
+
+    xmlCheckAllAccessed(xml, xmlRoot);
 }

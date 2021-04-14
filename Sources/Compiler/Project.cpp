@@ -225,6 +225,8 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
 
         outputs.emplace_back(std::move(output));
     }
+
+    xmlCheckAllAccessed(xml);
 }
 
 static void writeSection(std::stringstream& ss, const char* element, const Project::Section& section)
