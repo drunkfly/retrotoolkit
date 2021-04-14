@@ -15,6 +15,7 @@ public:
 
     void clear();
 
+    void addEmptySpaceDebugInfo(int64_t start, int64_t size) override;
     void addSectionDebugInfo(std::string name, int64_t start,
         Compression compression, int64_t uncompressedSize, std::optional<int64_t> compressedSize) override;
 

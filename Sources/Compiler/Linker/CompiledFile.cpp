@@ -21,6 +21,11 @@ std::unique_ptr<DebugInformation> CompiledFile::takeDebugInfo()
     return info;
 }
 
+void CompiledFile::addEmptySpaceDebugInfo(int64_t start, int64_t size)
+{
+    mDebugInfo->addEmptySpace(start, size);
+}
+
 void CompiledFile::addSectionDebugInfo(std::string name, int64_t start,
     Compression compression, int64_t uncompressedSize, std::optional<int64_t> compressedSize)
 {

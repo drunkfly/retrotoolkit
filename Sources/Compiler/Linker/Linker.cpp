@@ -42,6 +42,7 @@ namespace
         std::optional<size_t> resolvedFileOffset;
         bool labelsResolved;
         bool autoFileOffset;
+        bool autoFileOffsetNoPadding;
     };
 }
 
@@ -138,8 +139,12 @@ public:
                 OutputDebugStringA(ss.str().c_str()); }
               #endif
 
-                if (section->fileOffset && !section->autoFileOffset) {
+                if (section->fileOffset && !section->autoFileOffset)
                     section->resolvedFileOffset = section->fileOffset->evaluateUnsignedWord(nullptr, mSectionResolver);
+                else if (!section->autoFileOffsetNoPadding && section->compression == Compression::None)
+                    section->resolvedFileOffset = *section->resolvedBase;
+
+                if (section->resolvedFileOffset.has_value()) {
                   #if defined(_WIN32) && defined(DEBUG_LINKER) && !defined(NDEBUG)
                     { std::stringstream ss;
                     ss << "resolved file offset 0x" << std::hex << *section->resolvedFileOffset
@@ -487,9 +492,13 @@ public:
                 throw CompilerError(section->location, ss.str());
             }
 
-            while (targetOffset > offset) {
-                output->emitByte(nullptr, 0);
-                ++offset;
+            size_t size = section->resolvedSize.value();
+            if (size > 0 && targetOffset > offset) {
+                output->addEmptySpaceDebugInfo(offset, targetOffset - offset);
+                do {
+                    output->emitByte(nullptr, 0);
+                    ++offset;
+                } while (targetOffset > offset);
             }
 
             if (section->code)
@@ -521,7 +530,6 @@ public:
                 }
             }
 
-            size_t size = section->resolvedSize.value();
             offset += size;
 
             if (mFileUntil && size > 0 && offset > endAddress) {
@@ -609,7 +617,16 @@ private:
         if (!usedSections.emplace(sectionInfo->name).second)
             section = section->clone();
 
-        bool autoOffset = (sectionInfo->fileOffset && *sectionInfo->fileOffset == "auto");
+        bool autoOffset = false;
+        bool autoOffsetNoPadding = false;
+        if (sectionInfo->fileOffset.has_value()) {
+            if (*sectionInfo->fileOffset == "auto")
+                autoOffset = true;
+            else if (*sectionInfo->fileOffset == "auto:packed") {
+                autoOffset = true;
+                autoOffsetNoPadding = true;
+            }
+        }
 
         auto linkerSection = new (heap()) LinkerSection();
         linkerSection->location = sectionInfo->location;
@@ -624,6 +641,7 @@ private:
         linkerSection->compressionLocation = sectionInfo->compressionLocation;
         linkerSection->labelsResolved = false;
         linkerSection->autoFileOffset = autoOffset;
+        linkerSection->autoFileOffsetNoPadding = autoOffsetNoPadding;
         mSections.emplace_back(linkerSection);
 
         mSectionsByName[sectionInfo->name] = linkerSection;

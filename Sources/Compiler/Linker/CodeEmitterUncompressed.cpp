@@ -13,16 +13,16 @@ void CodeEmitterUncompressed::clear()
     mBytes.clear();
 }
 
+void CodeEmitterUncompressed::addEmptySpaceDebugInfo(int64_t start, int64_t size)
+{
+    mSections.emplace_back(DebugInformation::createEmptySpace(start, size));
+}
+
 void CodeEmitterUncompressed::addSectionDebugInfo(std::string name, int64_t start,
     Compression compression, int64_t uncompressedSize, std::optional<int64_t> compressedSize)
 {
-    DebugInformation::Section section;
-    section.name = std::move(name);
-    section.compression = compression;
-    section.startAddress = start;
-    section.uncompressedSize = uncompressedSize;
-    section.compressedSize = compressedSize;
-    mSections.emplace_back(std::move(section));
+    mSections.emplace_back(DebugInformation::createSection(std::move(name),
+        start, compression, uncompressedSize, std::move(compressedSize)));
 }
 
 void CodeEmitterUncompressed::emitByte(SourceLocation* location, uint8_t byte)
@@ -67,7 +67,11 @@ void CodeEmitterUncompressed::copyTo(CodeEmitter* target) const
     target->emitBytes(mBytes.data(), mBytes.size());
 
     for (const auto& section : mSections) {
-        target->addSectionDebugInfo(section.name, section.startAddress,
-            section.compression, section.uncompressedSize, section.compressedSize);
+        if (section.isEmptySpace)
+            target->addEmptySpaceDebugInfo(section.startAddress, section.uncompressedSize);
+        else {
+            target->addSectionDebugInfo(section.name, section.startAddress,
+                section.compression, section.uncompressedSize, section.compressedSize);
+        }
     }
 }

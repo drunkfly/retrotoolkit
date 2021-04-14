@@ -18,6 +18,7 @@ public:
     CodeEmitter();
     virtual ~CodeEmitter();
 
+    virtual void addEmptySpaceDebugInfo(int64_t start, int64_t size) = 0;
     virtual void addSectionDebugInfo(std::string name, int64_t start,
         Compression compression, int64_t uncompressedSize, std::optional<int64_t> compressedSize) = 0;
 

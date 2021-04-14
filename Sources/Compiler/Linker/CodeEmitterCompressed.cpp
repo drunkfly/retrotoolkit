@@ -34,6 +34,12 @@ void CodeEmitterCompressed::clear()
     mCompressed = false;
 }
 
+void CodeEmitterCompressed::addEmptySpaceDebugInfo(int64_t start, int64_t size)
+{
+    throw CompilerError(mLocation,
+        "internal compiler error: attempted to add empty space in compressed code emitter.");
+}
+
 void CodeEmitterCompressed::addSectionDebugInfo(std::string name, int64_t start,
     Compression compression, int64_t uncompressedSize, std::optional<int64_t> compressedSize)
 {
