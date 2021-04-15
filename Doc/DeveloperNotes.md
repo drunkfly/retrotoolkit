@@ -28,5 +28,68 @@ apt-get install \
     qtmultimedia5-dev \
     qt5-default \
     openjdk-15-dbg \
-    openjdk-15-jdk
+    openjdk-15-jdk \
+    libpulse-dev \
+    libxcursor-dev \
+    libxrender-dev \
+    libxfixes-dev \
+    libxinerama-dev \
+    libxi-dev \
+    libxrandr-dev \
+    libxss-dev \
+    libxxf86vm-dev \
+    libudev-dev \
+    libdbus-1-dev \
+    libibus-1.0-dev \
+    libasound2-dev \
+    libsndio-dev \
+    libsamplerate0-dev \
+    libaudio-dev \
+    libdrm-dev \
+    libgbm-dev \
+    libegl-dev \
+    libxkbcommon-dev \
+    libwayland-dev \
+    wayland-protocols
+```
+
+For cross-compilation:
+
+```
+dpkg --add-architecture i386
+apt-get install \
+    gcc-multilib \
+    g++-multilib \
+    qtmultimedia5-dev:i386 \
+    qt5-default:i386 \
+    mingw-w64-common \
+    mingw-w64-i686-dev \
+    mingw-w64-x86-64-dev \
+    binutils-mingw-w64-i686 \
+    binutils-mingw-w64-x86-64 \
+    gcc-mingw-w64-i686 \
+    gcc-mingw-w64-x86-64 \
+    libglib2.0-dev:i386 \
+    libpulse-dev:i386 \
+    libxcursor-dev:i386 \
+    libxrender-dev:i386 \
+    libxfixes-dev:i386 \
+    libxinerama-dev:i386 \
+    libxi-dev:i386 \
+    libxrandr-dev:i386 \
+    libxss-dev:i386 \
+    libxxf86vm-dev:i386 \
+    libudev-dev:i386 \
+    libdbus-1-dev:i386 \
+    libibus-1.0-dev:i386 \
+    libasound2-dev:i386 \
+    libsndio-dev:i386 \
+    libsamplerate0-dev:i386 \
+    libaudio-dev:i386 \
+    libdrm-dev:i386 \
+    libgbm-dev:i386 \
+    libegl-dev:i386 \
+    libxkbcommon-dev:i386 \
+    libwayland-dev:i386 \
+    wayland-protocols:i386
 ```

@@ -378,7 +378,7 @@ set_option(SDL_DLOPEN          "Use dlopen for shared object loading" ${SDL_DLOP
 dep_option(OSS                 "Support the OSS audio API" ON "UNIX_SYS OR RISCOS" OFF)
 set_option(ALSA                "Support the ALSA audio API" ${UNIX_SYS})
 dep_option(ALSA_SHARED         "Dynamically load ALSA audio support" ON "ALSA" OFF)
-set_option(JACK                "Support the JACK audio API" ${UNIX_SYS})
+set_option(JACK                "Support the JACK audio API" OFF)#${UNIX_SYS})
 dep_option(JACK_SHARED         "Dynamically load JACK audio support" ON "JACK" OFF)
 set_option(ESD                 "Support the Enlightened Sound Daemon" OFF)#${UNIX_SYS})
 dep_option(ESD_SHARED          "Dynamically load ESD audio support" ON "ESD" OFF)
