@@ -4,6 +4,8 @@ add(Tests
     CONSOLE
     FOLDER
         "Tests"
+    OUTPUT_DIR
+        "${CMAKE_CURRENT_BINARY_DIR}"
     LIBS
         Common
         Compiler

@@ -2357,10 +2357,10 @@ if(SDL_STATIC)
   endif()
 endif()
 
-set_target_properties(SDL2main PROPERTIES FOLDER "Libraries")
-set_target_properties(SDL2 PROPERTIES FOLDER "Libraries")
+set_target_properties(SDL2main PROPERTIES FOLDER "Libs" MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set_target_properties(SDL2 PROPERTIES FOLDER "Libs" MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 target_compile_definitions(SDL2 PUBLIC "DECLSPEC=")
-target_link_libraries(SDL2main SDL2 Engine)
+target_link_libraries(SDL2main SDL2)
 
 ##### Tests #####
 

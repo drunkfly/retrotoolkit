@@ -225,9 +225,6 @@ macro(add target type)
         if(NOT ARG_CONSOLE)
             set_target_properties("${target}" PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE TRUE)
         endif()
-        if(MINGW OR CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-            set_target_properties("${target}" PROPERTIES LINK_FLAGS "-static-libgcc -static-libstdc++")
-        endif()
     elseif("${type}" STREQUAL "QT_EXECUTABLE")
         set(qt TRUE)
         add_executable("${target}")
@@ -281,7 +278,8 @@ macro(add target type)
 
     if(ARG_FOLDER)
         set_target_properties("${target}" PROPERTIES
-            FOLDER "${ARG_FOLDER}")
+            FOLDER "${ARG_FOLDER}"
+            )
     endif()
 
     #########################################################################################################

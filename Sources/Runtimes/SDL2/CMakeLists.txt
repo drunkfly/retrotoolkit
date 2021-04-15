@@ -3,6 +3,7 @@ add(SDL2Runtime
     EXECUTABLE
     LIBS
         SDL2
+        SDL2main
     SOURCES
         Common.h
         Game.cpp
@@ -17,4 +18,8 @@ add(SDL2Runtime
 target_precompile_headers(SDL2Runtime
     PRIVATE
         [["Runtimes/SDL2/Common.h"]]
+    )
+
+set_target_properties(SDL2Runtime PROPERTIES
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
     )
