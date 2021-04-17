@@ -1,43 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RetroProject>
 
-    <Configuration name="Tape Release">
-        <Constant name="TRDOS" value="0" />
-        <Constant name="DEBUG" value="0" />
-    </Configuration>
-
-    <Configuration name="TR-DOS Release">
-        <Constant name="TRDOS" value="1" />
-        <Constant name="DEBUG" value="0" />
-    </Configuration>
-
-    <Configuration name="Tape Debug">
-        <Constant name="TRDOS" value="0" />
-        <Constant name="DEBUG" value="1" />
-    </Configuration>
-
-    <Configuration name="TR-DOS Debug">
-        <Constant name="TRDOS" value="1" />
-        <Constant name="DEBUG" value="1" />
-    </Configuration>
+    <OutputDirectory path="_out" />
 
     <Files>
-        <File name="LOADER" start="0x6000" until="0x8000">
-            <Section name="loader" />
-            <Section name="loader_logo" compression="lzsa2" />
-            <Section name="loader_main" />
-            <Section name="bank5_engine_topmost" />
+        <File name="MAIN" start="0x8000">
+            <Section name="main" />
         </File>
     </Files>
 
-    <OutputTAP enabled="!TRDOS">
-        <File basic="boot" />
-        <File ref="LOADER" />
+    <OutputTAP>
+        <File name="DEMO" basic="boot" />
+        <File ref="MAIN" />
     </OutputTAP>
-
-    <OutputTRD enabled="TRDOS">
-        <File basic="boot" />
-        <File ref="LOADER" />
-    </OutputTRD>
 
 </RetroProject>
