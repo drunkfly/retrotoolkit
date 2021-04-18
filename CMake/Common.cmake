@@ -17,6 +17,9 @@ get_filename_component(BASE_PATH "${CMAKE_CURRENT_LIST_FILE}" ABSOLUTE)
 get_filename_component(BASE_PATH "${BASE_PATH}" DIRECTORY)
 get_filename_component(BASE_PATH "${BASE_PATH}" DIRECTORY)
 
+get_filename_component(BINARIES_PATH "${CMAKE_BINARY_DIR}" DIRECTORY)
+set(BINARIES_PATH "${BINARIES_PATH}/Binaries")
+
 if(MSVC)
     add_definitions(
         -D_SCL_SECURE_NO_WARNINGS=1
@@ -206,9 +209,7 @@ macro(add target type)
     endif()
 
     if(NOT ARG_OUTPUT_DIR)
-        get_filename_component(buildPath "${CMAKE_BINARY_DIR}" DIRECTORY)
-        get_filename_component(buildName "${CMAKE_BINARY_DIR}" NAME)
-        set(ARG_OUTPUT_DIR "${buildPath}/Binaries/${buildName}")
+        set(ARG_OUTPUT_DIR "${BINARIES_PATH}/${buildName}")
     endif()
 
     #########################################################################################################

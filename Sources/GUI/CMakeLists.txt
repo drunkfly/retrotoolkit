@@ -1,4 +1,6 @@
 
+if(NOT EXCLUDE_GUI)
+
 add(RetroToolkit
     QT_EXECUTABLE
     USES
@@ -10,6 +12,7 @@ add(RetroToolkit
     LIBS
         Common
         Compiler
+        Z80
         RunTests
     SOURCES
         Resources/resources.qrc
@@ -55,3 +58,5 @@ target_precompile_headers(RetroToolkit
     PRIVATE
         [["GUI/Common.h"]]
     )
+
+endif()

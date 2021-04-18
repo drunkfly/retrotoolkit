@@ -4,8 +4,13 @@ add(SDL2Runtime
     LIBS
         SDL2
         SDL2main
+        Z80
+    OUTPUT_DIR
+        "${CMAKE_BINARY_DIR}"
     SOURCES
         Common.h
+        Cpu.cpp
+        Cpu.h
         Game.cpp
         Game.h
         SDL2Core.cpp
