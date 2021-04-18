@@ -1,5 +1,12 @@
 #include "Strings.h"
 
+std::string toUpper(std::string str)
+{
+    for (auto& ch : str)
+        ch = toupper(ch);
+    return str;
+}
+
 std::string toLower(std::string str)
 {
     for (auto& ch : str)

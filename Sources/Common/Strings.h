@@ -3,6 +3,7 @@
 
 #include "Common/Common.h"
 
+std::string toUpper(std::string str);
 std::string toLower(std::string str);
 
 bool equalCaseInsensitive(const char* str1, const char* str2);

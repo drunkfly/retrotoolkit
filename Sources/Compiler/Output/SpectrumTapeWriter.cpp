@@ -128,7 +128,7 @@ SpectrumTapeWriter::~SpectrumTapeWriter()
 {
 }
 
-void SpectrumTapeWriter::addBasicFile(std::string name, const std::string& data, int startLine)
+void SpectrumTapeWriter::addBasicFile(SourceLocation*, std::string name, const std::string& data, int startLine)
 {
     auto basicFile = std::make_unique<BasicFile>();
     basicFile->setName(std::move(name));
@@ -138,7 +138,8 @@ void SpectrumTapeWriter::addBasicFile(std::string name, const std::string& data,
     mFiles.emplace_back(std::move(basicFile));
 }
 
-void SpectrumTapeWriter::addCodeFile(std::string name, const CodeEmitter::Byte* data, size_t size, size_t startAddress)
+void SpectrumTapeWriter::addCodeFile(SourceLocation*, std::string name,
+    const std::string&, const CodeEmitter::Byte* data, size_t size, size_t startAddress)
 {
     auto codeFile = std::make_unique<CodeFile>();
     codeFile->setName(std::move(name));

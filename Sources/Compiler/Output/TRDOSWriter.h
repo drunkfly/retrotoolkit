@@ -9,8 +9,11 @@ public:
     TRDOSWriter();
     ~TRDOSWriter();
 
-    void addBasicFile(std::string name, const std::string& data, int startLine = -1) override;
-    void addCodeFile(std::string name, const CodeEmitter::Byte* data, size_t size, size_t startAddress) override;
+    void addBasicFile(SourceLocation* location, std::string name,
+        const std::string& data, int startLine = -1) override;
+
+    void addCodeFile(SourceLocation* location, std::string name,
+        const std::string& originalName, const CodeEmitter::Byte* data, size_t size, size_t startAddress) override;
 
     void setWriteSclFile(std::filesystem::path path);
     void setWriteTrdFile(std::filesystem::path path, std::string volumeName);

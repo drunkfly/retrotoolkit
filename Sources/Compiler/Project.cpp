@@ -173,22 +173,9 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
         FOR_EACH(File, OutputTAP) {
             Output::File outputFile = {};
             outputFile.location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
-
-            auto ref = OPT_STRING(ref, File);
-            auto basic = OPT_STRING(basic, File);
             outputFile.name = OPT_STRING(name, File);
-
-            if (ref && !basic)
-                outputFile.ref = std::move(ref);
-            else if (basic && !ref)
-                outputFile.basic = std::move(basic);
-            else {
-                std::stringstream ss;
-                ss << "Invalid <" << "File" << "> element in <"
-                    << "OutputTAP" << "> section of file \"" << mPath.string() << "\".";
-                throw std::runtime_error(ss.str());
-            }
-
+            outputFile.ref = OPT_STRING(ref, File);
+            outputFile.basic = OPT_STRING(basic, File);
             output->files.emplace_back(std::move(outputFile));
         }
 
@@ -204,22 +191,26 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
         FOR_EACH(File, OutputTRD) {
             Output::File outputFile = {};
             outputFile.location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
-
-            auto ref = OPT_STRING(ref, File);
-            auto basic = OPT_STRING(basic, File);
             outputFile.name = OPT_STRING(name, File);
+            outputFile.ref = OPT_STRING(ref, File);
+            outputFile.basic = OPT_STRING(basic, File);
+            output->files.emplace_back(std::move(outputFile));
+        }
 
-            if (ref && !basic)
-                outputFile.ref = std::move(ref);
-            else if (basic && !ref)
-                outputFile.basic = std::move(basic);
-            else {
-                std::stringstream ss;
-                ss << "Invalid <" << "File" << "> element in <"
-                    << "OutputTRD" << "> section of file \"" << mPath.string() << "\".";
-                throw std::runtime_error(ss.str());
-            }
+        outputs.emplace_back(std::move(output));
+    }
 
+    IF_HAS(OutputZ80, RetroProject) {
+        auto output = std::make_unique<Output>();
+        output->type = Output::ZXSpectrumZ80;
+        output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputZ80)) : nullptr);
+        output->enabled = OPT_STRING(enabled, OutputZ80);
+
+        FOR_EACH(File, OutputZ80) {
+            Output::File outputFile = {};
+            outputFile.location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
+            outputFile.name = OPT_STRING(name, File);
+            outputFile.ref = OPT_STRING(ref, File);
             output->files.emplace_back(std::move(outputFile));
         }
 
@@ -266,6 +257,7 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
     switch (output.type) {
         case Project::Output::ZXSpectrumTAP: element = "OutputTAP"; break;
         case Project::Output::ZXSpectrumTRD: element = "OutputTRD"; break;
+        case Project::Output::ZXSpectrumZ80: element = "OutputZ80"; break;
     }
 
     ss << "    <" << element;
@@ -284,7 +276,8 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
         if (file.ref) {
             ss << " ref=";
             xmlEncodeInQuotes(ss, *file.ref);
-        } else if (file.basic) {
+        }
+        if (file.basic) {
             ss << " basic=";
             xmlEncodeInQuotes(ss, *file.basic);
         }

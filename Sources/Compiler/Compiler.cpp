@@ -12,6 +12,7 @@
 #include "Compiler/Linker/CompiledOutput.h"
 #include "Compiler/Assembler/AssemblerParser.h"
 #include "Compiler/Output/TRDOSWriter.h"
+#include "Compiler/Output/SpectrumSnapshotWriter.h"
 #include "Compiler/Output/SpectrumTapeWriter.h"
 #include "Compiler/SourceFile.h"
 #include "Compiler/SpectrumBasicCompiler.h"
@@ -387,6 +388,17 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 break;
             }
 
+            case Project::Output::ZXSpectrumZ80: {
+                if (mListener)
+                    mListener->compilerProgress(count++, total, "Generating Z80...");
+
+                auto z80Writer = std::make_unique<SpectrumSnapshotWriter>();
+                z80Writer->setWriteZ80File(mOutputPath / (projectName + ".z80"));
+
+                writer = std::move(z80Writer);
+                break;
+            }
+
             default:
                 assert(false);
                 ++count;
@@ -402,7 +414,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                     throw CompilerError(file.location, ss.str());
                 }
                 std::string name = (file.name.has_value() ? *file.name : *file.ref);
-                writer->addCodeFile(std::move(name), data->data(), data->size(), data->loadAddress());
+                writer->addCodeFile(file.location,
+                    std::move(name), *file.ref, data->data(), data->size(), data->loadAddress());
             } else if (file.basic) {
                 auto it = compiledBasicFiles.find(*file.basic);
                 if (it == compiledBasicFiles.end()) {
@@ -411,7 +424,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                     throw CompilerError(file.location, ss.str());
                 }
                 std::string name = (file.name.has_value() ? *file.name : *file.basic);
-                writer->addBasicFile(std::move(name), it->second.data, it->second.startLine);
+                writer->addBasicFile(file.location, std::move(name), it->second.data, it->second.startLine);
             } else
                 throw CompilerError(file.location, "Internal compiler error: unsupported output file.");
         }

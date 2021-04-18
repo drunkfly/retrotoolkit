@@ -146,7 +146,7 @@ TRDOSWriter::~TRDOSWriter()
 {
 }
 
-void TRDOSWriter::addBasicFile(std::string name, const std::string& data, int startLine)
+void TRDOSWriter::addBasicFile(SourceLocation*, std::string name, const std::string& data, int startLine)
 {
     auto basicFile = std::make_unique<BasicFile>();
     basicFile->setName(std::move(name));
@@ -157,7 +157,8 @@ void TRDOSWriter::addBasicFile(std::string name, const std::string& data, int st
     mFiles.emplace_back(std::move(basicFile));
 }
 
-void TRDOSWriter::addCodeFile(std::string name, const CodeEmitter::Byte* data, size_t size, size_t startAddress)
+void TRDOSWriter::addCodeFile(SourceLocation*, std::string name,
+    const std::string&, const CodeEmitter::Byte* data, size_t size, size_t startAddress)
 {
     auto codeFile = std::make_unique<CodeFile>();
     codeFile->setName(std::move(name));
