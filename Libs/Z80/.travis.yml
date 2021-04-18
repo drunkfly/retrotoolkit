@@ -1,0 +1,121 @@
+
+matrix:
+  include:
+    - language: cpp
+      compiler: gcc
+      install:
+        - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+        - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
+        - |
+          if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+            CMAKE_URL="http://www.cmake.org/files/v3.5/cmake-3.5.1-Linux-x86_64.tar.gz"
+            mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+            export PATH=${DEPS_DIR}/cmake/bin:${PATH}
+          fi
+        - cd ..
+      script:
+        - mkdir build
+        - cd build
+        - ${DEPS_DIR}/cmake/bin/cmake ..
+        - make
+        - make test
+        - make examples
+    - language: cpp
+      compiler: clang
+      install:
+        - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+        - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
+        - |
+          if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+            CMAKE_URL="http://www.cmake.org/files/v3.5/cmake-3.5.1-Linux-x86_64.tar.gz"
+            mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+            export PATH=${DEPS_DIR}/cmake/bin:${PATH}
+          fi
+        - cd ..
+      script:
+        - mkdir build
+        - cd build
+        - ${DEPS_DIR}/cmake/bin/cmake ..
+        - make
+        - make test
+        - make examples
+    - language: python
+      python: 3.4
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.5
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.5-dev
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.6
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.6-dev
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.7
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.7-dev
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.8
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.8-dev
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
+    - language: python
+      python: 3.9-dev
+      install:
+        - python setup.py install
+      script:
+        - python setup.py test
+        - cd examples
+        - ./exercisers.py
