@@ -12,7 +12,7 @@ add(RetroToolkit
     LIBS
         Common
         Compiler
-        Z80
+        EmulatorCore
         RunTests
     SOURCES
         Resources/resources.qrc

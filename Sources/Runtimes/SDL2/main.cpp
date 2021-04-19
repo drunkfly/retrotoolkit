@@ -1,7 +1,7 @@
 #include "SDL2Core.h"
 #include "Runtimes/SDL2/Game.h"
-#include "Runtimes/SDL2/Memory.h"
-#include "Runtimes/SDL2/Cpu.h"
+#include "Runtimes/SDL2/GameData.h"
+#include "Emulator/Snapshot.h"
 #include <SDL_main.h>
 
 static std::unique_ptr<Game> game;
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
    #ifndef NDEBUG
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] != '-') {
-            Cpu::loadZ80(argv[i]);
+            loadSnapshot(argv[i], initState, initMemory);
             break;
         }
     }

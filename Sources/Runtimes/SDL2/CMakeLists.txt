@@ -11,16 +11,11 @@ add(SDL2Runtime
         Z80
     SOURCES
         Common.h
-        Cpu.cpp
-        Cpu.h
-        Disassembler.cpp
-        Disassembler.h
+        EmulatorCore.cpp
         Game.cpp
         Game.h
-        Memory.cpp
-        Memory.h
-        Screen.cpp
-        Screen.h
+        GameData.cpp
+        GameData.h
         SDL2Core.cpp
         SDL2Core.h
         Settings.cpp

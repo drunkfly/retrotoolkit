@@ -1,21 +1,23 @@
 #include "Game.h"
+#include "Emulator/Z80Screen.h"
+#include "Emulator/Emulator.h"
+#include "Emulator/Snapshot.h"
 #include "Runtimes/SDL2/SDL2Core.h"
 #include "Runtimes/SDL2/Settings.h"
-#include "Runtimes/SDL2/Cpu.h"
-#include "Runtimes/SDL2/Screen.h"
+#include "Runtimes/SDL2/GameData.h"
 
 const int TicksPerFrame = 1000 / 50;
 
 Game::Game()
     : mSDL2(std::make_unique<SDL2Core>())
     , mSettings(std::make_unique<Settings>())
-    , mScreen(std::make_unique<Screen>())
-    , mCpu(std::make_unique<Cpu>(mScreen.get()))
+    , mEmulator(std::make_unique<Emulator>())
     , mZoom(0)
     , mBorderSize(0)
     , mLastFrameTicks(0)
 {
     createWindow();
+    mEmulator->loadSnapshot(&initState, initMemory);
 }
 
 Game::~Game()
@@ -55,7 +57,7 @@ void Game::runFrame()
         mLastFrameTicks = ticks;
 
     while (ticks - mLastFrameTicks >= TicksPerFrame) {
-        mCpu->runFrame();
+        mEmulator->runFrame();
         mLastFrameTicks += TicksPerFrame;
     }
 
@@ -64,7 +66,7 @@ void Game::runFrame()
 
     int pitch = 0;
     void* pixels = mSDL2->lockScreenBuffer(&pitch);
-    mScreen->draw(reinterpret_cast<uint8_t*>(pixels), pitch);
+    mEmulator->screen()->draw(reinterpret_cast<uint8_t*>(pixels), pitch);
     mSDL2->unlockScreenBuffer();
 
     int scrW = SCREEN_WIDTH * mZoom;

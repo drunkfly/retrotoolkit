@@ -1,14 +1,12 @@
-#ifndef RUNTIMES_SDL2_DISASSEMBLER_H
-#define RUNTIMES_SDL2_DISASSEMBLER_H
+#ifndef EMULATOR_DISASSEMBLER_H
+#define EMULATOR_DISASSEMBLER_H
 
-#include "Runtimes/SDL2/Common.h"
-
-class Cpu;
+#include "Emulator/Common.h"
 
 class Disassembler : public z80::z80_disasm<Disassembler>
 {
 public:
-    explicit Disassembler(Cpu* cpu);
+    explicit Disassembler(Emulator* emulator);
 
     void setAppendNewline(bool flag) { mMode = (flag ? mMode | AppendNewline : mMode & ~AppendNewline); }
     void setPrependAddress(bool flag) { mMode = (flag ? mMode | PrependAddress : mMode & ~PrependAddress); }
@@ -28,7 +26,7 @@ private:
         PrependAddress = 0x02,
     };
 
-    Cpu* mCpu;
+    Emulator* mEmulator;
     z80::fast_u16 mAddress;
     z80::fast_u16 mStartAddress;
     char mBuffer[64];

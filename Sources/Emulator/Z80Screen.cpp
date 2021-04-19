@@ -1,7 +1,8 @@
-#include "Screen.h"
-#include "Runtimes/SDL2/Memory.h"
+#include "Z80Screen.h"
+#include "Emulator/Z80Memory.h"
+#include "Emulator/Emulator.h"
 
-static const uint8_t palette[] = {
+const uint8_t Z80Screen::palette[] = {
         0x00, 0x00, 0x00,
         0x00, 0x00, 0xc0,
         0xc0, 0x00, 0x00,
@@ -20,17 +21,18 @@ static const uint8_t palette[] = {
         0xff, 0xff, 0xff,
     };
 
-Screen::Screen()
-    : mBorderColor(0)
+Z80Screen::Z80Screen(Emulator* emulator)
+    : mEmulator(emulator)
+    , mBorderColor(0)
     , mFrameCounter(0)
     , mUseShadowScreen(false)
 {
 }
 
-void Screen::draw(uint8_t* pixels, int pitch) const
+void Z80Screen::draw(uint8_t* pixels, int pitch, bool inactiveScreen) const
 {
-    int bank = (mUseShadowScreen ? 7 : 5);
-    const uint8_t* memPixels = &memory[bank * 16384];
+    int bank = (mUseShadowScreen ^ inactiveScreen ? 7 : 5);
+    const uint8_t* memPixels = mEmulator->memory()->bankData(bank);
     const uint8_t* memAttrib = pixels + 0x1800;
 
     for (int y = 0; y < SCREEN_HEIGHT; y++) {
@@ -39,7 +41,7 @@ void Screen::draw(uint8_t* pixels, int pitch) const
             uint8_t byte = memPixels[y * (SCREEN_WIDTH / 8) + (x >> 3)];
 
             bool pixel = (byte & (1 << (7 - (x & 7)))) != 0;
-            if (attr & 0x80) { // flash?
+            if (attr & 0x80) { // flash
                 if (mFrameCounter & 32)
                     pixel = !pixel;
             }
@@ -50,7 +52,7 @@ void Screen::draw(uint8_t* pixels, int pitch) const
             else
                 color = (attr >> 3) & 7; // paper
 
-            if (attr & 0x40) // bright?
+            if (attr & 0x40) // bright
                 color |= 8;
 
             const uint8_t* c = &palette[color * 3];

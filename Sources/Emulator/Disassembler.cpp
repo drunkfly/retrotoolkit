@@ -1,11 +1,12 @@
 #include "Disassembler.h"
-#include "Runtimes/SDL2/Memory.h"
-#include "Runtimes/SDL2/Cpu.h"
+#include "Emulator/Emulator.h"
+#include "Emulator/Z80Memory.h"
+#include "Emulator/Z80Cpu.h"
 
-Disassembler::Disassembler(Cpu* cpu)
-    : mCpu(cpu)
-    , mAddress(mCpu->get_pc())
-    , mStartAddress(mCpu->get_pc())
+Disassembler::Disassembler(Emulator* emulator)
+    : mEmulator(emulator)
+    , mAddress(mEmulator->cpu()->get_pc())
+    , mStartAddress(mEmulator->cpu()->get_pc())
     , mMode(PrependAddress | AppendNewline)
 {
     mBuffer[0] = 0;
@@ -35,9 +36,9 @@ void Disassembler::on_emit(const char* out)
 
 z80::fast_u8 Disassembler::on_read_next_byte()
 {
-    size_t addr = mCpu->resolveAddress(mAddress);
+    uint8_t value = mEmulator->memory()->read(mAddress);
     mAddress = (mAddress + 1) & 0xffff;
-    return memory[addr];
+    return value;
 }
 
 z80::fast_u16 Disassembler::on_get_last_read_addr() const

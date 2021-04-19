@@ -1,0 +1,29 @@
+
+add(EmulatorCore
+    STATIC_LIBRARY
+    FOLDER
+        "Runtimes"
+    LIBS
+        Z80
+    SOURCES
+        Util/LargeBuffer.cpp
+        Util/LargeBuffer.h
+        Common.h
+        Disassembler.cpp
+        Disassembler.h
+        Emulator.cpp
+        Emulator.h
+        Snapshot.cpp
+        Snapshot.h
+        Z80Cpu.cpp
+        Z80Cpu.h
+        Z80Memory.cpp
+        Z80Memory.h
+        Z80Screen.cpp
+        Z80Screen.h
+    )
+
+target_precompile_headers(EmulatorCore
+    PRIVATE
+        [["Emulator/Common.h"]]
+    )
