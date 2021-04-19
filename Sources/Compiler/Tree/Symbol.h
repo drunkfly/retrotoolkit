@@ -7,6 +7,7 @@ class Expr;
 class SourceLocation;
 class Label;
 class Value;
+class ProgramSection;
 class CompilerError;
 class ISectionResolver;
 
@@ -68,13 +69,15 @@ private:
 class ConditionalConstantSymbol : public Symbol
 {
 public:
-    ConditionalConstantSymbol(SourceLocation* location, const char* name)
+    ConditionalConstantSymbol(SourceLocation* location, ProgramSection* section, const char* name)
         : Symbol(location, name)
+        , mSection(section)
     {
         registerFinalizer();
     }
 
     Type type() const final override;
+    ProgramSection* section() const { return mSection; }
 
     void addValue(Expr* condition, Expr* value);
 
@@ -90,6 +93,7 @@ private:
     };
 
     std::vector<Entry> mEntries;
+    ProgramSection* mSection;
 
     DISABLE_COPY(ConditionalConstantSymbol);
 };

@@ -131,7 +131,7 @@ void AssemblerContextIf::addConstant(SymbolTable* symbolTable, SourceLocation* l
     }
 
     if (!constSymbol) {
-        constSymbol = new (heap()) ConditionalConstantSymbol(location, name);
+        constSymbol = new (heap()) ConditionalConstantSymbol(location, currentSection(), name);
         if (!symbolTable->addSymbol(constSymbol)) {
             std::stringstream ss;
             ss << "duplicate identifier \"" << name << "\".";

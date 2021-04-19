@@ -65,6 +65,8 @@ static std::unique_ptr<Project::Section> parseSection(
     section->location = (locFactory ? locFactory->createLocation(ROW(Section)) : nullptr);
     section->name = REQ_STRING(name, Section);
     section->nameLocation = (locFactory ? locFactory->createLocation(ATTR_ROW(name, Section)) : nullptr);
+    section->condition = OPT_STRING(enableIf, Section);
+    section->conditionLocation = (locFactory ? locFactory->createLocation(ATTR_ROW(enableIf, Section)) : nullptr);
     section->base = OPT_STRING(base, Section);
     section->baseLocation = (locFactory ? locFactory->createLocation(ATTR_ROW(base, Section)) : nullptr);
     section->fileOffset = OPT_STRING(fileOffset, Section);
@@ -298,16 +300,20 @@ static void writeSection(std::stringstream& ss, const char* element, const Proje
 {
     ss << "            <Section name=";
     xmlEncodeInQuotes(ss, section.name);
+    if (section.condition) {
+        ss << " enableIf=";
+        xmlEncodeInQuotes(ss, *section.condition);
+    }
     if (section.base) {
-        ss << ' ';
+        ss << " base=";
         xmlEncodeInQuotes(ss, *section.base);
     }
     if (section.alignment) {
-        ss << ' ';
+        ss << " alignment=";
         xmlEncodeInQuotes(ss, *section.alignment);
     }
     if (section.fileOffset) {
-        ss << ' ';
+        ss << " fileOffset=";
         xmlEncodeInQuotes(ss, *section.fileOffset);
     }
     switch (section.attachment) {

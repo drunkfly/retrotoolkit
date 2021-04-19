@@ -45,6 +45,8 @@ public:
         SourceLocation* location;
         std::string name;
         SourceLocation* nameLocation;
+        std::optional<std::string> condition;
+        SourceLocation* conditionLocation;
         std::optional<std::string> base;
         SourceLocation* baseLocation;
         std::optional<std::string> fileOffset;

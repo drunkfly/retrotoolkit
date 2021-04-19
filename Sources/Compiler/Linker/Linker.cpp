@@ -606,6 +606,14 @@ private:
 
     void addSection(std::unordered_set<std::string>& usedSections, const Project::Section* sectionInfo)
     {
+        if (sectionInfo->condition.has_value()) {
+            Expr* expr = parseExpression(sectionInfo->conditionLocation, *sectionInfo->condition);
+            if (expr) {
+                if (expr->evaluateValue(nullptr, nullptr).number == 0)
+                    return;
+            }
+        }
+
         auto section = mProgram->getOrAddSection(sectionInfo->name);
         if (!mSectionSet.emplace(section).second) {
             std::stringstream ss;
@@ -941,9 +949,10 @@ CompiledOutput* Linker::link(Program* program)
             case Symbol::ConditionalConstant: {
                 int64_t addr = 0;
                 TestOnlySectionResolver testOnlyResolver(mFiles);
-                Expr* expr = static_cast<ConditionalConstantSymbol*>(symbol)->
-                    expr(symbol->location(), &addr, &testOnlyResolver);
-                if (expr)
+                auto conditionalSymbol = static_cast<ConditionalConstantSymbol*>(symbol);
+                ProgramSection* section = conditionalSymbol->section();
+                Expr* expr = conditionalSymbol->expr(symbol->location(), &addr, &testOnlyResolver);
+                if (expr && (section == nullptr || mUsedSections.find(section->name()) != mUsedSections.end()))
                     expr->evaluateValue(&addr, &testOnlyResolver);
                 break;
             }
