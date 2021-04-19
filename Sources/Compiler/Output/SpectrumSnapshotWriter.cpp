@@ -262,7 +262,7 @@ void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
     if (machine == Z80Machine::Auto) {
         if (mPort1FFD != 0xffff)
             machine = Z80Machine::SpectrumPlus3;
-        else if (need128k)
+        else if (need128k || mPort7FFD != 0)
             machine = Z80Machine::Spectrum128k;
         else {
             machine = Z80Machine::Spectrum48k;
@@ -479,6 +479,7 @@ void SpectrumSnapshotWriter::writeExeFile(SourceLocation* loc,
     data[regOff + 28] = (mPort1FFD == 0xffff ? 0 : uint8_t(mPort1FFD));
     data[regOff + 29] = mPort7FFD;
     data[regOff + 30] = mPortFFFD;
+    data[regOff + 31] = mBorderColor;
 
     writeFile(output, data);
 }

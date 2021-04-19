@@ -13,6 +13,8 @@ add(SDL2Runtime
         Common.h
         Cpu.cpp
         Cpu.h
+        Disassembler.cpp
+        Disassembler.h
         Game.cpp
         Game.h
         Memory.cpp

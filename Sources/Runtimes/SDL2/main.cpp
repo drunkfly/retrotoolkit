@@ -1,5 +1,7 @@
 #include "SDL2Core.h"
 #include "Runtimes/SDL2/Game.h"
+#include "Runtimes/SDL2/Memory.h"
+#include "Runtimes/SDL2/Cpu.h"
 #include <SDL_main.h>
 
 static std::unique_ptr<Game> game;
@@ -43,6 +45,15 @@ int main(int argc, char** argv)
   #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(runFrame, 0, TRUE);
   #else
+   #ifndef NDEBUG
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] != '-') {
+            Cpu::loadZ80(argv[i]);
+            break;
+        }
+    }
+   #endif
+
     for (;;)
         runFrame();
   #endif

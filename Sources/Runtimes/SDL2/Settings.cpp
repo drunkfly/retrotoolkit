@@ -1,7 +1,7 @@
 #include "Settings.h"
 
 Settings::Settings()
-    : mScreenBorder(false)
+    : mScreenBorder(true)
     , mScreenZoom(3)
 {
 }
