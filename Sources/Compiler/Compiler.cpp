@@ -1,4 +1,5 @@
 #include "Compiler.h"
+#include "Compiler/Tree/Value.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SourceLocationFactory.h"
 #include "Compiler/Tree/SymbolTable.h"
@@ -393,7 +394,111 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                     mListener->compilerProgress(count++, total, "Generating Z80...");
 
                 auto z80Writer = std::make_unique<SpectrumSnapshotWriter>();
-                z80Writer->setWriteZ80File(mOutputPath / (projectName + ".z80"));
+                z80Writer->setWriteZ80File(output->location, mOutputPath / (projectName + ".z80"));
+
+                if (output->z80->format.value.has_value()) {
+                    if (*output->z80->format.value == "auto")
+                        z80Writer->setFormat(Z80Format::Auto);
+                    else {
+                        auto value = output->z80->format.evaluateValue(program, &linker).number;
+                        if (value == 1)
+                            z80Writer->setFormat(Z80Format::Version1);
+                        else if (value == 2)
+                            z80Writer->setFormat(Z80Format::Version2);
+                        else if (value == 3)
+                            z80Writer->setFormat(Z80Format::Version3);
+                        else
+                            throw CompilerError(output->z80->format.location, "invalid Z80 format.");
+                    }
+                }
+
+                if (output->z80->machine.value.has_value()) {
+                    if (*output->z80->machine.value == "auto")
+                        z80Writer->setMachine(Z80Machine::Auto);
+                    else if (*output->z80->machine.value == "16k")
+                        z80Writer->setMachine(Z80Machine::Spectrum16k);
+                    else if (*output->z80->machine.value == "48k")
+                        z80Writer->setMachine(Z80Machine::Spectrum48k);
+                    else if (*output->z80->machine.value == "128k")
+                        z80Writer->setMachine(Z80Machine::Spectrum128k);
+                    else if (*output->z80->machine.value == "+3")
+                        z80Writer->setMachine(Z80Machine::SpectrumPlus3);
+                    else if (*output->z80->machine.value == "pentagon")
+                        z80Writer->setMachine(Z80Machine::Pentagon);
+                    else if (*output->z80->machine.value == "scorpion")
+                        z80Writer->setMachine(Z80Machine::Scorpion);
+                    else if (*output->z80->machine.value == "didaktik")
+                        z80Writer->setMachine(Z80Machine::DidaktikKompakt);
+                    else if (*output->z80->machine.value == "+2")
+                        z80Writer->setMachine(Z80Machine::SpectrumPlus2);
+                    else if (*output->z80->machine.value == "+2A")
+                        z80Writer->setMachine(Z80Machine::SpectrumPlus2A);
+                    else if (*output->z80->machine.value == "tc2048")
+                        z80Writer->setMachine(Z80Machine::TC2048);
+                    else if (*output->z80->machine.value == "tc2068")
+                        z80Writer->setMachine(Z80Machine::TC2068);
+                    else if (*output->z80->machine.value == "ts2068")
+                        z80Writer->setMachine(Z80Machine::TS2068);
+                    else
+                        throw CompilerError(output->z80->machine.location, "invalid Z80 machine.");
+                }
+
+                if (output->z80->a.value.has_value())
+                    z80Writer->setA(output->z80->a.evaluateByte(program, &linker));
+                if (output->z80->f.value.has_value())
+                    z80Writer->setF(output->z80->f.evaluateByte(program, &linker));
+                if (output->z80->bc.value.has_value())
+                    z80Writer->setBC(output->z80->bc.evaluateWord(program, &linker));
+                if (output->z80->hl.value.has_value())
+                    z80Writer->setHL(output->z80->hl.evaluateWord(program, &linker));
+                if (output->z80->de.value.has_value())
+                    z80Writer->setDE(output->z80->de.evaluateWord(program, &linker));
+                if (output->z80->shadowA.value.has_value())
+                    z80Writer->setShadowA(output->z80->shadowA.evaluateByte(program, &linker));
+                if (output->z80->shadowF.value.has_value())
+                    z80Writer->setShadowF(output->z80->shadowF.evaluateByte(program, &linker));
+                if (output->z80->shadowBC.value.has_value())
+                    z80Writer->setShadowBC(output->z80->shadowBC.evaluateWord(program, &linker));
+                if (output->z80->shadowHL.value.has_value())
+                    z80Writer->setShadowHL(output->z80->shadowHL.evaluateWord(program, &linker));
+                if (output->z80->shadowDE.value.has_value())
+                    z80Writer->setShadowDE(output->z80->shadowDE.evaluateWord(program, &linker));
+                if (output->z80->pc.value.has_value())
+                    z80Writer->setPC(output->z80->pc.evaluateWord(program, &linker));
+                if (output->z80->sp.value.has_value())
+                    z80Writer->setSP(output->z80->sp.evaluateWord(program, &linker));
+                if (output->z80->iy.value.has_value())
+                    z80Writer->setIY(output->z80->iy.evaluateWord(program, &linker));
+                if (output->z80->ix.value.has_value())
+                    z80Writer->setIX(output->z80->ix.evaluateWord(program, &linker));
+                if (output->z80->i.value.has_value())
+                    z80Writer->setI(output->z80->i.evaluateByte(program, &linker));
+                if (output->z80->r.value.has_value())
+                    z80Writer->setR(output->z80->r.evaluateByte(program, &linker));
+
+                if (output->z80->port1FFD.value.has_value())
+                    z80Writer->setPort1FFD(output->z80->port1FFD.evaluateWord(program, &linker));
+                if (output->z80->port7FFD.value.has_value())
+                    z80Writer->setPort7FFD(output->z80->port7FFD.evaluateWord(program, &linker));
+                if (output->z80->portFFFD.value.has_value())
+                    z80Writer->setPortFFFD(output->z80->portFFFD.evaluateWord(program, &linker));
+
+                if (output->z80->borderColor.value.has_value()) {
+                    auto color = output->z80->borderColor.evaluateValue(program, &linker).number;
+                    if (color < 0 || color > 7)
+                        throw CompilerError(output->z80->borderColor.location, "invalid border color.");
+                    z80Writer->setBorderColor(uint8_t(color));
+                }
+
+                if (output->z80->interruptMode.value.has_value()) {
+                    auto color = output->z80->interruptMode.evaluateValue(program, &linker).number;
+                    if (color < 0 || color > 2)
+                        throw CompilerError(output->z80->interruptMode.location, "invalid interrupt mode.");
+                    z80Writer->setInterruptMode(uint8_t(color));
+                }
+
+                if (output->z80->interruptsEnabled.value.has_value())
+                    z80Writer->setInterruptsEnabled(output->z80->interruptsEnabled.evaluateBool(program, &linker));
 
                 writer = std::move(z80Writer);
                 break;

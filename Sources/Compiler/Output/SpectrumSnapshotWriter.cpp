@@ -8,8 +8,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SpectrumSnapshotWriter::SpectrumSnapshotWriter()
-    : mZ80Format(Z80Format::Auto)
-    , mZ80Machine(Z80Machine::Spectrum128k)
+    : mZ80Location(nullptr)
+    , mZ80Format(Z80Format::Auto)
+    , mZ80Machine(Z80Machine::Auto)
     , mA(0)
     , mF(0)
     , mBC(0)
@@ -26,11 +27,12 @@ SpectrumSnapshotWriter::SpectrumSnapshotWriter()
     , mIX(0)
     , mI(0)
     , mR(0)
-    , mBorderColor(0)
+    , mBorderColor(7)
     , mInterruptMode(0)
     , mPort7FFD(0)
-    , mPort1FFD(0xff)
+    , mPort1FFD(0xffff)
     , mPortFFFD(0)
+    , mInterruptsEnabled(true)
 {
     memset(mSoundChipRegisters, 0, sizeof(mSoundChipRegisters));
 }
@@ -47,53 +49,152 @@ void SpectrumSnapshotWriter::addBasicFile(SourceLocation* location, std::string,
 void SpectrumSnapshotWriter::addCodeFile(SourceLocation* location, std::string name,
     const std::string& originalName, const CodeEmitter::Byte* data, size_t size, size_t startAddress)
 {
-    if (startAddress < 0x4000)
-        throw CompilerError(location, "starting address should be >= 0x4000.");
-
     int bank = 0;
+    bool hasBank = false;
     if (startsWith(toUpper(name), "BANK") && name.length() > 4 && isDigit(name[4])) {
+        hasBank = true;
+
         bank = charToInt(name[4]);
         if (bank < 0 || bank > 7 || name.length() != 5)
             throw CompilerError(location, "invalid bank number (should be in range 0 to 7).");
 
         if (mZ80Format == Z80Format::Auto)
             mZ80Format = Z80Format::Version2;
-        else if (mZ80Format == Z80Format::Version1)
+        else if (bank != 0 && bank != 2 && bank != 5 && size != 0 && mZ80Format == Z80Format::Version1)
             throw CompilerError(location, "version 1 of Z80 format does not support memory banks.");
     }
 
     if (size == 0)
         return;
 
-    for (const auto& it : mFiles) {
-        if ((startAddress + size - 1) >= it.start && startAddress <= (it.start + it.size - 1)) {
-            if (startAddress < 0xc000 && it.start < 0xc000) {
+    if (!hasBank) {
+        if (size > 3 * 16384)
+            throw CompilerError(location, "file is greater than 48K.");
+        if (startAddress < 0x4000 || startAddress + size > 0x10000)
+            throw CompilerError(location, "file does not fit memory bounds (0x4000..0xffff).");
+
+        size_t start1 = startAddress;
+        size_t end1 = start1 + size;
+        for (const auto& it : mFiles) {
+            size_t start2;
+            switch (it.bank) {
+                case 0: start2 = it.start; break;
+                case 2: start2 = it.start - (0xc000 - 0x8000); break;
+                case 5: start2 = it.start - (0xc000 - 0x4000); break;
+                default: continue;
+            }
+
+            size_t end2 = (start2 + it.size - 1);
+            if (end1 >= start2 && start1 <= end2) {
                 std::stringstream ss;
                 ss << "File \"" << originalName << "\" overlaps with file \"" << it.name << "\".";
                 throw CompilerError(location, ss.str());
-            } else if (it.bank == bank) {
+            }
+        }
+
+        size_t off1 = 0;
+
+        if (start1 < 0x8000) {
+            File file;
+            file.bank = 5;
+            file.start = start1;
+            file.size = std::min<size_t>(end1, 0x8000) - file.start;
+            file.location = location;
+            file.name = originalName;
+            file.bytes.reset(new uint8_t[file.size]);
+            for (size_t i = 0; i < file.size; i++)
+                file.bytes[i] = data[i].value;
+            file.start += (0xc000 - 0x4000);
+            mFiles.emplace_back(std::move(file));
+            off1 += file.size;
+        }
+
+        if (end1 > 0x8000 && start1 < 0xc000) {
+            File file;
+            file.bank = 2;
+            file.start = std::max<size_t>(start1, 0x8000);
+            file.size = std::min<size_t>(end1, 0xc000) - file.start;
+            file.location = location;
+            file.name = originalName;
+            file.bytes.reset(new uint8_t[file.size]);
+            for (size_t i = 0; i < file.size; i++)
+                file.bytes[i] = data[off1 + i].value;
+            file.start += (0xc000 - 0x8000);
+            mFiles.emplace_back(std::move(file));
+            off1 += file.size;
+        }
+
+        if (end1 > 0xc000) {
+            File file;
+            file.bank = 0;
+            file.start = std::max<size_t>(start1, 0xc000);
+            file.size = std::min<size_t>(end1, 0x10000) - file.start;
+            file.location = location;
+            file.name = originalName;
+            file.bytes.reset(new uint8_t[file.size]);
+            for (size_t i = 0; i < file.size; i++)
+                file.bytes[i] = data[off1 + i].value;
+            mFiles.emplace_back(std::move(file));
+        }
+    } else {
+        if (size > 16384)
+            throw CompilerError(location, "bank size should not exceed 16K.");
+
+        if (bank == 2) {
+            if (startAddress >= 0x8000 && startAddress + size <= 0xc000)
+                startAddress += (0xc000 - 0x8000);
+            else if (startAddress >= 0xc000 && startAddress + size <= 0x10000)
+                ;
+            else
+                throw CompilerError(location, "file does not fit BANK 2 bounds (0x8000..0xbfff or 0xc000..0xffff).");
+        } else if (bank == 5) {
+            if (startAddress >= 0x4000 && startAddress + size <= 0x8000)
+                startAddress += (0xc000 - 0x4000);
+            else if (startAddress >= 0xc000 && startAddress + size <= 0x10000)
+                ;
+            else
+                throw CompilerError(location, "file does not fit BANK 5 bounds (0x4000..0x7fff or 0xc000..0xffff).");
+        } else {
+            if (startAddress < 0xc000 || startAddress + size > 0x10000) {
                 std::stringstream ss;
-                ss << "File \"" << originalName << "\" overlaps with file \"" << it.name << "\" in bank " << bank << '.';
+                ss << "file does not fit BANK " << bank << " bounds (0xc000..0xffff).";
                 throw CompilerError(location, ss.str());
             }
         }
-    }
 
-    File file;
-    file.bank = bank;
-    file.start = startAddress;
-    file.size = size;
-    file.name = originalName;
-    file.bytes.reset(new uint8_t[size]);
-    for (size_t i = 0; i < size; i++)
-        file.bytes[i] = data[i].value;
-    mFiles.emplace_back(std::move(file));
+        for (const auto& it : mFiles) {
+            if (it.bank != bank)
+                continue;
+
+            size_t start1 = startAddress;
+            size_t start2 = it.start;
+            size_t end1 = (start1 + size - 1);
+            size_t end2 = (start2 + it.size - 1);
+            if (end1 >= start2 && start1 <= end2) {
+                std::stringstream ss;
+                ss << "File \"" << originalName << "\" overlaps with file \"" << it.name << "\".";
+                throw CompilerError(location, ss.str());
+            }
+        }
+
+        File file;
+        file.bank = bank;
+        file.start = startAddress;
+        file.size = size;
+        file.location = location;
+        file.name = originalName;
+        file.bytes.reset(new uint8_t[size]);
+        for (size_t i = 0; i < size; i++)
+            file.bytes[i] = data[i].value;
+        mFiles.emplace_back(std::move(file));
+    }
 }
 
-void SpectrumSnapshotWriter::setWriteZ80File(std::filesystem::path path, Z80Format format)
+void SpectrumSnapshotWriter::setWriteZ80File(SourceLocation* loc, std::filesystem::path path, Z80Format format)
 {
     mZ80File = std::move(path);
     mZ80Format = format;
+    mZ80Location = loc;
 }
 
 void SpectrumSnapshotWriter::writeOutput()
@@ -104,15 +205,70 @@ void SpectrumSnapshotWriter::writeOutput()
 
 void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
 {
+    Z80Format format = mZ80Format;
+    Z80Machine machine = mZ80Machine;
     std::stringstream ss;
 
-    if (mZ80Format == Z80Format::Auto) {
-        mZ80Format = Z80Format::Version1;
-        for (const auto& it : mFiles) {
-            if (it.start + it.size > 0xc000) {
-                mZ80Format = Z80Format::Version2;
-                break;
+    bool is48k = false;
+    switch (machine) {
+        case Z80Machine::Auto: break;
+        case Z80Machine::Spectrum16k: is48k = true; break;
+        case Z80Machine::Spectrum48k: is48k = true; break;
+        case Z80Machine::Spectrum128k: break;
+        case Z80Machine::SpectrumPlus3: break;
+        case Z80Machine::Pentagon: break;
+        case Z80Machine::Scorpion: break;
+        case Z80Machine::DidaktikKompakt: is48k = true; break;
+        case Z80Machine::SpectrumPlus2: break;
+        case Z80Machine::SpectrumPlus2A: break;
+        case Z80Machine::TC2048: is48k = true; break;
+        case Z80Machine::TC2068: is48k = true; break;
+        case Z80Machine::TS2068: is48k = true; break;
+    }
+
+    bool need128k = false;
+    if (format == Z80Format::Auto) {
+        format = Z80Format::Version1;
+        if (mPort1FFD != 0xffff)
+            format = Z80Format::Version3;
+        else if (machine != Z80Machine::Spectrum48k && machine != Z80Machine::Auto)
+            format = Z80Format::Version2;
+        else if (mPC == 0)
+            format = Z80Format::Version2;
+        else {
+            for (const auto& it : mFiles) {
+                if (it.bank != 0 && it.bank != 2 && it.bank != 5) {
+                    format = Z80Format::Version2;
+                    need128k = true;
+                    break;
+                }
             }
+        }
+    }
+
+    if (machine == Z80Machine::Auto) {
+        if (mPort1FFD != 0xffff)
+            machine = Z80Machine::SpectrumPlus3;
+        else if (need128k)
+            machine = Z80Machine::Spectrum128k;
+        else {
+            machine = Z80Machine::Spectrum48k;
+            is48k = true;
+        }
+    }
+
+    assert(format != Z80Format::Auto);
+    assert(machine != Z80Machine::Auto);
+
+    if (format == Z80Format::Version1 && mPC == 0)
+        throw CompilerError(mZ80Location, "cannot write z80 format 1 with PC equal to 0.");
+    if (format != Z80Format::Version3 && mPort1FFD != 0xffff)
+        throw CompilerError(mZ80Location, "port 0x1ffd requires z80 format 3.");
+
+    if (is48k) {
+        for (const auto& it : mFiles) {
+            if (it.bank != 0 && it.bank != 2 && it.bank != 5)
+                throw CompilerError(it.location, "Invalid bank for 48k machine.");
         }
     }
 
@@ -120,7 +276,7 @@ void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
     writeByte(ss, mF);                                                  // 1
     writeWordLE(ss, mBC);                                               // 2
     writeWordLE(ss, mHL);                                               // 4
-    writeWordLE(ss, (mZ80Format == Z80Format::Version1 ? mPC : 0));     // 6
+    writeWordLE(ss, (format == Z80Format::Version1 ? mPC : 0));         // 6
     writeWordLE(ss, mSP);                                               // 8
     writeByte(ss, mI);                                                  // 10
     writeByte(ss, mR);                                                  // 11
@@ -139,34 +295,26 @@ void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
     writeByte(ss, mShadowF);                                            // 22
     writeWordLE(ss, mIY);                                               // 23
     writeWordLE(ss, mIX);                                               // 25
-    writeByte(ss, 1); // interrupts enabled                             // 27
+    writeByte(ss, (mInterruptsEnabled ? 1 : 0));                        // 27
     writeByte(ss, 0); // IFF2                                           // 28
 
     uint8_t flags2 = 0;
     flags2 |= (mInterruptMode <= 2 ? mInterruptMode : 0);
-    flags2 |= 0xc0; // kempston
+    flags2 |= 0x40; // kempston
     writeByte(ss, flags2);                                              // 29
 
-    switch (mZ80Format) {
-        case Z80Format::Version1: {
-            std::unique_ptr<uint8_t[]> memory{new uint8_t[49152]};
-            for (const auto& it : mFiles) {
-                assert(it.start >= 0x4000);
-                assert(it.start + it.size <= 0xffff);
-                memcpy(&memory[it.start - 0x4000], it.bytes.get(), it.size);
-            }
-            ss.write(reinterpret_cast<char*>(memory.get()), 49152);
+    switch (format) {
+        case Z80Format::Version1:
             break;
-        }
 
         case Z80Format::Version2:
         case Z80Format::Version3: {
-            writeWordLE(ss, (mZ80Format == Z80Format::Version2 ? 23 : (mPort1FFD != 0xff ? 55 : 54)));  // 30
+            writeWordLE(ss, (format == Z80Format::Version2 ? 23 : (mPort1FFD != 0xffff ? 55 : 54)));    // 30
             writeWordLE(ss, mPC);                                                                       // 32
-            switch (mZ80Machine) {
+            switch (machine) {
                 case Z80Machine::Spectrum16k: writeByte(ss, 0); break;                                  // 34
                 case Z80Machine::Spectrum48k: writeByte(ss, 0); break;
-                case Z80Machine::Spectrum128k: writeByte(ss, (mZ80Format == Z80Format::Version2 ? 3 : 4)); break;
+                case Z80Machine::Spectrum128k: writeByte(ss, (format == Z80Format::Version2 ? 3 : 4)); break;
                 case Z80Machine::SpectrumPlus3: writeByte(ss, 7); break;
                 case Z80Machine::Pentagon: writeByte(ss, 9); break;
                 case Z80Machine::Scorpion: writeByte(ss, 10); break;
@@ -181,13 +329,13 @@ void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
             writeByte(ss, 0);         // FIXME: timex: last OUT to 0xFF                                 // 36
 
             uint8_t flags3 = 0;
-            if (mZ80Machine == Z80Machine::Spectrum16k)
+            if (machine == Z80Machine::Spectrum16k)
                 flags3 |= 0x80;
             writeByte(ss, flags3);                                                                      // 37
             writeByte(ss, mPortFFFD);                                                                   // 38
             ss.write(reinterpret_cast<const char*>(mSoundChipRegisters), 16);                           // 39
 
-            if (mZ80Format == Z80Format::Version3) {
+            if (format == Z80Format::Version3) {
                 writeWordLE(ss, 0);     // low T state counter                                          // 55
                 writeByte(ss, 0);       // high T state counter                                         // 57
                 writeByte(ss, 0);       // ignored by Z80                                               // 58
@@ -200,8 +348,8 @@ void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
                 writeByte(ss, 0);       // MGT type                                                     // 83
                 writeByte(ss, 0);       // Disciple inhibit button status                               // 84
                 writeByte(ss, 0);       // Disciple inhibit flag                                        // 85
-                if (mPort1FFD != 0xff)
-                    writeByte(ss, mPort1FFD);                                                           // 86
+                if (mPort1FFD != 0xffff)
+                    writeByte(ss, uint8_t(mPort1FFD & 0xff));                                           // 86
             }
 
             break;
@@ -209,9 +357,66 @@ void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
 
         default:
             assert(false);
-            throw CompilerError(nullptr, "internal compiler error: unsupported z80 format.");
+            throw CompilerError(mZ80Location, "internal compiler error: unsupported z80 format.");
+    }
+
+    auto memory = buildMemory();
+
+    if (format == Z80Format::Version1) {
+        ss.write(reinterpret_cast<const char*>(&memory[5 * 16384]), 16384);
+        ss.write(reinterpret_cast<const char*>(&memory[2 * 16384]), 16384);
+        ss.write(reinterpret_cast<const char*>(&memory[0 * 16384]), 16384);
+    } else {
+        writeWordLE(ss, 0xffff);
+        writeByte(ss, 8);               // bank 5: 0x4000 - 0x7fff
+        ss.write(reinterpret_cast<const char*>(&memory[5 * 16384]), 16384);
+
+        writeWordLE(ss, 0xffff);
+        writeByte(ss, (is48k ? 4 : 5)); // bank 2: 0x8000 - 0xbfff
+        ss.write(reinterpret_cast<const char*>(&memory[2 * 16384]), 16384);
+
+        writeWordLE(ss, 0xffff);
+        writeByte(ss, (is48k ? 5 : 3)); // bank 0: 0xc000 - 0xffff
+        ss.write(reinterpret_cast<const char*>(&memory[0 * 16384]), 16384);
+
+        if (!is48k) {
+            writeWordLE(ss, 0xffff);
+            writeByte(ss, 4);           // bank 1: 0xc000 - 0xffff
+            ss.write(reinterpret_cast<const char*>(&memory[1 * 16384]), 16384);
+
+            writeWordLE(ss, 0xffff);
+            writeByte(ss, 6);           // bank 3: 0xc000 - 0xffff
+            ss.write(reinterpret_cast<const char*>(&memory[3 * 16384]), 16384);
+
+            writeWordLE(ss, 0xffff);
+            writeByte(ss, 7);           // bank 4: 0xc000 - 0xffff
+            ss.write(reinterpret_cast<const char*>(&memory[4 * 16384]), 16384);
+
+            writeWordLE(ss, 0xffff);
+            writeByte(ss, 9);           // bank 6: 0xc000 - 0xffff
+            ss.write(reinterpret_cast<const char*>(&memory[6 * 16384]), 16384);
+
+            writeWordLE(ss, 0xffff);
+            writeByte(ss, 10);          // bank 7: 0xc000 - 0xffff
+            ss.write(reinterpret_cast<const char*>(&memory[7 * 16384]), 16384);
+        }
     }
 
     std::string data = ss.str();
     return writeFile(path, data);
+}
+
+std::unique_ptr<uint8_t[]> SpectrumSnapshotWriter::buildMemory()
+{
+    std::unique_ptr<uint8_t[]> memory{new uint8_t[8 * 16384]};
+    memset(memory.get(), 0, 8 * 16384);
+
+    for (const auto& it : mFiles) {
+        assert(it.start >= 0xc000);
+        assert(it.size <= 16384);
+        assert(it.bank >= 0 && it.bank < 8);
+        memcpy(&memory[it.bank * 16384 + it.start - 0xc000], it.bytes.get(), it.size);
+    }
+
+    return memory;
 }

@@ -4,10 +4,12 @@
 #include "Compiler/Tree/SourceLocationFactory.h"
 #include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/Linker/Program.h"
 #include "Compiler/CompilerError.h"
 #include "Compiler/ExpressionParser.h"
 #include "Common/Xml.h"
 #include "Common/IO.h"
+#include "Common/Strings.h"
 
 const char* Project::FileSuffix = "retro";
 const char* Project::DefaultOutputDirectory = "_out";
@@ -214,6 +216,78 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
             output->files.emplace_back(std::move(outputFile));
         }
 
+        output->z80 = std::make_unique<Output::Z80>();
+
+        IF_HAS(Format, OutputZ80) {
+            auto loc = (locationFactory ? locationFactory->createLocation(ROW(Format)) : nullptr);
+            output->z80->format = Output::Z80::Value{ loc, REQ_STRING(value, Format) };
+        }
+
+        IF_HAS(Machine, OutputZ80) {
+            auto loc = (locationFactory ? locationFactory->createLocation(ROW(Machine)) : nullptr);
+            output->z80->machine = Output::Z80::Value{ loc, REQ_STRING(value, Machine) };
+        }
+
+        FOR_EACH(Register, OutputZ80) {
+            std::string name = toLower(REQ_STRING(name, Register));
+            const std::string& value = REQ_STRING(value, Register);
+            auto loc = (locationFactory ? locationFactory->createLocation(ROW(Register)) : nullptr);
+
+            if (name == "a") output->z80->a = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "f") output->z80->f = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "bc") output->z80->bc = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "hl") output->z80->hl = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "de") output->z80->de = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "a'") output->z80->shadowA = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "f'") output->z80->shadowF = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "bc'") output->z80->shadowBC = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "hl'") output->z80->shadowHL = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "de'") output->z80->shadowDE = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "pc") output->z80->pc = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "sp") output->z80->sp = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "iy") output->z80->iy = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "ix") output->z80->ix = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "i") output->z80->i = Output::Z80::Value{ loc, std::move(value) };
+            else if (name == "r") output->z80->r = Output::Z80::Value{ loc, std::move(value) };
+            else {
+                auto loc = (locationFactory ? locationFactory->createLocation(ROW(Register)) : nullptr);
+                std::stringstream ss;
+                ss << "invalid register name \"" << name << "\".";
+                throw CompilerError(loc, ss.str());
+            }
+        }
+
+        FOR_EACH(Port, OutputZ80) {
+            std::string number = toLower(REQ_STRING(number, Port));
+            const std::string& value = REQ_STRING(value, Port);
+            auto loc = (locationFactory ? locationFactory->createLocation(ROW(Port)) : nullptr);
+
+            if (number == "1ffd") output->z80->port1FFD = Output::Z80::Value{ loc, value };
+            else if (number == "7ffd") output->z80->port7FFD = Output::Z80::Value{ loc, value };
+            else if (number == "fffd") output->z80->portFFFD = Output::Z80::Value{ loc, value };
+            else {
+                auto loc = (locationFactory ? locationFactory->createLocation(ROW(Port)) : nullptr);
+                std::stringstream ss;
+                ss << "invalid port number \"" << REQ_STRING(number, Port) << "\".";
+                throw CompilerError(loc, ss.str());
+            }
+        }
+
+        IF_HAS(BorderColor, OutputZ80) {
+            auto loc = (locationFactory ? locationFactory->createLocation(ROW(BorderColor)) : nullptr);
+            output->z80->borderColor = Output::Z80::Value{ loc, REQ_STRING(value, BorderColor) };
+        }
+
+        IF_HAS(InterruptMode, OutputZ80) {
+            auto loc = (locationFactory ? locationFactory->createLocation(ROW(InterruptMode)) : nullptr);
+            output->z80->interruptMode = Output::Z80::Value{ loc, REQ_STRING(value, InterruptMode) };
+        }
+
+        IF_HAS(InterruptsEnabled, OutputZ80) {
+            auto loc = (locationFactory ? locationFactory->createLocation(ROW(InterruptsEnabled)) : nullptr);
+            output->z80->interruptsEnabled = Output::Z80::Value{ loc, REQ_STRING(value, InterruptsEnabled) };
+        }
+
         outputs.emplace_back(std::move(output));
     }
 
@@ -282,6 +356,60 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
             xmlEncodeInQuotes(ss, *file.basic);
         }
         ss << " />\n";
+    }
+
+    if (output.z80) {
+        if (output.z80->format.value.has_value())
+            ss << "        <Format value=\"" << *output.z80->format.value << "\" />";
+        if (output.z80->machine.value.has_value())
+            ss << "        <Machine value=\"" << *output.z80->machine.value << "\" />";
+
+        if (output.z80->a.value.has_value())
+            ss << "        <Register name=\"A\" value=\"" << *output.z80->a.value << "\" />";
+        if (output.z80->f.value.has_value())
+            ss << "        <Register name=\"F\" value=\"" << *output.z80->f.value << "\" />";
+        if (output.z80->bc.value.has_value())
+            ss << "        <Register name=\"BC\" value=\"" << *output.z80->bc.value << "\" />";
+        if (output.z80->hl.value.has_value())
+            ss << "        <Register name=\"HL\" value=\"" << *output.z80->hl.value << "\" />";
+        if (output.z80->de.value.has_value())
+            ss << "        <Register name=\"DE\" value=\"" << *output.z80->de.value << "\" />";
+        if (output.z80->shadowA.value.has_value())
+            ss << "        <Register name=\"A'\" value=\"" << *output.z80->shadowA.value << "\" />";
+        if (output.z80->shadowF.value.has_value())
+            ss << "        <Register name=\"F'\" value=\"" << *output.z80->shadowF.value << "\" />";
+        if (output.z80->shadowBC.value.has_value())
+            ss << "        <Register name=\"BC'\" value=\"" << *output.z80->shadowBC.value << "\" />";
+        if (output.z80->shadowHL.value.has_value())
+            ss << "        <Register name=\"HL'\" value=\"" << *output.z80->shadowHL.value << "\" />";
+        if (output.z80->shadowDE.value.has_value())
+            ss << "        <Register name=\"DE'\" value=\"" << *output.z80->shadowDE.value << "\" />";
+        if (output.z80->pc.value.has_value())
+            ss << "        <Register name=\"PC\" value=\"" << *output.z80->pc.value << "\" />";
+        if (output.z80->sp.value.has_value())
+            ss << "        <Register name=\"SP\" value=\"" << *output.z80->sp.value << "\" />";
+        if (output.z80->iy.value.has_value())
+            ss << "        <Register name=\"IY\" value=\"" << *output.z80->iy.value << "\" />";
+        if (output.z80->ix.value.has_value())
+            ss << "        <Register name=\"IX\" value=\"" << *output.z80->ix.value << "\" />";
+        if (output.z80->i.value.has_value())
+            ss << "        <Register name=\"I\" value=\"" << *output.z80->i.value << "\" />";
+        if (output.z80->r.value.has_value())
+            ss << "        <Register name=\"R\" value=\"" << *output.z80->r.value << "\" />";
+
+        if (output.z80->port1FFD.value.has_value())
+            ss << "        <Port number=\"1ffd\" value=\"" << *output.z80->port1FFD.value << "\" />";
+        if (output.z80->port7FFD.value.has_value())
+            ss << "        <Port number=\"7ffd\" value=\"" << *output.z80->port7FFD.value << "\" />";
+        if (output.z80->portFFFD.value.has_value())
+            ss << "        <Port number=\"fffd\" value=\"" << *output.z80->portFFFD.value << "\" />";
+
+        if (output.z80->borderColor.value.has_value())
+            ss << "        <BorderColor value=\"" << *output.z80->borderColor.value << "\" />";
+        if (output.z80->interruptMode.value.has_value())
+            ss << "        <InterruptMode value=\"" << *output.z80->interruptMode.value << "\" />";
+        if (output.z80->interruptsEnabled.value.has_value())
+            ss << "        <InterruptsEnabled value=\"" << *output.z80->interruptsEnabled.value << "\" />";
     }
 
     ss << "    </" << element << ">\n";
@@ -384,4 +512,38 @@ bool Project::Output::isEnabled(SymbolTable* symbolTable) const
     }
 
     return value->evaluateValue(nullptr, nullptr).number != 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Expr* Project::Output::Z80::Value::parseExpression(Program* program) const
+{
+    ExpressionParser parser(program->heap(), nullptr, nullptr, nullptr);
+    Expr* expr = parser.tryParseExpression(location, value.value().c_str(), program->globals());
+    if (!expr) {
+        std::stringstream ss;
+        ss << "unable to parse expression \"" << value.value() << "\": " << parser.error();
+        throw CompilerError(parser.errorLocation(), ss.str());
+    }
+    return expr;
+}
+
+uint8_t Project::Output::Z80::Value::evaluateByte(Program* program, ISectionResolver* sectionResolver) const
+{
+    return parseExpression(program)->evaluateByte(nullptr, sectionResolver);
+}
+
+uint16_t Project::Output::Z80::Value::evaluateWord(Program* program, ISectionResolver* sectionResolver) const
+{
+    return parseExpression(program)->evaluateWord(nullptr, sectionResolver);
+}
+
+bool Project::Output::Z80::Value::evaluateBool(Program* program, ISectionResolver* sectionResolver) const
+{
+    return evaluateValue(program, sectionResolver).number != 0;
+}
+
+::Value Project::Output::Z80::Value::evaluateValue(Program* program, ISectionResolver* sectionResolver) const
+{
+    return parseExpression(program)->evaluateValue(nullptr, sectionResolver);
 }

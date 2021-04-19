@@ -7,6 +7,9 @@ class Expr;
 class SourceLocation;
 class SourceLocationFactory;
 class SymbolTable;
+class Value;
+class ISectionResolver;
+class Program;
 
 class Project
 {
@@ -82,10 +85,52 @@ public:
             std::optional<std::string> name;
         };
 
+        struct Z80
+        {
+            struct Value
+            {
+                SourceLocation* location = nullptr;
+                std::optional<std::string> value;
+
+                Expr* parseExpression(Program* program) const;
+
+                uint8_t evaluateByte(Program* program, ISectionResolver* sectionResolver) const;
+                uint16_t evaluateWord(Program* program, ISectionResolver* sectionResolver) const;
+                bool evaluateBool(Program* program, ISectionResolver* sectionResolver) const;
+                ::Value evaluateValue(Program* program, ISectionResolver* sectionResolver) const;
+            };
+
+            Value format;
+            Value machine;
+            Value a;
+            Value f;
+            Value bc;
+            Value hl;
+            Value de;
+            Value shadowA;
+            Value shadowF;
+            Value shadowBC;
+            Value shadowHL;
+            Value shadowDE;
+            Value pc;
+            Value sp;
+            Value iy;
+            Value ix;
+            Value i;
+            Value r;
+            Value borderColor;
+            Value interruptMode;
+            Value port7FFD;
+            Value portFFFD;
+            Value port1FFD;
+            Value interruptsEnabled;
+        };
+
         Type type;
         SourceLocation* location;
         std::optional<std::string> enabled;
         std::vector<File> files;
+        std::unique_ptr<Z80> z80;
 
         bool isEnabled(SymbolTable* symbolTable) const;
     };
