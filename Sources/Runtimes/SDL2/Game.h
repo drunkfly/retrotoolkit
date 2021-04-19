@@ -3,6 +3,9 @@
 
 #include "Runtimes/SDL2/Common.h"
 
+class Cpu;
+class Screen;
+
 class Game
 {
 public:
@@ -17,6 +20,8 @@ public:
 private:
     std::unique_ptr<SDL2Core> mSDL2;
     std::unique_ptr<Settings> mSettings;
+    std::unique_ptr<Screen> mScreen;
+    std::unique_ptr<Cpu> mCpu;
     int mBorderSize;
     Uint32 mLastFrameTicks;
 

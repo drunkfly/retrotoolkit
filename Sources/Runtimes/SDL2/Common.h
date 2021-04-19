@@ -9,6 +9,7 @@
 #include <sstream>
 #include <memory>
 #include <stdexcept>
+#include <z80.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

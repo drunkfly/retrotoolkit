@@ -1,4 +1,5 @@
 #include "Project.h"
+#include "Compiler/Output/SpectrumSnapshotWriter.h"
 #include "Compiler/Tree/Expr.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SourceLocationFactory.h"
@@ -107,6 +108,84 @@ static std::unique_ptr<Project::Section> parseSection(
     return section;
 }
 
+static std::unique_ptr<Project::Output::Z80> parseZ80(
+    const XmlDocument& xml, XmlNode xmlOutputZ80, SourceLocationFactory* locFactory)
+{
+    auto z80 = std::make_unique<Project::Output::Z80>();
+
+    IF_HAS(Format, OutputZ80) {
+        auto loc = (locFactory ? locFactory->createLocation(ROW(Format)) : nullptr);
+        z80->format = Project::Output::Z80::Value{ loc, REQ_STRING(value, Format) };
+    }
+
+    IF_HAS(Machine, OutputZ80) {
+        auto loc = (locFactory ? locFactory->createLocation(ROW(Machine)) : nullptr);
+        z80->machine = Project::Output::Z80::Value{ loc, REQ_STRING(value, Machine) };
+    }
+
+    FOR_EACH(Register, OutputZ80) {
+        std::string name = toLower(REQ_STRING(name, Register));
+        const std::string& value = REQ_STRING(value, Register);
+        auto loc = (locFactory ? locFactory->createLocation(ROW(Register)) : nullptr);
+
+        if (name == "a") z80->a = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "f") z80->f = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "bc") z80->bc = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "hl") z80->hl = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "de") z80->de = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "a'") z80->shadowA = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "f'") z80->shadowF = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "bc'") z80->shadowBC = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "hl'") z80->shadowHL = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "de'") z80->shadowDE = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "pc") z80->pc = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "sp") z80->sp = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "iy") z80->iy = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "ix") z80->ix = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "i") z80->i = Project::Output::Z80::Value{ loc, std::move(value) };
+        else if (name == "r") z80->r = Project::Output::Z80::Value{ loc, std::move(value) };
+        else {
+            auto loc = (locFactory ? locFactory->createLocation(ROW(Register)) : nullptr);
+            std::stringstream ss;
+            ss << "invalid register name \"" << name << "\".";
+            throw CompilerError(loc, ss.str());
+        }
+    }
+
+    FOR_EACH(Port, OutputZ80) {
+        std::string number = toLower(REQ_STRING(number, Port));
+        const std::string& value = REQ_STRING(value, Port);
+        auto loc = (locFactory ? locFactory->createLocation(ROW(Port)) : nullptr);
+
+        if (number == "1ffd") z80->port1FFD = Project::Output::Z80::Value{ loc, value };
+        else if (number == "7ffd") z80->port7FFD = Project::Output::Z80::Value{ loc, value };
+        else if (number == "fffd") z80->portFFFD = Project::Output::Z80::Value{ loc, value };
+        else {
+            auto loc = (locFactory ? locFactory->createLocation(ROW(Port)) : nullptr);
+            std::stringstream ss;
+            ss << "invalid port number \"" << REQ_STRING(number, Port) << "\".";
+            throw CompilerError(loc, ss.str());
+        }
+    }
+
+    IF_HAS(BorderColor, OutputZ80) {
+        auto loc = (locFactory ? locFactory->createLocation(ROW(BorderColor)) : nullptr);
+        z80->borderColor = Project::Output::Z80::Value{ loc, REQ_STRING(value, BorderColor) };
+    }
+
+    IF_HAS(InterruptMode, OutputZ80) {
+        auto loc = (locFactory ? locFactory->createLocation(ROW(InterruptMode)) : nullptr);
+        z80->interruptMode = Project::Output::Z80::Value{ loc, REQ_STRING(value, InterruptMode) };
+    }
+
+    IF_HAS(InterruptsEnabled, OutputZ80) {
+        auto loc = (locFactory ? locFactory->createLocation(ROW(InterruptsEnabled)) : nullptr);
+        z80->interruptsEnabled = Project::Output::Z80::Value{ loc, REQ_STRING(value, InterruptsEnabled) };
+    }
+
+    return z80;
+}
+
 void Project::load(std::filesystem::path path, SourceLocationFactory* locationFactory)
 {
     mPath = std::move(path);
@@ -209,6 +288,7 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
         output->type = Output::ZXSpectrumZ80;
         output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputZ80)) : nullptr);
         output->enabled = OPT_STRING(enabled, OutputZ80);
+        output->z80 = parseZ80(xml, xmlOutputZ80, locationFactory);
 
         FOR_EACH(File, OutputZ80) {
             Output::File outputFile = {};
@@ -218,76 +298,22 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
             output->files.emplace_back(std::move(outputFile));
         }
 
-        output->z80 = std::make_unique<Output::Z80>();
+        outputs.emplace_back(std::move(output));
+    }
 
-        IF_HAS(Format, OutputZ80) {
-            auto loc = (locationFactory ? locationFactory->createLocation(ROW(Format)) : nullptr);
-            output->z80->format = Output::Z80::Value{ loc, REQ_STRING(value, Format) };
-        }
+    IF_HAS(OutputPC, RetroProject) {
+        auto output = std::make_unique<Output>();
+        output->type = Output::PC;
+        output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputPC)) : nullptr);
+        output->enabled = OPT_STRING(enabled, OutputPC);
+        output->z80 = parseZ80(xml, xmlOutputPC, locationFactory);
 
-        IF_HAS(Machine, OutputZ80) {
-            auto loc = (locationFactory ? locationFactory->createLocation(ROW(Machine)) : nullptr);
-            output->z80->machine = Output::Z80::Value{ loc, REQ_STRING(value, Machine) };
-        }
-
-        FOR_EACH(Register, OutputZ80) {
-            std::string name = toLower(REQ_STRING(name, Register));
-            const std::string& value = REQ_STRING(value, Register);
-            auto loc = (locationFactory ? locationFactory->createLocation(ROW(Register)) : nullptr);
-
-            if (name == "a") output->z80->a = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "f") output->z80->f = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "bc") output->z80->bc = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "hl") output->z80->hl = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "de") output->z80->de = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "a'") output->z80->shadowA = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "f'") output->z80->shadowF = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "bc'") output->z80->shadowBC = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "hl'") output->z80->shadowHL = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "de'") output->z80->shadowDE = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "pc") output->z80->pc = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "sp") output->z80->sp = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "iy") output->z80->iy = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "ix") output->z80->ix = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "i") output->z80->i = Output::Z80::Value{ loc, std::move(value) };
-            else if (name == "r") output->z80->r = Output::Z80::Value{ loc, std::move(value) };
-            else {
-                auto loc = (locationFactory ? locationFactory->createLocation(ROW(Register)) : nullptr);
-                std::stringstream ss;
-                ss << "invalid register name \"" << name << "\".";
-                throw CompilerError(loc, ss.str());
-            }
-        }
-
-        FOR_EACH(Port, OutputZ80) {
-            std::string number = toLower(REQ_STRING(number, Port));
-            const std::string& value = REQ_STRING(value, Port);
-            auto loc = (locationFactory ? locationFactory->createLocation(ROW(Port)) : nullptr);
-
-            if (number == "1ffd") output->z80->port1FFD = Output::Z80::Value{ loc, value };
-            else if (number == "7ffd") output->z80->port7FFD = Output::Z80::Value{ loc, value };
-            else if (number == "fffd") output->z80->portFFFD = Output::Z80::Value{ loc, value };
-            else {
-                auto loc = (locationFactory ? locationFactory->createLocation(ROW(Port)) : nullptr);
-                std::stringstream ss;
-                ss << "invalid port number \"" << REQ_STRING(number, Port) << "\".";
-                throw CompilerError(loc, ss.str());
-            }
-        }
-
-        IF_HAS(BorderColor, OutputZ80) {
-            auto loc = (locationFactory ? locationFactory->createLocation(ROW(BorderColor)) : nullptr);
-            output->z80->borderColor = Output::Z80::Value{ loc, REQ_STRING(value, BorderColor) };
-        }
-
-        IF_HAS(InterruptMode, OutputZ80) {
-            auto loc = (locationFactory ? locationFactory->createLocation(ROW(InterruptMode)) : nullptr);
-            output->z80->interruptMode = Output::Z80::Value{ loc, REQ_STRING(value, InterruptMode) };
-        }
-
-        IF_HAS(InterruptsEnabled, OutputZ80) {
-            auto loc = (locationFactory ? locationFactory->createLocation(ROW(InterruptsEnabled)) : nullptr);
-            output->z80->interruptsEnabled = Output::Z80::Value{ loc, REQ_STRING(value, InterruptsEnabled) };
+        FOR_EACH(File, OutputPC) {
+            Output::File outputFile = {};
+            outputFile.location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
+            outputFile.name = OPT_STRING(name, File);
+            outputFile.ref = OPT_STRING(ref, File);
+            output->files.emplace_back(std::move(outputFile));
         }
 
         outputs.emplace_back(std::move(output));
@@ -552,4 +578,114 @@ bool Project::Output::Z80::Value::evaluateBool(Program* program, ISectionResolve
 ::Value Project::Output::Z80::Value::evaluateValue(Program* program, ISectionResolver* sectionResolver) const
 {
     return parseExpression(program)->evaluateValue(nullptr, sectionResolver);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Project::Output::Z80::initWriter(
+    Program* program, ISectionResolver* sectionResolver, SpectrumSnapshotWriter* writer) const
+{
+    if (format.value.has_value()) {
+        if (*format.value == "auto")
+            writer->setFormat(Z80Format::Auto);
+        else {
+            auto value = format.evaluateValue(program, sectionResolver).number;
+            if (value == 1)
+                writer->setFormat(Z80Format::Version1);
+            else if (value == 2)
+                writer->setFormat(Z80Format::Version2);
+            else if (value == 3)
+                writer->setFormat(Z80Format::Version3);
+            else
+                throw CompilerError(format.location, "invalid Z80 format.");
+        }
+    }
+
+    if (machine.value.has_value()) {
+        if (*machine.value == "auto")
+            writer->setMachine(Z80Machine::Auto);
+        else if (*machine.value == "16k")
+            writer->setMachine(Z80Machine::Spectrum16k);
+        else if (*machine.value == "48k")
+            writer->setMachine(Z80Machine::Spectrum48k);
+        else if (*machine.value == "128k")
+            writer->setMachine(Z80Machine::Spectrum128k);
+        else if (*machine.value == "+3")
+            writer->setMachine(Z80Machine::SpectrumPlus3);
+        else if (*machine.value == "pentagon")
+            writer->setMachine(Z80Machine::Pentagon);
+        else if (*machine.value == "scorpion")
+            writer->setMachine(Z80Machine::Scorpion);
+        else if (*machine.value == "didaktik")
+            writer->setMachine(Z80Machine::DidaktikKompakt);
+        else if (*machine.value == "+2")
+            writer->setMachine(Z80Machine::SpectrumPlus2);
+        else if (*machine.value == "+2A")
+            writer->setMachine(Z80Machine::SpectrumPlus2A);
+        else if (*machine.value == "tc2048")
+            writer->setMachine(Z80Machine::TC2048);
+        else if (*machine.value == "tc2068")
+            writer->setMachine(Z80Machine::TC2068);
+        else if (*machine.value == "ts2068")
+            writer->setMachine(Z80Machine::TS2068);
+        else
+            throw CompilerError(machine.location, "invalid Z80 machine.");
+    }
+
+    if (a.value.has_value())
+        writer->setA(a.evaluateByte(program, sectionResolver));
+    if (f.value.has_value())
+        writer->setF(f.evaluateByte(program, sectionResolver));
+    if (bc.value.has_value())
+        writer->setBC(bc.evaluateWord(program, sectionResolver));
+    if (hl.value.has_value())
+        writer->setHL(hl.evaluateWord(program, sectionResolver));
+    if (de.value.has_value())
+        writer->setDE(de.evaluateWord(program, sectionResolver));
+    if (shadowA.value.has_value())
+        writer->setShadowA(shadowA.evaluateByte(program, sectionResolver));
+    if (shadowF.value.has_value())
+        writer->setShadowF(shadowF.evaluateByte(program, sectionResolver));
+    if (shadowBC.value.has_value())
+        writer->setShadowBC(shadowBC.evaluateWord(program, sectionResolver));
+    if (shadowHL.value.has_value())
+        writer->setShadowHL(shadowHL.evaluateWord(program, sectionResolver));
+    if (shadowDE.value.has_value())
+        writer->setShadowDE(shadowDE.evaluateWord(program, sectionResolver));
+    if (pc.value.has_value())
+        writer->setPC(pc.evaluateWord(program, sectionResolver));
+    if (sp.value.has_value())
+        writer->setSP(sp.evaluateWord(program, sectionResolver));
+    if (iy.value.has_value())
+        writer->setIY(iy.evaluateWord(program, sectionResolver));
+    if (ix.value.has_value())
+        writer->setIX(ix.evaluateWord(program, sectionResolver));
+    if (i.value.has_value())
+        writer->setI(i.evaluateByte(program, sectionResolver));
+    if (r.value.has_value())
+        writer->setR(r.evaluateByte(program, sectionResolver));
+
+    if (port1FFD.value.has_value())
+        writer->setPort1FFD(port1FFD.evaluateWord(program, sectionResolver));
+    if (port7FFD.value.has_value())
+        writer->setPort7FFD(port7FFD.evaluateWord(program, sectionResolver));
+    if (portFFFD.value.has_value())
+        writer->setPortFFFD(portFFFD.evaluateWord(program, sectionResolver));
+
+    if (borderColor.value.has_value()) {
+        auto color = borderColor.evaluateValue(program, sectionResolver).number;
+        if (color < 0 || color > 7)
+            throw CompilerError(borderColor.location, "invalid border color.");
+        writer->setBorderColor(uint8_t(color));
+    }
+
+    if (interruptMode.value.has_value()) {
+        auto color = interruptMode.evaluateValue(program, sectionResolver).number;
+        if (color < 0 || color > 2)
+            throw CompilerError(interruptMode.location, "invalid interrupt mode.");
+        writer->setInterruptMode(uint8_t(color));
+    }
+
+    if (interruptsEnabled.value.has_value())
+        writer->setInterruptsEnabled(interruptsEnabled.evaluateBool(program, sectionResolver));
 }

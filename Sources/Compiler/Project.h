@@ -10,6 +10,7 @@ class SymbolTable;
 class Value;
 class ISectionResolver;
 class Program;
+class SpectrumSnapshotWriter;
 
 class Project
 {
@@ -77,6 +78,7 @@ public:
             ZXSpectrumTAP,
             ZXSpectrumTRD,
             ZXSpectrumZ80,
+            PC,
         };
 
         struct File
@@ -126,6 +128,8 @@ public:
             Value portFFFD;
             Value port1FFD;
             Value interruptsEnabled;
+
+            void initWriter(Program* program, ISectionResolver* sectionResolver, SpectrumSnapshotWriter* writer) const;
         };
 
         Type type;

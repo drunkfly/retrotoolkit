@@ -14,9 +14,12 @@ add(Compiler
         LZSA
     DEPENDS
         JavaClasspath
+    INSTALL_RESOURCES_DIR
+        data
     INSTALL_RESOURCES
         ../Java/Build/RetroBuild.jar
         ../Java/Build/RetroEngine.jar
+        Resources/Win32Runtime.bin
     SOURCES
         Assembler/AssemblerContext.cpp
         Assembler/AssemblerContext.h

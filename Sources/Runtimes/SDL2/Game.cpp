@@ -1,12 +1,16 @@
 #include "Game.h"
 #include "Runtimes/SDL2/SDL2Core.h"
 #include "Runtimes/SDL2/Settings.h"
+#include "Runtimes/SDL2/Cpu.h"
+#include "Runtimes/SDL2/Screen.h"
 
 const int TicksPerFrame = 1000 / 50;
 
 Game::Game()
     : mSDL2(std::make_unique<SDL2Core>())
     , mSettings(std::make_unique<Settings>())
+    , mScreen(std::make_unique<Screen>())
+    , mCpu(std::make_unique<Cpu>(mScreen.get()))
     , mLastFrameTicks(0)
 {
     createWindow();
@@ -46,13 +50,12 @@ void Game::runFrame()
         mLastFrameTicks = ticks;
 
     while (ticks - mLastFrameTicks >= TicksPerFrame) {
-        // FIXME
-
+        mCpu->runFrame();
         mLastFrameTicks += TicksPerFrame;
     }
 
     int w = 0, h = 0;
     mSDL2->beginFrame(&w, &h);
-
+    mScreen->draw();
     mSDL2->endFrame();
 }

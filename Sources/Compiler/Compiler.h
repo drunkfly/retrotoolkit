@@ -21,7 +21,7 @@ public:
 class Compiler
 {
 public:
-    Compiler(GCHeap* heap, std::filesystem::path resourcesPath, ICompilerListener* listener = nullptr);
+    Compiler(GCHeap* heap, const std::filesystem::path& resourcesPath, ICompilerListener* listener = nullptr);
     ~Compiler();
 
     void setJdkPath(std::filesystem::path path);

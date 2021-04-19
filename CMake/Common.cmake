@@ -85,7 +85,7 @@ macro(qt_install_win32_plugins suffix config targetDir libFile)
         set(file "${path}/plugins/${name}")
         if(EXISTS "${file}" AND NOT EXISTS "${targetDir}/${name}")
             message(STATUS "Installing dependency '${name}' (${config})")
-            configure_file("${file}" "${targetDir}/${name}" COPYONLY)
+            configure_file("${file}" "${targetDir}/plugins/${name}" COPYONLY)
         endif()
     endforeach()
 endmacro()
@@ -146,34 +146,34 @@ macro(qt_install_libraries target outputDir)
     endforeach()
 endmacro()
 
-macro(install_resources target outputDir)
+macro(install_resources target installDir outputDir)
     foreach(file ${ARGN})
         get_filename_component(name "${file}" NAME)
         get_filename_component(path "${file}" ABSOLUTE)
         if(MSVC)
             foreach(config ${CMAKE_CONFIGURATION_TYPES})
-                add_custom_command(OUTPUT "${outputDir}/${config}/${name}"
-                    COMMAND "${CMAKE_COMMAND}" -E copy "${path}" "${outputDir}/${config}/${name}"
+                add_custom_command(OUTPUT "${installDir}/${config}/${outputDir}/${name}"
+                    COMMAND "${CMAKE_COMMAND}" -E copy "${path}" "${installDir}/${config}/${outputDir}/${name}"
                     MAIN_DEPENDENCY "${path}"
                     DEPENDS "${path}"
                     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                     COMMENT "Installing resource '${file}' (${config})"
                     )
-                source_group("Generated Files\\${config}" FILES "${outputDir}/${config}/${name}")
-                set_source_files_properties("${outputDir}/${config}/${name}" PROPERTIES HEADER_FILE_ONLY TRUE)
-                target_sources("${target}" PRIVATE "${outputDir}/${config}/${name}")
+                source_group("Generated Files\\${config}" FILES "${installDir}/${config}/${outputDir}/${name}")
+                set_source_files_properties("${installDir}/${config}/${outputDir}/${name}" PROPERTIES HEADER_FILE_ONLY TRUE)
+                target_sources("${target}" PRIVATE "${installDir}/${config}/${outputDir}/${name}")
             endforeach()
         else()
-            add_custom_command(OUTPUT "${outputDir}/${name}"
-                COMMAND "${CMAKE_COMMAND}" -E copy "${path}" "${outputDir}/${name}"
+            add_custom_command(OUTPUT "${installDir}/${outputDir}/${name}"
+                COMMAND "${CMAKE_COMMAND}" -E copy "${path}" "${installDir}/${outputDir}/${name}"
                 MAIN_DEPENDENCY "${path}"
                 DEPENDS "${path}"
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                 COMMENT "Installing resource '${file}'"
                 )
-            source_group("Generated Files" FILES "${outputDir}/${config}/${name}")
-            set_source_files_properties("${outputDir}/${config}/${name}" PROPERTIES HEADER_FILE_ONLY TRUE)
-            target_sources("${target}" PRIVATE "${outputDir}/${config}/${name}")
+            source_group("Generated Files" FILES "${installDir}/${outputDir}/${name}")
+            set_source_files_properties("${installDir}/${outputDir}/${name}" PROPERTIES HEADER_FILE_ONLY TRUE)
+            target_sources("${target}" PRIVATE "${installDir}/${outputDir}/${name}")
         endif()
     endforeach()
 endmacro()
@@ -187,6 +187,7 @@ macro(add target type)
 
     set(oneValue
         "FOLDER"
+        "INSTALL_RESOURCES_DIR"
         "OUTPUT_DIR"
         )
 
@@ -209,6 +210,7 @@ macro(add target type)
     endif()
 
     if(NOT ARG_OUTPUT_DIR)
+        get_filename_component(buildName "${CMAKE_BINARY_DIR}" NAME)
         set(ARG_OUTPUT_DIR "${BINARIES_PATH}/${buildName}")
     endif()
 
@@ -336,8 +338,12 @@ macro(add target type)
     #########################################################################################################
     ## Install files
 
+    if(NOT ARG_INSTALL_RESOURCES_DIR)
+        set(ARG_INSTALL_RESOURCES_DIR ".")
+    endif()
+
     if(ARG_INSTALL_RESOURCES)
-        install_resources("${target}" "${ARG_OUTPUT_DIR}" ${ARG_INSTALL_RESOURCES})
+        install_resources("${target}" "${ARG_OUTPUT_DIR}" "${ARG_INSTALL_RESOURCES_DIR}" ${ARG_INSTALL_RESOURCES})
     endif()
 
     #########################################################################################################

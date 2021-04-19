@@ -197,10 +197,23 @@ void SpectrumSnapshotWriter::setWriteZ80File(SourceLocation* loc, std::filesyste
     mZ80Location = loc;
 }
 
+void SpectrumSnapshotWriter::addWriteExeFile(
+    SourceLocation* loc, std::filesystem::path input, std::filesystem::path output)
+{
+    ExeFile file;
+    file.location = loc;
+    file.input = std::move(input);
+    file.output = std::move(output);
+    mExeFiles.emplace_back(std::move(file));
+}
+
 void SpectrumSnapshotWriter::writeOutput()
 {
     if (mZ80File)
         writeZ80File(*mZ80File);
+
+    for (const auto& it : mExeFiles)
+        writeExeFile(it.location, it.input, it.output);
 }
 
 void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
@@ -360,7 +373,8 @@ void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
             throw CompilerError(mZ80Location, "internal compiler error: unsupported z80 format.");
     }
 
-    auto memory = buildMemory();
+    std::unique_ptr<uint8_t[]> memory{new uint8_t[8 * 16384]};
+    buildMemory(memory.get());
 
     if (format == Z80Format::Version1) {
         ss.write(reinterpret_cast<const char*>(&memory[5 * 16384]), 16384);
@@ -406,17 +420,37 @@ void SpectrumSnapshotWriter::writeZ80File(const std::filesystem::path& path)
     return writeFile(path, data);
 }
 
-std::unique_ptr<uint8_t[]> SpectrumSnapshotWriter::buildMemory()
+void SpectrumSnapshotWriter::writeExeFile(SourceLocation* loc,
+    const std::filesystem::path& input, const std::filesystem::path& output)
 {
-    std::unique_ptr<uint8_t[]> memory{new uint8_t[8 * 16384]};
-    memset(memory.get(), 0, 8 * 16384);
+    std::string data = loadFile(input);
+
+    size_t off = 0, len = data.size();
+    while (off <= len - 4) {
+        if (memcmp(&data[off], "MEMORY\x1A\x1A", 8) == 0)
+            break;
+        ++off;
+    }
+
+    if (off + 8 * 16384 > len) {
+        std::stringstream ss;
+        ss << "unable to embed memory data into file \"" << input << "\".";
+        throw CompilerError(loc, ss.str());
+    }
+
+    buildMemory(&data[off]);
+    writeFile(output, data);
+}
+
+void SpectrumSnapshotWriter::buildMemory(void* dst)
+{
+    auto p = reinterpret_cast<uint8_t*>(dst);
+    memset(p, 0, 8 * 16384);
 
     for (const auto& it : mFiles) {
         assert(it.start >= 0xc000);
         assert(it.size <= 16384);
         assert(it.bank >= 0 && it.bank < 8);
-        memcpy(&memory[it.bank * 16384 + it.start - 0xc000], it.bytes.get(), it.size);
+        memcpy(&p[it.bank * 16384 + it.start - 0xc000], it.bytes.get(), it.size);
     }
-
-    return memory;
 }

@@ -69,6 +69,7 @@ public:
         const std::string& originalName, const CodeEmitter::Byte* data, size_t size, size_t startAddress) override;
 
     void setWriteZ80File(SourceLocation* loc, std::filesystem::path path, Z80Format format = Z80Format::Auto);
+    void addWriteExeFile(SourceLocation* loc, std::filesystem::path input, std::filesystem::path output);
 
     void writeOutput() override;
 
@@ -83,8 +84,16 @@ private:
         std::unique_ptr<uint8_t[]> bytes;
     };
 
+    struct ExeFile
+    {
+        SourceLocation* location;
+        std::filesystem::path input;
+        std::filesystem::path output;
+    };
+
     std::vector<File> mFiles;
     std::optional<std::filesystem::path> mZ80File;
+    std::vector<ExeFile> mExeFiles;
     SourceLocation* mZ80Location;
     Z80Format mZ80Format;
     Z80Machine mZ80Machine;
@@ -113,8 +122,9 @@ private:
     bool mInterruptsEnabled;
 
     void writeZ80File(const std::filesystem::path& path);
+    void writeExeFile(SourceLocation* loc, const std::filesystem::path& input, const std::filesystem::path& output);
 
-    std::unique_ptr<uint8_t[]> buildMemory();
+    void buildMemory(void* dst);
 
     DISABLE_COPY(SpectrumSnapshotWriter);
 };
