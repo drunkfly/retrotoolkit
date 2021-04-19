@@ -15,12 +15,20 @@ public:
     void createRenderer();
     void destroyRenderer();
 
+    void createScreenBuffer(int width, int height);
+    void destroyScreenBuffer();
+    void* lockScreenBuffer(int* pitch);
+    void unlockScreenBuffer();
+
     void beginFrame(int* width, int* height);
+    void drawScreenBuffer(int x, int y, int w, int h);
     void endFrame();
 
 private:
     SDL_Window* mWindow;
     SDL_Renderer* mRenderer;
+    SDL_Texture* mScreenBuffer;
+    bool mScreenBufferLocked;
 
     DISABLE_COPY(SDL2Core);
 };

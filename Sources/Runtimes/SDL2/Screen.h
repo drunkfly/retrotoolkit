@@ -10,7 +10,7 @@ public:
 
     void setUseShadowScreen(bool flag) { mUseShadowScreen = flag; }
 
-    void draw() const;
+    void draw(uint8_t* pixels, int pitch) const;
 
 private:
     bool mUseShadowScreen;

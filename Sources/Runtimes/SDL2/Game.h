@@ -22,6 +22,7 @@ private:
     std::unique_ptr<Settings> mSettings;
     std::unique_ptr<Screen> mScreen;
     std::unique_ptr<Cpu> mCpu;
+    int mZoom;
     int mBorderSize;
     Uint32 mLastFrameTicks;
 

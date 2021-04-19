@@ -6,6 +6,6 @@ Screen::Screen()
 {
 }
 
-void Screen::draw() const
+void Screen::draw(uint8_t* pixels, int pitch) const
 {
 }

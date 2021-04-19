@@ -425,20 +425,61 @@ void SpectrumSnapshotWriter::writeExeFile(SourceLocation* loc,
 {
     std::string data = loadFile(input);
 
-    size_t off = 0, len = data.size();
+    size_t off = 0, len = data.size(), memOff = size_t(-1), regOff = size_t(-1);
     while (off <= len - 4) {
-        if (memcmp(&data[off], "MEMORY\x1A\x1A", 8) == 0)
-            break;
+        if (memcmp(&data[off], "MEMORY\x1A\x1A", 8) == 0) {
+            memOff = off;
+            if (regOff != size_t(-1))
+                break;
+        }
+        if (memcmp(&data[off], "REGISTERS\x1A\x1A", 11) == 0) {
+            regOff = off;
+            if (memOff != size_t(-1))
+                break;
+        }
         ++off;
     }
 
-    if (off + 8 * 16384 > len) {
+    if (regOff == size_t(-1) || memOff == size_t(-1) || regOff + 31 > len || memOff + 8 * 16384 > len) {
         std::stringstream ss;
         ss << "unable to embed memory data into file \"" << input << "\".";
         throw CompilerError(loc, ss.str());
     }
 
-    buildMemory(&data[off]);
+    buildMemory(&data[memOff]);
+
+    data[regOff +  0] = mA;
+    data[regOff +  1] = mF;
+    data[regOff +  2] = (mBC >> 8) & 0xff;
+    data[regOff +  3] = mBC & 0xff;
+    data[regOff +  4] = (mDE >> 8) & 0xff;
+    data[regOff +  5] = mDE & 0xff;
+    data[regOff +  6] = mHL & 0xff;
+    data[regOff +  7] = (mHL >> 8) & 0xff;
+    data[regOff +  8] = mShadowA;
+    data[regOff +  9] = mShadowF;
+    data[regOff + 10] = (mShadowBC >> 8) & 0xff;
+    data[regOff + 11] = mShadowBC & 0xff;
+    data[regOff + 12] = (mShadowDE >> 8) & 0xff;
+    data[regOff + 13] = mShadowDE & 0xff;
+    data[regOff + 14] = mShadowHL & 0xff;
+    data[regOff + 15] = (mShadowHL >> 8) & 0xff;
+    data[regOff + 16] = (mIX >> 8) & 0xff;
+    data[regOff + 17] = mIX & 0xff;
+    data[regOff + 18] = (mIY >> 8) & 0xff;
+    data[regOff + 19] = mIY & 0xff;
+    data[regOff + 20] = mI;
+    data[regOff + 21] = mR;
+    data[regOff + 22] = mInterruptMode;
+    data[regOff + 23] = (mInterruptsEnabled ? 0 : 1);
+    data[regOff + 24] = mPC & 0xff;
+    data[regOff + 25] = (mPC >> 8) & 0xff;
+    data[regOff + 26] = mSP & 0xff;
+    data[regOff + 27] = (mSP >> 8) & 0xff;
+    data[regOff + 28] = (mPort1FFD == 0xffff ? 0 : uint8_t(mPort1FFD));
+    data[regOff + 29] = mPort7FFD;
+    data[regOff + 30] = mPortFFFD;
+
     writeFile(output, data);
 }
 
