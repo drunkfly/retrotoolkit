@@ -13,6 +13,12 @@
   <property name="windowTitle">
    <string>Retro Toolkit</string>
   </property>
+  <property name="iconSize">
+   <size>
+    <width>16</width>
+    <height>16</height>
+   </size>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <property name="spacing">
@@ -55,6 +61,7 @@
     <property name="title">
      <string>&amp;Debug</string>
     </property>
+    <addaction name="actionRun"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -65,7 +72,7 @@
       <string>&amp;References</string>
      </property>
      <property name="icon">
-      <iconset resource="res/resources.qrc">
+      <iconset resource="Resources/resources.qrc">
        <normaloff>:/resources/fatcow16x16/external.png</normaloff>:/resources/fatcow16x16/external.png</iconset>
      </property>
      <addaction name="actionZ80InstructionSet"/>
@@ -88,7 +95,7 @@
       <string>&amp;Books</string>
      </property>
      <property name="icon">
-      <iconset resource="res/resources.qrc">
+      <iconset resource="Resources/resources.qrc">
        <normaloff>:/resources/fatcow16x16/external.png</normaloff>:/resources/fatcow16x16/external.png</iconset>
      </property>
      <addaction name="actionZ80AssemblyLanguageProgramming"/>
@@ -100,7 +107,7 @@
       <string>&amp;Tutorials</string>
      </property>
      <property name="icon">
-      <iconset resource="res/resources.qrc">
+      <iconset resource="Resources/resources.qrc">
        <normaloff>:/resources/fatcow16x16/external.png</normaloff>:/resources/fatcow16x16/external.png</iconset>
      </property>
      <addaction name="actionHowToWriteZXSpectrumGames"/>
@@ -110,7 +117,7 @@
       <string>&amp;Code snippets</string>
      </property>
      <property name="icon">
-      <iconset resource="res/resources.qrc">
+      <iconset resource="Resources/resources.qrc">
        <normaloff>:/resources/fatcow16x16/external.png</normaloff>:/resources/fatcow16x16/external.png</iconset>
      </property>
      <addaction name="actionZ80MathRoutines"/>
@@ -179,6 +186,12 @@
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
@@ -186,13 +199,22 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionBuild"/>
+   <addaction name="actionRun"/>
   </widget>
   <action name="actionBuild">
+   <property name="icon">
+    <iconset resource="Resources/resources.qrc">
+     <normaloff>:/resources/fatcow16x16/compile.png</normaloff>:/resources/fatcow16x16/compile.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;Build</string>
    </property>
   </action>
   <action name="actionAbout">
+   <property name="icon">
+    <iconset resource="Resources/resources.qrc">
+     <normaloff>:/resources/fatcow16x16/lightbulb_off.png</normaloff>:/resources/fatcow16x16/lightbulb_off.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;About...</string>
    </property>
@@ -229,7 +251,7 @@
   </action>
   <action name="actionSpectrumMemoryMap">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -241,7 +263,7 @@
   </action>
   <action name="actionSpectrumScreenMemoryLayout">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -253,7 +275,7 @@
   </action>
   <action name="actionSpectrumKeyboard">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -265,7 +287,7 @@
   </action>
   <action name="actionSpectrumSound">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -277,7 +299,7 @@
   </action>
   <action name="actionZ80InstructionSet">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -289,7 +311,7 @@
   </action>
   <action name="actionZ80ShiftInstructions">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -301,7 +323,7 @@
   </action>
   <action name="actionZ80FlagAffection">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -313,7 +335,7 @@
   </action>
   <action name="actionZ80InstructionTimings">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -325,7 +347,7 @@
   </action>
   <action name="actionSpectrumKeyboardCheatSheet">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -337,7 +359,7 @@
   </action>
   <action name="actionHowToWriteZXSpectrumGames">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -349,7 +371,7 @@
   </action>
   <action name="actionZXSpectrumSystemVariables">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -361,7 +383,7 @@
   </action>
   <action name="actionZ80MathRoutines">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -373,7 +395,7 @@
   </action>
   <action name="actionZXSpectrum128KReference">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -385,7 +407,7 @@
   </action>
   <action name="actionTheCompleteZXSpectrumROMDisassembly">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -397,7 +419,7 @@
   </action>
   <action name="actionZ80AssemblyLanguageProgramming">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -409,7 +431,7 @@
   </action>
   <action name="actionZXSpectrumClearingScreen">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -421,7 +443,7 @@
   </action>
   <action name="actionHowToProgramTheZ80">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -433,7 +455,7 @@
   </action>
   <action name="actionZXSpectrum48KReference">
    <property name="icon">
-    <iconset resource="res/resources.qrc">
+    <iconset resource="Resources/resources.qrc">
      <normaloff>:/resources/fatcow16x16/world_link.png</normaloff>:/resources/fatcow16x16/world_link.png</iconset>
    </property>
    <property name="text">
@@ -441,6 +463,15 @@
    </property>
    <property name="whatsThis">
     <string>http://www.worldofspectrum.org/faq/reference/48kreference.htm</string>
+   </property>
+  </action>
+  <action name="actionRun">
+   <property name="icon">
+    <iconset resource="Resources/resources.qrc">
+     <normaloff>:/resources/fugue16x16/control.png</normaloff>:/resources/fugue16x16/control.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Run</string>
    </property>
   </action>
  </widget>

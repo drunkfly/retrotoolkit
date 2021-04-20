@@ -15,6 +15,7 @@
 #include "Compiler/Output/TRDOSWriter.h"
 #include "Compiler/Output/SpectrumSnapshotWriter.h"
 #include "Compiler/Output/SpectrumTapeWriter.h"
+#include "Compiler/Output/IOutputWriterProxy.h"
 #include "Compiler/SourceFile.h"
 #include "Compiler/SpectrumBasicCompiler.h"
 #include "Compiler/CompilerError.h"
@@ -39,6 +40,7 @@ Compiler::Compiler(GCHeap* heap, const std::filesystem::path& resourcesPath, ICo
     : mHeap(heap)
     , mListener(listener)
     , mLinkerOutput(nullptr)
+    , mOutputWriterProxy(nullptr)
     , mJVMThreadContext(new JVMThreadContext(mHeap))
     , mResourcesPath(resourcesPath / "data")
     , mEnableWav(false)
@@ -59,7 +61,7 @@ Compiler::~Compiler()
         }
     }
 
-    delete mJVMThreadContext;
+    mJVMThreadContext.reset();
 }
 
 void Compiler::setJdkPath(std::filesystem::path path)
@@ -356,7 +358,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
     // Generate outputs configured in the project
 
     for (const auto& output : project.outputs) {
-        std::unique_ptr<IOutputWriter> writer;
+        std::unique_ptr<IOutputWriter> outputWriter;
 
         if (!output->isEnabled(program->projectVariables()))
             continue;
@@ -373,7 +375,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                     tapeWriter->setWriteWavFile(*mGeneratedWavFile);
                 }
 
-                writer = std::move(tapeWriter);
+                outputWriter = std::move(tapeWriter);
                 break;
             }
 
@@ -385,7 +387,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 trdosWriter->setWriteSclFile(mOutputPath / (projectName + ".scl"));
                 trdosWriter->setWriteTrdFile(mOutputPath / (projectName + ".trd"), projectName);
 
-                writer = std::move(trdosWriter);
+                outputWriter = std::move(trdosWriter);
                 break;
             }
 
@@ -397,7 +399,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 output->z80->initWriter(program, &linker, z80Writer.get());
                 z80Writer->setWriteZ80File(output->location, mOutputPath / (projectName + ".z80"));
 
-                writer = std::move(z80Writer);
+                outputWriter = std::move(z80Writer);
                 break;
             }
 
@@ -410,7 +412,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 z80Writer->addWriteExeFile(output->location,
                     mResourcesPath / "Win32Runtime.bin", mOutputPath / (projectName + ".exe"));
 
-                writer = std::move(z80Writer);
+                outputWriter = std::move(z80Writer);
                 break;
             }
 
@@ -418,6 +420,12 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 assert(false);
                 ++count;
                 continue;
+        }
+
+        IOutputWriter* writer = outputWriter.get();
+        if (mOutputWriterProxy) {
+            mOutputWriterProxy->setOutput(output->type, outputWriter.get());
+            writer = mOutputWriterProxy;
         }
 
         for (const auto& file : output->files) {

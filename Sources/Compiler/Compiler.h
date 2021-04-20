@@ -6,6 +6,7 @@
 class GCHeap;
 class JVMThreadContext;
 class CompiledOutput;
+class IOutputWriterProxy;
 struct SourceFile;
 enum class FileType;
 
@@ -30,6 +31,7 @@ public:
     const std::optional<std::filesystem::path>& generatedWavFile() const { return mGeneratedWavFile; }
 
     void setEnableWav(bool flag) { mEnableWav = flag; }
+    void setOutputWriterProxy(IOutputWriterProxy* proxy) { mOutputWriterProxy = proxy; }
 
     void buildProject(const std::filesystem::path& projectFile, const std::string& projectConfiguration);
 
@@ -37,7 +39,8 @@ private:
     GCHeap* mHeap;
     ICompilerListener* mListener;
     CompiledOutput* mLinkerOutput;
-    JVMThreadContext* mJVMThreadContext;
+    IOutputWriterProxy* mOutputWriterProxy;
+    std::unique_ptr<JVMThreadContext> mJVMThreadContext;
     std::optional<std::filesystem::path> mJdkPath;
     std::filesystem::path mProjectPath;
     std::filesystem::path mOutputPath;

@@ -10,6 +10,7 @@
 #include "GUI/Util/ComboBox.h"
 #include "Compiler/Project.h"
 #include "Compiler/Tree/SourceLocation.h"
+#include "Emulator/Emulator.h"
 #include "ui_MainWindow.h"
 #include <QFileDialog>
 #include <QDesktopServices>
@@ -83,13 +84,14 @@ void MainWindow::setProject(const QString& file, std::unique_ptr<Project> projec
     }
 }
 
-bool MainWindow::buildProject(bool generateWav)
+bool MainWindow::buildProject(const std::shared_ptr<Emulator>& emulator, bool generateWav)
 {
     mUi->outputWidget->clear();
     mStatusLabel->setBuildStatus(tr("Building..."));
 
     BuildDialog dlg(*mProjectFile, comboSelectedItem(mConfigCombo).toByteArray().toStdString(), this);
     dlg.setEnableWav(generateWav);
+    dlg.setEmulator(emulator);
 
     connect(&dlg, &BuildDialog::success, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
     connect(&dlg, &BuildDialog::canceled, mStatusLabel, &BuildStatusLabel::clearBuildStatus);
@@ -132,6 +134,7 @@ bool MainWindow::buildProject(bool generateWav)
 void MainWindow::updateUi()
 {
     mUi->actionBuild->setEnabled(mProjectFile != nullptr);
+    mUi->actionRun->setEnabled(mProjectFile != nullptr);
     mUi->actionGenerateWAVFile->setEnabled(mProjectFile != nullptr);
     mUi->actionPlayWAVFile->setEnabled(mProjectFile != nullptr);
     mConfigCombo->setEnabled(mProjectFile != nullptr);
@@ -192,17 +195,25 @@ void MainWindow::on_actionOpenProject_triggered()
 
 void MainWindow::on_actionBuild_triggered()
 {
-    buildProject(false);
+    buildProject(nullptr, false);
+}
+
+void MainWindow::on_actionRun_triggered()
+{
+    auto emulator = std::make_shared<Emulator>();
+    if (!buildProject(emulator, false))
+        return;
+
 }
 
 void MainWindow::on_actionGenerateWAVFile_triggered()
 {
-    buildProject(true);
+    buildProject(nullptr, true);
 }
 
 void MainWindow::on_actionPlayWAVFile_triggered()
 {
-    if (!buildProject(true))
+    if (!buildProject(nullptr, true))
         return;
 
     PlayAudioDialog dlg(mGeneratedWavFile.value(), this);

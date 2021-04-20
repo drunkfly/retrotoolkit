@@ -7,7 +7,10 @@
 class QThread;
 class CompiledOutput;
 class SourceLocation;
+class Emulator;
+class IOutputWriterProxy;
 class Ui_BuildDialog;
+struct SnapshotState;
 
 class BuildThread : public QObject, public ICompilerListener
 {
@@ -21,6 +24,7 @@ public:
     const std::optional<std::filesystem::path>& generatedWavFile() const { return mGeneratedWavFile; }
 
     void setEnableWav(bool flag) { mEnableWav = flag; }
+    void setOutputProxy(std::shared_ptr<IOutputWriterProxy> proxy) { mOutputProxy = std::move(proxy); }
 
     void compile();
 
@@ -42,6 +46,7 @@ private:
     QString mProjectFile;
     std::string mProjectConfiguration;
     std::optional<std::filesystem::path> mGeneratedWavFile;
+    std::shared_ptr<IOutputWriterProxy> mOutputProxy;
     CompiledOutput* mLinkerOutput;
     bool mEnableWav;
 
@@ -63,6 +68,7 @@ public:
     const std::optional<std::filesystem::path>& generatedWavFile() const { return mGeneratedWavFile; }
 
     void setEnableWav(bool flag) { mEnableWav = flag; }
+    void setEmulator(std::shared_ptr<Emulator> emulator);
 
     int exec() override;
 
@@ -76,12 +82,13 @@ protected:
     void done(int result) override;
 
 private:
-    class Thread;
+    class OutputProxy;
 
     std::unique_ptr<Ui_BuildDialog> mUi;
     GCHeap mHeap;
     QString mProjectFile;
     CompiledOutput* mLinkerOutput;
+    std::shared_ptr<OutputProxy> mOutputProxy;
     std::optional<std::filesystem::path> mGeneratedWavFile;
     QThread* mThread;
     bool mEnableWav;

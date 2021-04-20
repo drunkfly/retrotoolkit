@@ -111,6 +111,7 @@ add(Compiler
         Output/LibSpectrum/VirtualFile.cpp
         Output/LibSpectrum/VirtualFile.h
         Output/IOutputWriter.h
+        Output/IOutputWriterProxy.h
         Output/SpectrumSnapshotWriter.cpp
         Output/SpectrumSnapshotWriter.h
         Output/SpectrumTapeWriter.cpp

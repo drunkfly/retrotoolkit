@@ -80,11 +80,14 @@ Third Party Software
 This software also includes a bunch of third party software. Please consult licensing for this software in the
 corresponding directories inside `Libs`.
 
-Note that this repository includes "Farm-Fresh Web Icons" by FatCow (http://www.fatcow.com/free-icons).
+This repository includes some of the "Farm-Fresh Web Icons" by FatCow (http://www.fatcow.com/free-icons).
 These icon sets are licensed under a Creative Commons Attribution 3.0 License. The icons may not be resold,
 sub-licensed, rented, transferred or otherwise made available for use. Please link to the page on
 fatcow.com if you would like to spread the word.
 
-Note that Apache Ant included into source distribution uses the Apache 2 license which is incompatible with
+This repository includes some of the "Fugue Icons" by Yusuke Kamiyamane (http://p.yusukekamiyamane.com/).
+These icons are licensed under a Creative Commons Attribution 3.0 License.
+
+Apache Ant, included into source distribution, is licensed under the Apache 2 license, which is incompatible with
 GNU GPL v2. Apache Ant is only used during the compilation process as an external tool and is not included into
 the final distribution.

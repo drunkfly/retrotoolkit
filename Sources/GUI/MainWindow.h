@@ -7,6 +7,7 @@
 class QComboBox;
 class Project;
 class BuildStatusLabel;
+class Emulator;
 class Ui_MainWindow;
 
 class MainWindow : public QMainWindow
@@ -29,7 +30,7 @@ private:
     BuildStatusLabel* mStatusLabel;
 
     void setProject(const QString& file, std::unique_ptr<Project> project);
-    bool buildProject(bool generateWav);
+    bool buildProject(const std::shared_ptr<Emulator>& emulator, bool generateWav);
 
     void updateUi();
     void updateConfigCombo();
@@ -42,6 +43,8 @@ private:
     Q_SLOT void on_actionBuild_triggered();
     Q_SLOT void on_actionGenerateWAVFile_triggered();
     Q_SLOT void on_actionPlayWAVFile_triggered();
+
+    Q_SLOT void on_actionRun_triggered();
 
     Q_SLOT void on_actionSettings_triggered();
 

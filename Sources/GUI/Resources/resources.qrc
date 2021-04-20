@@ -1,6 +1,9 @@
 <RCC>
   <qresource prefix="resources">
+    <file>fatcow16x16/compile.png</file>
     <file>fatcow16x16/external.png</file>
+    <file>fatcow16x16/lightbulb_off.png</file>
     <file>fatcow16x16/world_link.png</file>
+    <file>fugue16x16/control.png</file>
   </qresource>
 </RCC>

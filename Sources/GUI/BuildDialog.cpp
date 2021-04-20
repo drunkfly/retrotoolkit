@@ -1,4 +1,6 @@
 #include "BuildDialog.h"
+#include "Emulator/Snapshot.h"
+#include "Compiler/Output/IOutputWriterProxy.h"
 #include "Compiler/Java/JVM.h"
 #include "Compiler/CompilerError.h"
 #include "GUI/Settings.h"
@@ -21,6 +23,7 @@ BuildThread::BuildThread(GCHeap* heap, const QString& projectFile, std::string p
     , mProjectFile(projectFile)
     , mProjectConfiguration(std::move(projectConfiguration))
     , mLinkerOutput(nullptr)
+    , mOutputProxy(nullptr)
     , mEnableWav(false)
 {
 }
@@ -42,6 +45,7 @@ void BuildThread::compile()
             JVM::setVerboseClass(settings.jdkVerboseClass);
             JVM::setVerboseJNI(settings.jdkVerboseJNI);
             compiler.setEnableWav(mEnableWav);
+            compiler.setOutputWriterProxy(mOutputProxy.get());
             compiler.buildProject(toPath(mProjectFile), mProjectConfiguration);
             mLinkerOutput = compiler.linkerOutput();
             mGeneratedWavFile = compiler.generatedWavFile();
@@ -97,6 +101,48 @@ void BuildThread::printMessage(std::string text)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class BuildDialog::OutputProxy : public IOutputWriterProxy
+{
+public:
+    explicit OutputProxy(std::shared_ptr<Emulator> emulator)
+        : mEmulator(std::move(emulator))
+        , mWriter(nullptr)
+    {
+        // FIXME
+        //mMemory.reset(new uint8_t[Z80Memory::BankCount * Z80Memory::BankSize]);
+        //mState.reset(new SnapshotState);
+    }
+
+    void setOutput(Project::Output::Type type, IOutputWriter* writer) override
+    {
+        mWriter = writer;
+    }
+
+    void addBasicFile(SourceLocation* location, std::string name, const std::string& data, int startLine) override
+    {
+        mWriter->addBasicFile(location, std::move(name), data, startLine);
+    }
+
+    void addCodeFile(SourceLocation* location, std::string name,
+        const std::string& originalName, const CodeEmitter::Byte* data, size_t size, size_t startAddress) override
+    {
+        mWriter->addCodeFile(location, std::move(name), originalName, data, size, startAddress);
+    }
+
+    void writeOutput() override
+    {
+        mWriter->writeOutput();
+    }
+
+private:
+    std::shared_ptr<Emulator> mEmulator;
+    IOutputWriter* mWriter;
+
+    DISABLE_COPY(OutputProxy);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BuildDialog::BuildDialog(const QString& projectFile, std::string projectConfiguration, QWidget* parent)
     : QDialog(parent)
     , mUi(new Ui_BuildDialog)
@@ -110,6 +156,7 @@ BuildDialog::BuildDialog(const QString& projectFile, std::string projectConfigur
     mThread = QThread::create([this, projectFile, configuration = std::move(projectConfiguration)]() mutable {
             BuildThread thread(&mHeap, projectFile, std::move(configuration));
             thread.setEnableWav(mEnableWav);
+            thread.setOutputProxy(mOutputProxy);
 
             connect(this, &BuildDialog::cancelRequested, &thread, &BuildThread::requestCancel, Qt::DirectConnection);
 
@@ -141,6 +188,14 @@ BuildDialog::~BuildDialog()
     mThread->wait();
 }
 
+void BuildDialog::setEmulator(std::shared_ptr<Emulator> emulator)
+{
+    if (emulator)
+        mOutputProxy = std::make_shared<OutputProxy>(std::move(emulator));
+    else
+        mOutputProxy.reset();
+}
+
 int BuildDialog::exec()
 {
     mThread->start();
@@ -156,4 +211,8 @@ void BuildDialog::done(int result)
 
     mThread->wait();
     QDialog::done(result);
+
+    if (mOutputProxy) {
+        // FIXME
+    }
 }
