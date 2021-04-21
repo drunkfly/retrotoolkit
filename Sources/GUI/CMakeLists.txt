@@ -15,6 +15,13 @@ add(RetroToolkit
         EmulatorCore
         RunTests
     SOURCES
+        Build/BuildDialog.cpp
+        Build/BuildDialog.h
+        Build/BuildDialog.ui
+        Build/BuildThread.cpp
+        Build/BuildThread.h
+        Build/OutputProxy.cpp
+        Build/OutputProxy.h
         Resources/resources.qrc
         Util/ComboBox.cpp
         Util/ComboBox.h
@@ -33,9 +40,6 @@ add(RetroToolkit
         AboutDialog.cpp
         AboutDialog.h
         AboutDialog.ui
-        BuildDialog.cpp
-        BuildDialog.h
-        BuildDialog.ui
         Common.h
         MainWindow.cpp
         MainWindow.h
