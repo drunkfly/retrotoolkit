@@ -305,8 +305,8 @@ public final class SourceFiles
         }
     }
 
-    final BuilderClassLoader classLoader;
-    final HashMap<String, File> classFiles;
+    private final BuilderClassLoader classLoader;
+    private final HashMap<String, File> classFiles;
 
     public SourceFiles()
     {

@@ -21,8 +21,8 @@ public final class ZXScreen
     public static final int AttribAreaSize = AttribWidth * AttribHeight;
     public static final int SizeInBytes = PixelAreaSize + AttribAreaSize;
 
-    final byte[] pixels;
-    final byte[] attribs;
+    private final byte[] pixels;
+    private final byte[] attribs;
 
     public ZXScreen()
     {

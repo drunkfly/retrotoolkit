@@ -16,9 +16,9 @@ import drunkfly.internal.OutputFile;
 
 public abstract class Builder
 {
-    ArrayList<InputFile> inputFiles;
-    ArrayList<OutputFile> outputFiles;
-    long classLastModified;
+    private ArrayList<InputFile> inputFiles;
+    private ArrayList<OutputFile> outputFiles;
+    private long classLastModified;
 
     protected abstract void run();
 

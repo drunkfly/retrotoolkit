@@ -4,9 +4,9 @@ import java.awt.image.BufferedImage;
 
 public final class Gfx
 {
-    final BufferedImage image;
-    final GfxFormat format;
-    String name;
+    private final BufferedImage image;
+    private final GfxFormat format;
+    private String name;
 
     public Gfx(int width, int height, GfxFormat format)
     {
