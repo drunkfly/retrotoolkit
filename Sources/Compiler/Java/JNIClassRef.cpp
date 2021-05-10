@@ -96,6 +96,26 @@ void JNIClassRef::registerNatives(const std::vector<JNINativeMethod>& natives)
     registerNatives(jint(natives.size()), natives.data());
 }
 
+void JNIClassRef::resolveField(jfieldID& field, const char* name, const char* signature)
+{
+    if (!field)
+        field = resolveField(name, signature);
+}
+
+jfieldID JNIClassRef::resolveField(const char* name, const char* signature)
+{
+    auto env = JVM::jniEnv();
+    jfieldID field = env->vtbl->GetFieldID(env, mObjectRef, name, signature);
+    if (!field) {
+        JNIThrowableRef::rethrowCurrentException();
+        std::stringstream ss;
+        ss << "Unable to resolve field \"" << name << "\" with signature \"" << signature
+           << "\" of class \"" << this->name() << "\".";
+        throw CompilerError(nullptr, ss.str());
+    }
+    return field;
+}
+
 void JNIClassRef::resolveMethod(jmethodID& method, const char* name, const char* signature)
 {
     if (!method)

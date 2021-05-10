@@ -93,6 +93,7 @@ add_custom_command(OUTPUT
         "${CMAKE_COMMAND}"
             "-DSRCPATH=${CMAKE_CURRENT_SOURCE_DIR}/Build/Tools"
             "-DDSTPATH=${CMAKE_CURRENT_SOURCE_DIR}/Build/_/Compiler/Java"
+            "-DJDKROOT=${JDK_ROOT}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/CMakeEmbedClasses.cmake"
     WORKING_DIRECTORY
         "${CMAKE_CURRENT_SOURCE_DIR}"

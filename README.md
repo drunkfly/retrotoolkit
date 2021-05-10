@@ -11,7 +11,7 @@ Compiling
 You will need to install the following dependencies:
 
 * C++ Compiler with C++17 support (tested on MSVC 2019 and GCC 10.2.0)
-* CMake 3.16 or newer.
+* CMake 3.20 or newer.
 * Qt 5.15. Older 5.x versions may work as well, but are not tested
 * Java Development Kit 1.5 or newer.
 

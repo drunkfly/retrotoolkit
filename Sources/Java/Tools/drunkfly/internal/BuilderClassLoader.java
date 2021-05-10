@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 
+import drunkfly.jni.CallableWithJNI;
 import drunkfly.IO;
 
 public final class BuilderClassLoader extends URLClassLoader
@@ -20,6 +21,7 @@ public final class BuilderClassLoader extends URLClassLoader
     private final HashMap<String, File> classFiles;
     private final ArrayList<File> jarFiles;
 
+    @CallableWithJNI
     public BuilderClassLoader(String[] classpaths) throws MalformedURLException
     {
         super(makeURLs(classpaths));
@@ -92,6 +94,12 @@ public final class BuilderClassLoader extends URLClassLoader
     public static native BuilderClassLoader getInstance();
 
     // Classes
+
+    @CallableWithJNI
+    @Override public Class<?> loadClass(String name) throws ClassNotFoundException
+    {
+        return super.loadClass(name);
+    }
 
     @Override public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {

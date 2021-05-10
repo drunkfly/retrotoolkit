@@ -28,8 +28,6 @@ public:
 private:
     JNIRef mOutputWriter;
     JNIRef mPrintWriter;
-    jmethodID mClassLoaderConstructorID;
-    jmethodID mClassLoaderLoadClassMethodID;
     jmethodID mCompilerMethodID;
     bool mWasInitialized;
 

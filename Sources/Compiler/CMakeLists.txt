@@ -54,11 +54,8 @@ add(Compiler
         Compression/Zx7Compressor.cpp
         Compression/Zx7Compressor.h
         Java/Natives/drunkfly_Builder.cpp
-        Java/Natives/drunkfly_Builder.h
         Java/Natives/drunkfly_internal_BuilderClassLoader.cpp
-        Java/Natives/drunkfly_internal_BuilderClassLoader.h
         Java/Natives/drunkfly_Messages.cpp
-        Java/Natives/drunkfly_Messages.h
         Java/Exceptions.cpp
         Java/Exceptions.h
         Java/JavaStdClasses.cpp

@@ -3,7 +3,7 @@
 
 #include "Compiler/Java/JNIRef.h"
 
-class JNIClassRef final : public JNIRef
+class JNIClassRef : public JNIRef
 {
     JNIREF(JNIClassRef, jclass)
 
@@ -16,6 +16,9 @@ public:
 
     void registerNatives(jint count, const JNINativeMethod* methods);
     void registerNatives(const std::vector<JNINativeMethod>& natives);
+
+    void resolveField(jfieldID& field, const char* name, const char* signature);
+    jfieldID resolveField(const char* name, const char* signature);
 
     void resolveMethod(jmethodID& method, const char* name, const char* signature);
     jmethodID resolveMethod(const char* name, const char* signature);

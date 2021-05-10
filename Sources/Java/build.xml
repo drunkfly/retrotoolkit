@@ -84,6 +84,7 @@
         <jar destfile="Build/RetroBuild.jar"
              basedir="Build/Tools"
              includes="**"
+             excludes="**/JNITool*.class"
             >
         </jar>
     </target>
