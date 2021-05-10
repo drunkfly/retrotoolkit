@@ -7,6 +7,9 @@
 #define ROOT(NAME) \
     XmlNode xml##NAME = xmlGetRootElement(xml, #NAME)
 
+#define ELEMENT(NAME, PARENT) \
+    if (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); \
+        (xml##NAME ? xml##NAME->accessed = true : (xmlMissingElement(xml, xml##PARENT, #NAME), true)))
 #define IF_HAS(NAME, PARENT) \
     if (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); (xml##NAME ? xml##NAME->accessed = true : false))
 #define FOR_EACH(NAME, PARENT) \
@@ -58,6 +61,7 @@ std::optional<bool> xmlGetOptionalBoolAttribute(const XmlDocument& xml, XmlNode 
 
 int xmlGetAttributeRow(XmlNode node, const char* name);
 
+[[noreturn]] void xmlMissingElement(const XmlDocument& xml, XmlNode node, const char* name);
 [[noreturn]] void xmlMissingAttributeValue(const XmlDocument& xml, XmlNode node, const char* name);
 [[noreturn]] void xmlInvalidAttributeValue(const XmlDocument& xml, XmlNode node, const char* name);
 

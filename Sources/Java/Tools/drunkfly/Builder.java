@@ -103,6 +103,18 @@ public abstract class Builder
         }
     }
 
+    public Tileset loadTileset(String path)
+    {
+        File file = registerInputFile(path);
+        return new Tileset(file);
+    }
+
+    public Tilemap loadTilemap(String path)
+    {
+        File file = registerInputFile(path);
+        return new Tilemap(file);
+    }
+
     public void writeFile(String path, byte[] data)
     {
         File file = registerOutputFile(path);

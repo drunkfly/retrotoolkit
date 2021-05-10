@@ -56,6 +56,8 @@ add(Compiler
         Java/Natives/drunkfly_Builder.cpp
         Java/Natives/drunkfly_internal_BuilderClassLoader.cpp
         Java/Natives/drunkfly_Messages.cpp
+        Java/Natives/drunkfly_Tilemap.cpp
+        Java/Natives/drunkfly_Tileset.cpp
         Java/Exceptions.cpp
         Java/Exceptions.h
         Java/JavaStdClasses.cpp

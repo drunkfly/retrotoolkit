@@ -102,5 +102,5 @@ JNIClassRef JVMGlobalContext::invokeClassLoader(const JNIRef& classLoader, const
     if (!classLoader || !className)
         return nullptr;
 
-    JavaClasses::drunkfly_internal_BuilderClassLoader.loadClass(classLoader.toJNI(), className.toJNI());
+    return JavaClasses::drunkfly_internal_BuilderClassLoader.loadClass(classLoader.toJNI(), className.toJNI());
 }

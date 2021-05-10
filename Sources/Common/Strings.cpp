@@ -91,7 +91,8 @@ bool intFromString(int& out, const char* p, size_t size)
         --size;
     }
 
-    return out * sign;
+    out *= sign;
+    return true;
 }
 
 std::wstring wstringFromUtf8(const std::string& str)

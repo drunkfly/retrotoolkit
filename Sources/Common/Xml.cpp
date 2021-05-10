@@ -135,6 +135,15 @@ int xmlGetAttributeRow(XmlNode node, const char* name)
     return node->Row();
 }
 
+[[noreturn]] void xmlMissingElement(const XmlDocument& xml, XmlNode node, const char* name)
+{
+    std::stringstream ss;
+    ss << "Missing required element \"" << name << "\" in element \""
+        << node->ValueStr() << "\" in file \"" << xml->path.string() << "\" at line "
+        << node->Row() << ", column " << node->Column() << '.';
+    throw std::runtime_error(ss.str());
+}
+
 [[noreturn]] void xmlMissingAttributeValue(const XmlDocument& xml, XmlNode node, const char* name)
 {
     std::stringstream ss;
