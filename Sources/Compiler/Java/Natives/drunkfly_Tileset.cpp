@@ -3,7 +3,6 @@
 #include "Common/IO.h"
 #include "Compiler/Java/Exceptions.h"
 #include "Compiler/Java/JNIStringRef.h"
-#include "Compiler/Java/JNIStringRef.h"
 
 void JNICALL NATIVE_drunkfly_Tileset_loadXml(JNIEnv* env, jobject self, jstring fileName)
 {
@@ -14,6 +13,9 @@ void JNICALL NATIVE_drunkfly_Tileset_loadXml(JNIEnv* env, jobject self, jstring 
         auto xml = xmlLoad(path);
         ROOT(tileset);
 
+        const auto& version = REQ_STRING(version, tileset);
+        const auto& tiledVersion = REQ_STRING(tiledversion, tileset);
+        const auto& name = REQ_STRING(name, tileset);
         int tileWidth = REQ_INT(tilewidth, tileset);
         int tileHeight = REQ_INT(tileheight, tileset);
         int tileCount = REQ_INT(tilecount, tileset);
@@ -24,11 +26,14 @@ void JNICALL NATIVE_drunkfly_Tileset_loadXml(JNIEnv* env, jobject self, jstring 
         JavaClasses::drunkfly_Tileset.setTileCount(self, tileCount);
         JavaClasses::drunkfly_Tileset.setColumnCount(self, columnCount);
 
-        ELEMENT(image, tileset) {
+        REQ_ELEMENT(image, tileset) {
             const auto& source = REQ_STRING(source, image);
             int imageWidth = REQ_INT(width, image);
             int imageHeight = REQ_INT(height, image);
-            std::filesystem::path imagePath = path / pathFromUtf8(REQ_STRING(source, image));
+
+            std::filesystem::path imagePath = path;
+            imagePath.remove_filename();
+            imagePath = imagePath / pathFromUtf8(REQ_STRING(source, image));
             JavaClasses::drunkfly_Tileset.setImagePath(self, JNIStringRef::from(imagePath).toJNI());
         }
 
@@ -43,16 +48,16 @@ void JNICALL NATIVE_drunkfly_Tileset_loadXml(JNIEnv* env, jobject self, jstring 
 
                     if (name == "id")
                         stringId = value;
-                    else {
+                    else
                         INVALID(name, property);
-                    }
                 }
             }
 
             int x = id % columnCount;
             int y = id / columnCount;
-            JavaClasses::drunkfly_Tileset.addTile(self, x, y, JNIStringRef::from(stringId).toJNI());
+            JavaClasses::drunkfly_Tileset.setTile(self, x, y, JNIStringRef::from(stringId).toJNI());
         }
 
+        xmlCheckAllAccessed(xml);
     JCATCH
 }

@@ -124,6 +124,14 @@ std::optional<bool> xmlGetOptionalBoolAttribute(const XmlDocument& xml, XmlNode 
     return result;
 }
 
+const char* xmlGetRequiredText(const XmlDocument& xml, XmlNode node)
+{
+    const char* text = node->GetText();
+    if (!text)
+        xmlMissingElementText(xml, node);
+    return text;
+}
+
 int xmlGetAttributeRow(XmlNode node, const char* name)
 {
     size_t len = strlen(name);
@@ -141,6 +149,14 @@ int xmlGetAttributeRow(XmlNode node, const char* name)
     ss << "Missing required element \"" << name << "\" in element \""
         << node->ValueStr() << "\" in file \"" << xml->path.string() << "\" at line "
         << node->Row() << ", column " << node->Column() << '.';
+    throw std::runtime_error(ss.str());
+}
+
+[[noreturn]] void xmlMissingElementText(const XmlDocument& xml, XmlNode node)
+{
+    std::stringstream ss;
+    ss << "Missing text for element \"" << node->ValueStr() << "\" in file \""
+        << xml->path.string() << "\" at line " << node->Row() << ", column " << node->Column() << '.';
     throw std::runtime_error(ss.str());
 }
 

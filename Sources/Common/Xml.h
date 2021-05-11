@@ -7,14 +7,15 @@
 #define ROOT(NAME) \
     XmlNode xml##NAME = xmlGetRootElement(xml, #NAME)
 
-#define ELEMENT(NAME, PARENT) \
-    if (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); \
-        (xml##NAME ? xml##NAME->accessed = true : (xmlMissingElement(xml, xml##PARENT, #NAME), true)))
 #define IF_HAS(NAME, PARENT) \
     if (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); (xml##NAME ? xml##NAME->accessed = true : false))
 #define FOR_EACH(NAME, PARENT) \
     for (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); (xml##NAME ? xml##NAME->accessed = true : false); \
         xml##NAME = xml##NAME->NextSiblingElement(#NAME))
+
+#define REQ_ELEMENT(NAME, PARENT) \
+    if (auto xml##NAME = xml##PARENT->FirstChildElement(#NAME); \
+        (xml##NAME ? xml##NAME->accessed = true : (xmlMissingElement(xml, xml##PARENT, #NAME), true)))
 
 #define ROW(NAME) \
     xml##NAME->Row()
@@ -35,6 +36,9 @@
     xmlGetRequiredBoolAttribute(xml, xml##PARENT, #NAME)
 #define OPT_BOOL(NAME, PARENT) \
     xmlGetOptionalBoolAttribute(xml, xml##PARENT, #NAME)
+
+#define REQ_TEXT(NAME) \
+    xmlGetRequiredText(xml, xml##NAME)
 
 #define INVALID(NAME, PARENT) \
     xmlInvalidAttributeValue(xml, xml##PARENT, #NAME)
@@ -59,9 +63,12 @@ std::optional<int> xmlGetOptionalIntAttribute(const XmlDocument& xml, XmlNode no
 bool xmlGetRequiredBoolAttribute(const XmlDocument& xml, XmlNode node, const char* name);
 std::optional<bool> xmlGetOptionalBoolAttribute(const XmlDocument& xml, XmlNode node, const char* name);
 
+const char* xmlGetRequiredText(const XmlDocument& xml, XmlNode node);
+
 int xmlGetAttributeRow(XmlNode node, const char* name);
 
 [[noreturn]] void xmlMissingElement(const XmlDocument& xml, XmlNode node, const char* name);
+[[noreturn]] void xmlMissingElementText(const XmlDocument& xml, XmlNode node);
 [[noreturn]] void xmlMissingAttributeValue(const XmlDocument& xml, XmlNode node, const char* name);
 [[noreturn]] void xmlInvalidAttributeValue(const XmlDocument& xml, XmlNode node, const char* name);
 

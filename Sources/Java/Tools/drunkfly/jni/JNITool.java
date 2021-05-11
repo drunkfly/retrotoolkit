@@ -103,7 +103,8 @@ public final class JNITool extends ClassVisitor
 
                 Type r = t.getReturnType();
                 String d = type.replace(';', '@').replace('[', '!');
-                result.add("method|" + d + '|' + name + '|' + toCxxType(r) + '|' + args + '|' + call + '|' + toMethodName(r));
+                result.add("method|" + d +
+                    '|' + name + '|' + toCxxType(r, true) + '|' + args + '|' + call + '|' + toMethodName(r));
             }
             return null;
         }
@@ -162,6 +163,11 @@ public final class JNITool extends ClassVisitor
 
     private static String toCxxType(Type type)
     {
+        return toCxxType(type, false);
+    }
+
+    private static String toCxxType(Type type, boolean returnValue)
+    {
         switch (type.getSort()) {
             case Type.VOID: return "void";
             case Type.BOOLEAN: return "jboolean";
@@ -175,28 +181,28 @@ public final class JNITool extends ClassVisitor
 
             case Type.ARRAY:
                 if (type.getDimensions() != 1)
-                    return "jobjectArray";
+                    return (returnValue ? "JNIRef" : "jobjectArray");
                 switch (type.getElementType().getSort()) {
-                    case Type.BOOLEAN: return "jbooleanArray";
-                    case Type.CHAR: return "jcharArray";
-                    case Type.BYTE: return "jbyteArray";
-                    case Type.SHORT: return "jshortArray";
-                    case Type.INT: return "jintArray";
-                    case Type.FLOAT: return "jfloatArray";
-                    case Type.LONG: return "jlongArray";
-                    case Type.DOUBLE: return "jdoubleArray";
-                    case Type.OBJECT: return "jobjectArray";
+                    case Type.BOOLEAN: return (returnValue ? "JNIRef" : "jbooleanArray");
+                    case Type.CHAR: return (returnValue ? "JNIRef" : "jcharArray");
+                    case Type.BYTE: return (returnValue ? "JNIRef" : "jbyteArray");
+                    case Type.SHORT: return (returnValue ? "JNIRef" : "jshortArray");
+                    case Type.INT: return (returnValue ? "JNIRef" : "jintArray");
+                    case Type.FLOAT: return (returnValue ? "JNIRef" : "jfloatArray");
+                    case Type.LONG: return (returnValue ? "JNIRef" : "jlongArray");
+                    case Type.DOUBLE: return (returnValue ? "JNIRef" : "jdoubleArray");
+                    case Type.OBJECT: return (returnValue ? "JNIRef" : "jobjectArray");
                 }
                 break;
 
             case Type.OBJECT:
                 if ("java/lang/String".equals(type.getInternalName()))
-                    return "jstring";
+                    return (returnValue ? "JNIStringRef" : "jstring");
                 else if ("java/lang/Class".equals(type.getInternalName()))
-                    return "jclass";
+                    return (returnValue ? "JNIClassRef" : "jclass");
                 else if ("java/lang/Throwable".equals(type.getInternalName()))
-                    return "jthrowable";
-                return "jobject";
+                    return (returnValue ? "JNIThrowableRef" : "jthrowable");
+                return (returnValue ? "JNIRef" : "jobject");
         }
 
         throw new RuntimeException("Invalid type " + type);

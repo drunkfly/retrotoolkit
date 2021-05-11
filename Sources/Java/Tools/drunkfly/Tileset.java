@@ -21,6 +21,12 @@ public final class Tileset
         loadXml(file.getAbsolutePath());
     }
 
+    @CallableWithJNI
+    public Tileset(String filePath)
+    {
+        this(new File(filePath));
+    }
+
     public Tileset(String imagePath, int tileWidth, int tileHeight, int tileCount, int columnCount)
     {
         this.imagePath = imagePath;
@@ -52,14 +58,52 @@ public final class Tileset
         return columnCount;
     }
 
-    @CallableWithJNI
-    public void addTile(int x, int y, String id)
-    {
-        tiles.add(new Tile(this, x, y, id));
-    }
-
     public List<Tile> getTiles()
     {
         return Collections.unmodifiableList(tiles);
+    }
+
+    @CallableWithJNI
+    public Tile getTile(int index)
+    {
+        if (index < 0 || index >= tiles.size())
+            return null;
+        return tiles.get(index);
+    }
+
+    @CallableWithJNI
+    public Tile getTile(int x, int y)
+    {
+        int index = y * columnCount + x;
+        if (index < 0 || index >= tiles.size())
+            return null;
+        return tiles.get(index);
+    }
+
+    @CallableWithJNI
+    public Tile setTile(int index, String id)
+    {
+        if (index < 0 || index >= tileCount)
+            throw new RuntimeException("Invalid tile index (" + index + ").");
+
+        int x = index % columnCount;
+        int y = index / columnCount;
+        return setTile(x, y, id);
+    }
+
+    @CallableWithJNI
+    public Tile setTile(int x, int y, String id)
+    {
+        Tile tile = new Tile(this, x, y, id);
+        int index = tile.getIndex();
+
+        if (x < 0 || y < 0 || x >= columnCount || index >= tileCount)
+            throw new RuntimeException("Invalid tile coordinate (" + x + ", " + y + ").");
+
+        while (index >= tiles.size())
+            tiles.add(null);
+
+        tiles.set(index, tile);
+        return tile;
     }
 }
