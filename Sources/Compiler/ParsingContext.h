@@ -4,10 +4,10 @@
 #include "Common/StringSet.h"
 
 class GCHeap;
-class Token;
 class SymbolTable;
 class Expr;
 class AssemblerContext;
+class Token;
 
 class ParsingContext
 {

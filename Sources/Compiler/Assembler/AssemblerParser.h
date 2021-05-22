@@ -3,12 +3,12 @@
 
 #include "Common/Common.h"
 
-struct Token;
 class GCHeap;
 class AssemblerContext;
 class Program;
 class SymbolTable;
 class Instruction;
+class Token;
 
 class AssemblerParser
 {

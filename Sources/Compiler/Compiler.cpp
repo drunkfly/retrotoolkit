@@ -2,7 +2,9 @@
 #include "Compiler/Tree/Value.h"
 #include "Compiler/Tree/SourceLocation.h"
 #include "Compiler/Tree/SourceLocationFactory.h"
+#include "Compiler/Tree/Symbol.h"
 #include "Compiler/Tree/SymbolTable.h"
+#include "Compiler/Tree/Expr.h"
 #include "Compiler/Java/JNIThrowableRef.h"
 #include "Compiler/Java/JStringList.h"
 #include "Compiler/Java/JVMThreadContext.h"
@@ -145,7 +147,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
               + nAsm
               + nBasic
               + (buildJavaFiles.empty() ? 0 : 1)
-              + (buildJavaFiles.empty() && gameJavaFiles.empty() ? 0 : 3)
+              + (buildJavaFiles.empty() && gameJavaFiles.empty() ? 0 : 5)
               + project.outputs.size();
 
     auto program = new (mHeap) Program();
@@ -180,6 +182,51 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             targetVersion = "1.7";
         else if (version >= 6)
             targetVersion = "1.6";
+
+        // Generate constants for Java scripts
+
+        if (mListener)
+            mListener->compilerProgress(count++, total, "Generating Java code...");
+
+        std::vector<const ConstantSymbol*> symbols;
+        symbols.reserve(program->projectVariables()->symbols().size());
+        for (const auto& it : program->projectVariables()->symbols()) {
+            assert(it.second->type() == Symbol::Constant);
+            if (it.second->type() == Symbol::Constant)
+                symbols.emplace_back(static_cast<ConstantSymbol*>(it.second));
+        }
+
+        std::sort(symbols.begin(), symbols.end(), [](const ConstantSymbol* a, const ConstantSymbol* b) -> bool {
+                return strcmp(a->name(), b->name()) < 0;
+            });
+
+        std::stringstream ss;
+        ss << "public final class BuildSettings\n";
+        ss << "{\n";
+        for (const ConstantSymbol* symbol : symbols) {
+            std::unique_ptr<CompilerError> error;
+            if (!symbol->value()->canEvaluateValue(nullptr, nullptr, error))
+                ss << "    // Skipped " << symbol->name() << ": " << error->message() << "\n";
+            else {
+                auto value = symbol->value()->evaluateValue(nullptr, nullptr);
+                const char* type = (value.number > 0x7fffffff ? "long" : "int");
+                ss << "    public static final " << type << ' ' << symbol->name() << " = " << value.number << ";\n";
+            }
+        }
+        ss << "};\n";
+        std::string buildSettingsJava = ss.str();
+
+        auto path = mOutputPath / "java_generated" / "build" / "BuildSettings.java";
+        writeFile(path, "package build;\n" + buildSettingsJava, SkipIfSameContent);
+        sourceFile.fileID = new (mHeap) FileID("build/BuildSettings.java", path);
+        sourceFile.fileType = FileType::Java;
+        buildJavaFiles.emplace_back(sourceFile);
+
+        path = mOutputPath / "java_generated" / "game" / "BuildSettings.java";
+        writeFile(path, "package game;\n" + buildSettingsJava, SkipIfSameContent);
+        sourceFile.fileID = new (mHeap) FileID("game/BuildSettings.java", path);
+        sourceFile.fileType = FileType::Java;
+        gameJavaFiles.emplace_back(sourceFile);
 
         // Game code
 
