@@ -238,6 +238,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             list.reserve(gameJavaFiles.size() + 12);
             list.add("-Xlint:all");
             list.add("-g");
+            list.add("-encoding");
+            list.add("UTF-8");
             list.add("-source");
             list.add(targetVersion);
             list.add("-target");
@@ -267,6 +269,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
             list.reserve(buildJavaFiles.size() + 8);
             list.add("-Xlint:all");
             list.add("-g");
+            list.add("-encoding");
+            list.add("UTF-8");
             list.add("-classpath");
             list.add(mResourcesPath / "RetroBuild.jar");
             list.add("-sourcepath");

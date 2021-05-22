@@ -10,6 +10,13 @@ public final class IO
 {
     private IO() {}
 
+    public static String getBaseName(File file)
+    {
+        String fileName = file.getName();
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex < 0 ? fileName : fileName.substring(0, dotIndex));
+    }
+
     public static byte[] loadFile(File file) throws IOException
     {
         int fileSize = (int)file.length();
