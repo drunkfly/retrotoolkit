@@ -43,6 +43,16 @@ public final class Tilemap
         {
             return y;
         }
+
+        public int getTileX()
+        {
+            return x / tileWidth;
+        }
+
+        public int getTileY()
+        {
+            return y / tileHeight;
+        }
     }
 
     public final class Layer
@@ -86,6 +96,8 @@ public final class Tilemap
 
     @AccessibleWithJNI private int width;
     @AccessibleWithJNI private int height;
+    @AccessibleWithJNI private int tileWidth;
+    @AccessibleWithJNI private int tileHeight;
     private final ArrayList<Layer> layers = new ArrayList<Layer>();
     private final ArrayList<Obj> objects = new ArrayList<Obj>();
 
@@ -94,10 +106,12 @@ public final class Tilemap
         loadXml(file.getAbsolutePath());
     }
 
-    public Tilemap(int width, int height)
+    public Tilemap(int width, int height, int tileWidth, int tileHeight)
     {
         this.width = width;
         this.height = height;
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
     }
 
     private native void loadXml(String fileName);
@@ -110,6 +124,16 @@ public final class Tilemap
     public int getHeight()
     {
         return height;
+    }
+
+    public int getTileWidth()
+    {
+        return tileWidth;
+    }
+
+    public int getTileHeight()
+    {
+        return tileHeight;
     }
 
     public int getLayerCount()

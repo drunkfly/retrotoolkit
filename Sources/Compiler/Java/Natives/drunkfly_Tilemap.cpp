@@ -44,6 +44,8 @@ void JNICALL NATIVE_drunkfly_Tilemap_loadXml(JNIEnv* env, jobject self, jstring 
 
         JavaClasses::drunkfly_Tilemap.setWidth(self, width);
         JavaClasses::drunkfly_Tilemap.setHeight(self, height);
+        JavaClasses::drunkfly_Tilemap.setTileWidth(self, tileWidth);
+        JavaClasses::drunkfly_Tilemap.setTileHeight(self, tileHeight);
 
         std::vector<Tileset> tilesets;
 
