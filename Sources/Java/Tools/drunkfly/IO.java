@@ -16,6 +16,20 @@ public final class IO
         return (dotIndex < 0 ? fileName : fileName.substring(0, dotIndex));
     }
 
+    public static File appendBaseName(File file, String append)
+    {
+        File parent = file.getParentFile();
+        String name = file.getName();
+
+        int dotIndex = name.lastIndexOf('.');
+        if (dotIndex < 0)
+            name = name + append;
+        else
+            name = name.substring(0, dotIndex) + append + name.substring(dotIndex);
+
+        return new File(parent, name);
+    }
+
     public static byte[] loadFile(File file) throws IOException
     {
         int fileSize = (int)file.length();
