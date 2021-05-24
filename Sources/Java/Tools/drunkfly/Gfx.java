@@ -108,6 +108,11 @@ public final class Gfx
         return result;
     }
 
+    public void putImage(int dstX, int dstY, Gfx image)
+    {
+        putImage(dstX, dstY, image, 0, 0, image.getWidth(), image.getHeight());
+    }
+
     public void putImage(int dstX, int dstY, Gfx image, int srcX, int srcY)
     {
         putImage(dstX, dstY, image, srcX, srcY, image.getWidth(), image.getHeight());
