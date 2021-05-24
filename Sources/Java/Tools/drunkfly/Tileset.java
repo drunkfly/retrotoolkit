@@ -41,6 +41,11 @@ public final class Tileset
 
     private native void loadXml(String fileName);
 
+    public String getImagePath()
+    {
+        return imagePath;
+    }
+
     public int getTileWidth()
     {
         return tileWidth;

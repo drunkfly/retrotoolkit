@@ -46,4 +46,9 @@ public final class Tile
     {
         return id;
     }
+
+    public Gfx getGfx(Gfx tilesetImage)
+    {
+        return tilesetImage.getImage(x, y, tileset.getTileWidth(), tileset.getTileHeight());
+    }
 }

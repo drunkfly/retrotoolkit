@@ -2,7 +2,7 @@ package drunkfly;
 
 public final class Bytes
 {
-    private static final String hex = "0123456789abcdef";
+    private static final String HEX = "0123456789abcdef";
 
     private Bytes() {}
 
@@ -34,23 +34,23 @@ public final class Bytes
     {
         char[] result = new char[data.length * 2];
         for (int i = 0; i < data.length; i++) {
-            result[i * 2 + 0] = hex.charAt((data[i] >>> 4) & 0xf);
-            result[i * 2 + 1] = hex.charAt(data[i] & 0xf);
+            result[i * 2 + 0] = HEX.charAt((data[i] >>> 4) & 0xf);
+            result[i * 2 + 1] = HEX.charAt(data[i] & 0xf);
         }
         return new String(result);
     }
 
     public static void appendHex(StringBuilder builder, int value)
     {
-        builder.append(hex.charAt((value >>> 4) & 0xf));
-        builder.append(hex.charAt(value & 0xf));
+        builder.append(HEX.charAt((value >>> 4) & 0xf));
+        builder.append(HEX.charAt(value & 0xf));
     }
 
     public static void appendHexWithPrefix(StringBuilder builder, int value)
     {
         builder.append("0x");
-        builder.append(hex.charAt((value >>> 4) & 0xf));
-        builder.append(hex.charAt(value & 0xf));
+        builder.append(HEX.charAt((value >>> 4) & 0xf));
+        builder.append(HEX.charAt(value & 0xf));
     }
 
     public static void toAssembler(StringBuilder builder, byte[] data)

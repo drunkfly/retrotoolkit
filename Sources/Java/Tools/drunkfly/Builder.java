@@ -74,6 +74,12 @@ public abstract class Builder
 
     // I/O operations for builders
 
+    public boolean inputFileExists(String path)
+    {
+        File file = resolveInputFile(path);
+        return file.exists();
+    }
+
     public byte[] loadBytes(String path)
     {
         File file = registerInputFile(path);
@@ -143,7 +149,13 @@ public abstract class Builder
 
     private File resolveInputFile(String path)
     {
-        return BuilderClassLoader.getInstance().findResourceFile(path);
+        File file = BuilderClassLoader.getInstance().findResourceFile(path);
+        if (file == null) {
+            file = new File(path);
+            if (!file.isAbsolute() || !file.exists())
+                throw new RuntimeException("File \"" + path + "\" does not exist.");
+        }
+        return file;
     }
 
     private File resolveOutputFile(String path)

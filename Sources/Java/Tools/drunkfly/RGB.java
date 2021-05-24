@@ -2,102 +2,102 @@ package drunkfly;
 
 public final class RGB
 {
-    public static final int RedMask = 0x00ff0000;
-    public static final int GreenMask = 0x0000ff00;
-    public static final int BlueMask = 0x000000ff;
-    public static final int AlphaMask = 0xff000000;
+    public static final int RED_MASK = 0x00ff0000;
+    public static final int GREEN_MASK = 0x0000ff00;
+    public static final int BLUE_MASK = 0x000000ff;
+    public static final int ALPHA_MASK = 0xff000000;
 
-    public static final int RedShift = 16;
-    public static final int GreenShift = 8;
-    public static final int BlueShift = 0;
-    public static final int AlphaShift = 24;
+    public static final int RED_SHIFT = 16;
+    public static final int GREEN_SHIFT = 8;
+    public static final int BLUE_SHIFT = 0;
+    public static final int ALPHA_SHIFT = 24;
 
-    public static final int Transparent = RGB.make(0, 0, 0, 0);
-    public static final int Black = RGB.make(0, 0, 0);
+    public static final int TRANSPARENT = RGB.make(0, 0, 0, 0);
+    public static final int BLACK = RGB.make(0, 0, 0);
 
     private RGB() {}
 
     public static int make(int r, int g, int b)
     {
-        return ((r & 0xff) << RedShift)
-             | ((g & 0xff) << GreenShift)
-             | ((b & 0xff) << BlueShift)
-             | AlphaMask;
+        return ((r & 0xff) << RED_SHIFT)
+             | ((g & 0xff) << GREEN_SHIFT)
+             | ((b & 0xff) << BLUE_SHIFT)
+             | ALPHA_MASK;
     }
 
     public static int make(int r, int g, int b, int a)
     {
-        return ((r & 0xff) << RedShift)
-             | ((g & 0xff) << GreenShift)
-             | ((b & 0xff) << BlueShift)
-             | ((a & 0xff) << AlphaShift);
+        return ((r & 0xff) << RED_SHIFT)
+             | ((g & 0xff) << GREEN_SHIFT)
+             | ((b & 0xff) << BLUE_SHIFT)
+             | ((a & 0xff) << ALPHA_SHIFT);
     }
 
     public static int getR(int color)
     {
-        return (color & RedMask) >>> RedShift;
+        return (color & RED_MASK) >>> RED_SHIFT;
     }
 
     public static int getG(int color)
     {
-        return (color & GreenMask) >>> GreenShift;
+        return (color & GREEN_MASK) >>> GREEN_SHIFT;
     }
 
     public static int getB(int color)
     {
-        return (color & BlueMask) >>> BlueShift;
+        return (color & BLUE_MASK) >>> BLUE_SHIFT;
     }
 
     public static int getA(int color)
     {
-        return (color & AlphaMask) >>> AlphaShift;
+        return (color & ALPHA_MASK) >>> ALPHA_SHIFT;
     }
 
     public static float getFloatR(int color)
     {
-        return (float)((color & RedMask) >>> RedShift) / 255.0f;
+        return (float)((color & RED_MASK) >>> RED_SHIFT) / 255.0f;
     }
 
     public static float getFloatG(int color)
     {
-        return (float)((color & GreenMask) >>> GreenShift) / 255.0f;
+        return (float)((color & GREEN_MASK) >>> GREEN_SHIFT) / 255.0f;
     }
 
     public static float getFloatB(int color)
     {
-        return (float)((color & BlueMask) >>> BlueShift) / 255.0f;
+        return (float)((color & BLUE_MASK) >>> BLUE_SHIFT) / 255.0f;
     }
 
     public static float getFloatA(int color)
     {
-        return (float)((color & AlphaMask) >>> AlphaShift) / 255.0f;
+        return (float)((color & ALPHA_MASK) >>> ALPHA_SHIFT) / 255.0f;
     }
 
     public static int setR(int color, int r)
     {
-        color &= ~RedMask;
-        color |= (r & 0xff) << RedShift;
+        color &= ~RED_MASK;
+        color |= (r & 0xff) << RED_SHIFT;
         return color;
     }
 
     public static int setG(int color, int g)
     {
-        color &= ~GreenMask;
-        color |= (g & 0xff) << GreenShift;
+        color &= ~GREEN_MASK;
+        color |= (g & 0xff) << GREEN_SHIFT;
         return color;
     }
 
     public static int setB(int color, int b)
     {
-        color &= ~BlueMask;
-        color |= (b & 0xff) << BlueShift;
+        color &= ~BLUE_MASK;
+        color |= (b & 0xff) << BLUE_SHIFT;
         return color;
     }
 
     public static int setA(int color, int a)
     {
-        color &= ~AlphaMask;
-        color |= (a & 0xff) << AlphaShift;
+        color &= ~ALPHA_MASK;
+        color |= (a & 0xff) << ALPHA_SHIFT;
         return color;
     }
 

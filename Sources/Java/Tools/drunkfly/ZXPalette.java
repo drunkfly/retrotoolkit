@@ -2,24 +2,24 @@ package drunkfly;
 
 public final class ZXPalette
 {
-    public static final int Black = 0;
-    public static final int Blue = 1;
-    public static final int Red = 2;
-    public static final int Magenta = 3;
-    public static final int Green = 4;
-    public static final int Cyan = 5;
-    public static final int Yellow = 6;
-    public static final int White = 7;
+    public static final int BLACK = 0;
+    public static final int BLUE = 1;
+    public static final int RED = 2;
+    public static final int MAGENTA = 3;
+    public static final int GREEN = 4;
+    public static final int CYAN = 5;
+    public static final int YELLOW = 6;
+    public static final int WHITE = 7;
 
-    public static final int Bright = 0x40;
-    public static final int Flash = 0x80;
+    public static final int BRIGHT = 0x40;
+    public static final int FLASH = 0x80;
 
-    public static final int InkShift = 0;
-    public static final int InkMask = 7;
-    public static final int PaperShift = 3;
-    public static final int PaperMask = 0x38;
+    public static final int INK_SHIFT = 0;
+    public static final int INK_MASK = 7;
+    public static final int PAPER_SHIFT = 3;
+    public static final int PAPER_MASK = 0x38;
 
-    public static final int[] Colors = {
+    public static final int[] COLORS = {
             RGB.make(0x00, 0x00, 0x00),
             RGB.make(0x00, 0x00, 0xc0),
             RGB.make(0xc0, 0x00, 0x00),
@@ -40,17 +40,17 @@ public final class ZXPalette
 
     public static int ink(int ink, boolean bright)
     {
-        int result = (ink << InkShift) & InkMask;
+        int result = (ink << INK_SHIFT) & INK_MASK;
         if (bright)
-            result |= Bright;
+            result |= BRIGHT;
         return result;
     }
 
     public static int paper(int paper, boolean bright)
     {
-        int result = (paper << PaperShift) & PaperMask;
+        int result = (paper << PAPER_SHIFT) & PAPER_MASK;
         if (bright)
-            result |= Bright;
+            result |= BRIGHT;
         return result;
     }
 
@@ -61,12 +61,12 @@ public final class ZXPalette
 
     public static int attrib(int ink, int paper, boolean bright, boolean flash)
     {
-        ink = (ink << InkShift) & InkMask;
-        paper = (paper << PaperShift) & PaperMask;
+        ink = (ink << INK_SHIFT) & INK_MASK;
+        paper = (paper << PAPER_SHIFT) & PAPER_MASK;
         if (bright)
-            ink |= Bright;
+            ink |= BRIGHT;
         if (flash)
-            ink |= Flash;
+            ink |= FLASH;
         return ink | paper;
     }
 }

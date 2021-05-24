@@ -61,15 +61,15 @@ public final class Gfx
     {
         if (x < 0 || y < 0 || x >= image.getWidth() || y >= image.getHeight()) {
             switch (format) {
-                case RGB: return RGB.Black;
-                case RGBA: return RGB.Transparent;
+                case RGB: return RGB.BLACK;
+                case RGBA: return RGB.TRANSPARENT;
             }
             throw new RuntimeException("Invalid GFX format.");
         }
 
         int value = image.getRGB(x, y);
         switch (format) {
-            case RGB: return value | RGB.AlphaMask;
+            case RGB: return value | RGB.ALPHA_MASK;
             case RGBA: return value;
         }
         throw new RuntimeException("Invalid GFX format.");
@@ -81,7 +81,7 @@ public final class Gfx
             return;
 
         switch (format) {
-            case RGB: image.setRGB(x, y, value | RGB.AlphaMask); return;
+            case RGB: image.setRGB(x, y, value | RGB.ALPHA_MASK); return;
             case RGBA: image.setRGB(x, y, value); return;
         }
         throw new RuntimeException("Invalid GFX format.");
@@ -119,6 +119,13 @@ public final class Gfx
             for (int x = 0; x < srcW; x++)
                 setPixel(dstX + x, dstY + y, image.getPixel(srcX + x, srcY + y));
         }
+    }
+
+    public ZXImage toZXImage()
+    {
+        ZXImage image = new ZXImage(getWidth(), getHeight());
+        image.putImage(0, 0, this);
+        return image;
     }
 
     public ZXScreen toZXScreen()

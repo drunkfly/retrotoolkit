@@ -88,6 +88,16 @@ public final class Tilemap
             return name;
         }
 
+        public List<Tileset> getTilesets()
+        {
+            ArrayList<Tileset> result = new ArrayList<Tileset>();
+            for (Tile tile : tiles) {
+                if (tile != null)
+                    result.add(tile.getTileset());
+            }
+            return result;
+        }
+
         public Tile getTile(int x, int y)
         {
             if (x < 0 || y < 0 || x >= width || y >= height)
