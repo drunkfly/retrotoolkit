@@ -51,6 +51,8 @@ public final class Tile
     {
         int tileWidth = tileset.getTileWidth();
         int tileHeight = tileset.getTileHeight();
-        return tilesetImage.getImage(x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+        Gfx gfx = tilesetImage.getImage(x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+        gfx.setName(id != null && id.length() > 0 ? id : "tile (" + x + ", " + y + ")");
+        return gfx;
     }
 }
