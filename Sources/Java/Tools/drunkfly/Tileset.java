@@ -109,7 +109,7 @@ public final class Tileset
     public Tile setTile(int index, String id)
     {
         if (index < 0 || index >= tileCount)
-            throw new RuntimeException("Invalid tile index (" + index + ").");
+            throw new RuntimeException("Invalid tile index (" + index + ") in tileset \"" + file + "\".");
 
         int x = index % columnCount;
         int y = index / columnCount;
@@ -123,7 +123,7 @@ public final class Tileset
         int index = tile.getIndex();
 
         if (x < 0 || y < 0 || x >= columnCount || index >= tileCount)
-            throw new RuntimeException("Invalid tile coordinate (" + x + ", " + y + ").");
+            throw new RuntimeException("Invalid tile coordinate (" + x + ", " + y + ") in tileset \"" + file + "\".");
 
         while (index >= tiles.size())
             tiles.add(null);
