@@ -408,6 +408,17 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
     // Generate outputs configured in the project
 
+    std::unordered_set<std::string> outputs;
+    auto makePath = [this, &outputs](std::string name) -> std::filesystem::path {
+            std::filesystem::path path = mOutputPath / name;
+            if (!outputs.emplace(std::move(name)).second) {
+                std::stringstream ss;
+                ss << "Duplicate output file \"" << path << "\".";
+                throw CompilerError(nullptr, ss.str());
+            }
+            return path;
+        };
+
     for (const auto& output : project.outputs) {
         std::unique_ptr<IOutputWriter> outputWriter;
 
@@ -420,9 +431,9 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                     mListener->compilerProgress(count++, total, "Generating TAP...");
 
                 auto tapeWriter = std::make_unique<SpectrumTapeWriter>();
-                tapeWriter->setWriteTapFile(mOutputPath / (projectName + ".tap"));
+                tapeWriter->setWriteTapFile(makePath(projectName + ".tap"));
                 if (mEnableWav) {
-                    mGeneratedWavFile = mOutputPath / (projectName + ".wav");
+                    mGeneratedWavFile = makePath(projectName + ".wav");
                     tapeWriter->setWriteWavFile(*mGeneratedWavFile);
                 }
 
@@ -435,8 +446,8 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                     mListener->compilerProgress(count++, total, "Generating TRD and SCL...");
 
                 auto trdosWriter = std::make_unique<TRDOSWriter>();
-                trdosWriter->setWriteSclFile(mOutputPath / (projectName + ".scl"));
-                trdosWriter->setWriteTrdFile(mOutputPath / (projectName + ".trd"), projectName);
+                trdosWriter->setWriteSclFile(makePath(projectName + ".scl"));
+                trdosWriter->setWriteTrdFile(makePath(projectName + ".trd"), projectName);
 
                 outputWriter = std::move(trdosWriter);
                 break;
@@ -448,7 +459,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
 
                 auto z80Writer = std::make_unique<SpectrumSnapshotWriter>();
                 output->z80->initWriter(program, &linker, z80Writer.get());
-                z80Writer->setWriteZ80File(output->location, mOutputPath / (projectName + ".z80"));
+                z80Writer->setWriteZ80File(output->location, makePath(projectName + ".z80"));
 
                 outputWriter = std::move(z80Writer);
                 break;
@@ -461,7 +472,7 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 auto z80Writer = std::make_unique<SpectrumSnapshotWriter>();
                 output->z80->initWriter(program, &linker, z80Writer.get());
                 z80Writer->addWriteExeFile(output->location,
-                    mResourcesPath / "Win32Runtime.bin", mOutputPath / (projectName + ".exe"));
+                    mResourcesPath / "Win32Runtime.bin", makePath(projectName + ".exe"));
 
                 outputWriter = std::move(z80Writer);
                 break;
@@ -490,14 +501,14 @@ void Compiler::buildProject(const std::filesystem::path& projectFile, const std:
                 std::string name = (file.name.has_value() ? *file.name : *file.ref);
                 writer->addCodeFile(file.location,
                     std::move(name), *file.ref, data->data(), data->size(), data->loadAddress());
-            } else if (file.basic) {
-                auto it = compiledBasicFiles.find(*file.basic);
+            } else if (file.refBasic) {
+                auto it = compiledBasicFiles.find(*file.refBasic);
                 if (it == compiledBasicFiles.end()) {
                     std::stringstream ss;
-                    ss << "Basic file \"" << *file.basic << "\" was not found.";
+                    ss << "Basic file \"" << *file.refBasic << "\" was not found.";
                     throw CompilerError(file.location, ss.str());
                 }
-                std::string name = (file.name.has_value() ? *file.name : *file.basic);
+                std::string name = (file.name.has_value() ? *file.name : *file.refBasic);
                 writer->addBasicFile(file.location, std::move(name), it->second.data, it->second.startLine);
             } else
                 throw CompilerError(file.location, "Internal compiler error: unsupported output file.");

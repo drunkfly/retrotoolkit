@@ -85,7 +85,7 @@ public:
         {
             SourceLocation* location;
             std::optional<std::string> ref;
-            std::optional<std::string> basic;
+            std::optional<std::string> refBasic;
             std::optional<std::string> name;
         };
 

@@ -247,7 +247,7 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
         }
     }
 
-    IF_HAS(OutputTAP, RetroProject) {
+    FOR_EACH(OutputTAP, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTAP;
         output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputTAP)) : nullptr);
@@ -258,14 +258,14 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
             outputFile.location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
             outputFile.name = OPT_STRING(name, File);
             outputFile.ref = OPT_STRING(ref, File);
-            outputFile.basic = OPT_STRING(basic, File);
+            outputFile.refBasic = OPT_STRING(refBasic, File);
             output->files.emplace_back(std::move(outputFile));
         }
 
         outputs.emplace_back(std::move(output));
     }
 
-    IF_HAS(OutputTRD, RetroProject) {
+    FOR_EACH(OutputTRD, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumTRD;
         output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputTRD)) : nullptr);
@@ -276,14 +276,14 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
             outputFile.location = (locationFactory ? locationFactory->createLocation(ROW(File)) : nullptr);
             outputFile.name = OPT_STRING(name, File);
             outputFile.ref = OPT_STRING(ref, File);
-            outputFile.basic = OPT_STRING(basic, File);
+            outputFile.refBasic = OPT_STRING(refBasic, File);
             output->files.emplace_back(std::move(outputFile));
         }
 
         outputs.emplace_back(std::move(output));
     }
 
-    IF_HAS(OutputZ80, RetroProject) {
+    FOR_EACH(OutputZ80, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::ZXSpectrumZ80;
         output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputZ80)) : nullptr);
@@ -301,7 +301,7 @@ void Project::load(std::filesystem::path path, SourceLocationFactory* locationFa
         outputs.emplace_back(std::move(output));
     }
 
-    IF_HAS(OutputPC, RetroProject) {
+    FOR_EACH(OutputPC, RetroProject) {
         auto output = std::make_unique<Output>();
         output->type = Output::PC;
         output->location = (locationFactory ? locationFactory->createLocation(ROW(OutputPC)) : nullptr);
@@ -383,9 +383,9 @@ static void writeOutput(std::stringstream& ss, const Project::Output& output)
             ss << " ref=";
             xmlEncodeInQuotes(ss, *file.ref);
         }
-        if (file.basic) {
-            ss << " basic=";
-            xmlEncodeInQuotes(ss, *file.basic);
+        if (file.refBasic) {
+            ss << " refBasic=";
+            xmlEncodeInQuotes(ss, *file.refBasic);
         }
         ss << " />\n";
     }

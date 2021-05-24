@@ -37,7 +37,15 @@ Expr* ExpressionParser::tryParseExpression(SourceLocation* location, const char*
 
     const Token* token = lexer.firstToken();
     ParsingContext context(mHeap, token, nullptr, variables, mLocalLabelsPrefix, false);
-    return tryParseExpression(&context, true, false);
+    Expr* expr = tryParseExpression(&context, true, false);
+
+    if (context.token()->id() != TokenID::TOK_EOF) {
+        mError = "syntax error.";
+        mErrorLocation = context.token()->location();
+        return nullptr;
+    }
+
+    return expr;
 }
 
 Expr* ExpressionParser::tryParseExpression(ParsingContext* context, bool unambiguous, bool allowHereVariable)
