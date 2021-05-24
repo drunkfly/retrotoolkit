@@ -34,6 +34,13 @@ public final class Tilemap
             return name;
         }
 
+        public boolean hasName(String strName)
+        {
+            if (strName == null)
+                return name == null;
+            return name != null && name.equals(strName);
+        }
+
         public int getX()
         {
             return x;
@@ -60,12 +67,15 @@ public final class Tilemap
         private final int id;
         private final String name;
         private final Tile[] tiles;
+        private final ArrayList<Obj>[] objects;
 
+        @SuppressWarnings("unchecked")
         Layer(int id, String name)
         {
             this.id = id;
             this.name = name;
             tiles = new Tile[width * height];
+            objects = new ArrayList[width * height];
         }
 
         public int getId()
@@ -89,8 +99,43 @@ public final class Tilemap
         public void setTile(int x, int y, Tile tile)
         {
             if (x < 0 || y < 0 || x >= width || y >= height)
-                throw new RuntimeException("Tile coordinate is out of range.");
+                throw new RuntimeException("Tile coordinates are out of range.");
             tiles[y * width + x] = tile;
+        }
+
+        public List<Obj> getObjects(int x, int y)
+        {
+            if (x < 0 || y < 0 || x >= width || y >= height)
+                return new ArrayList<Obj>();
+
+            ArrayList<Obj> list = objects[y * width + x];
+            if (list == null) {
+                list = new ArrayList<Obj>();
+                objects[y * width + x] = list;
+            }
+
+            return Collections.unmodifiableList(list);
+        }
+
+        @CallableWithJNI
+        public void addObject(int x, int y, int id, String name)
+        {
+            Obj obj = new Obj(id, name, x, y);
+
+            x /= tileWidth;
+            y /= tileHeight;
+
+            if (x < 0 || y < 0 || x >= width || y >= height)
+                throw new RuntimeException("Object coordinates are out of range.");
+
+            ArrayList<Obj> list = objects[y * width + x];
+            if (list == null) {
+                list = new ArrayList<Obj>();
+                objects[y * width + x] = list;
+            }
+
+            list.add(obj);
+            allObjects.add(obj);
         }
     }
 
@@ -99,7 +144,7 @@ public final class Tilemap
     @AccessibleWithJNI private int tileWidth;
     @AccessibleWithJNI private int tileHeight;
     private final ArrayList<Layer> layers = new ArrayList<Layer>();
-    private final ArrayList<Obj> objects = new ArrayList<Obj>();
+    private final ArrayList<Obj> allObjects = new ArrayList<Obj>();
 
     public Tilemap(File file)
     {
@@ -165,16 +210,8 @@ public final class Tilemap
         return null;
     }
 
-    @CallableWithJNI
-    public Obj addObject(int id, String name, int x, int y)
+    public List<Obj> getAllObjects()
     {
-        Obj obj = new Obj(id, name, x, y);
-        objects.add(obj);
-        return obj;
-    }
-
-    public List<Obj> getObjects()
-    {
-        return Collections.unmodifiableList(objects);
+        return Collections.unmodifiableList(allObjects);
     }
 }

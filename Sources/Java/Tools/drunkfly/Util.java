@@ -4,25 +4,23 @@ import java.io.File;
 
 public final class Util
 {
-    public static String identifierFromFileName(String fileName)
+    public static boolean isNullOrEmpty(String string)
     {
-        return identifierFromFileName(new File(fileName));
+        return string == null || string.length() == 0;
     }
 
-    public static String identifierFromFileName(File file)
+    public static String identifierFromString(String string)
     {
-        String fileName = IO.getBaseName(file);
-
-        int n = fileName.length();
+        int n = string.length();
         if (n == 0)
             return "_";
 
         StringBuilder builder = new StringBuilder();
-        if (fileName.charAt(0) >= '0' && fileName.charAt(0) <= '9')
+        if (string.charAt(0) >= '0' && string.charAt(0) <= '9')
             builder.append('_');
 
         for (int i = 0; i < n; i++) {
-            char ch = fileName.charAt(i);
+            char ch = string.charAt(i);
             if (ch >= 'a' && ch <= 'z')
                 builder.append(ch);
             else if (ch >= 'A' && ch <= 'Z')

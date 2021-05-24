@@ -131,8 +131,10 @@ void JNICALL NATIVE_drunkfly_Tilemap_loadXml(JNIEnv* env, jobject self, jstring 
         }
 
         FOR_EACH(objectgroup, map) {
-            int groupId = REQ_INT(id, objectgroup);
-            const auto& groupName = REQ_STRING(name, objectgroup);
+            int id = REQ_INT(id, objectgroup);
+            const auto& name = REQ_STRING(name, objectgroup);
+
+            JNIRef layer = JavaClasses::drunkfly_Tilemap.addLayer(self, id, JNIStringRef::from(name).toJNI());
 
             FOR_EACH(object, objectgroup) {
                 int objectId = REQ_INT(id, object);
@@ -142,8 +144,8 @@ void JNICALL NATIVE_drunkfly_Tilemap_loadXml(JNIEnv* env, jobject self, jstring 
 
                 REQ_ELEMENT(point, object);
 
-                JavaClasses::drunkfly_Tilemap.addObject(self,
-                    objectId, JNIStringRef::from(objectName).toJNI(), objectX, objectY);
+                JavaClasses::drunkfly_Tilemap_Layer.addObject(layer.toJNI(),
+                    objectX, objectY, objectId, JNIStringRef::from(objectName).toJNI());
             }
         }
 

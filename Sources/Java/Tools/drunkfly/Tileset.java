@@ -9,6 +9,7 @@ import java.util.List;
 
 public final class Tileset
 {
+    private final File file;
     @AccessibleWithJNI private String imagePath;
     @AccessibleWithJNI private int tileWidth;
     @AccessibleWithJNI private int tileHeight;
@@ -18,6 +19,7 @@ public final class Tileset
 
     public Tileset(File file)
     {
+        this.file = file;
         loadXml(file.getAbsolutePath());
     }
 
@@ -29,6 +31,7 @@ public final class Tileset
 
     public Tileset(String imagePath, int tileWidth, int tileHeight, int tileCount, int columnCount)
     {
+        this.file = new File(imagePath);
         this.imagePath = imagePath;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
@@ -78,6 +81,24 @@ public final class Tileset
         if (index < 0 || index >= tiles.size())
             return null;
         return tiles.get(index);
+    }
+
+    public Tile getTile(String id)
+    {
+        for (Tile tile : tiles) {
+            String tileId = tile.getId();
+            if (tileId != null && tileId.equals(id))
+                return tile;
+        }
+        return null;
+    }
+
+    public Tile getRequiredTile(String id)
+    {
+        Tile tile = getTile(id);
+        if (tile == null)
+            throw new RuntimeException("Missing tile \"" + id + "\" from tileset \"" + file + "\".");
+        return tile;
     }
 
     @CallableWithJNI

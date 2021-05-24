@@ -20,6 +20,13 @@ public final class Tile
         return tileset;
     }
 
+    public boolean hasId(String strId)
+    {
+        if (strId == null)
+            return id == null;
+        return id != null && id.equals(strId);
+    }
+
     public int getX()
     {
         return x;
