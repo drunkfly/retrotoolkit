@@ -86,10 +86,14 @@ public final class Tileset
     public Tile getTile(String id)
     {
         for (Tile tile : tiles) {
+            if (tile == null)
+                continue;
+
             String tileId = tile.getId();
             if (tileId != null && tileId.equals(id))
                 return tile;
         }
+
         return null;
     }
 

@@ -98,8 +98,12 @@ public final class Tilemap
         @CallableWithJNI
         public void setTile(int x, int y, Tile tile)
         {
-            if (x < 0 || y < 0 || x >= width || y >= height)
-                throw new RuntimeException("Tile coordinates are out of range.");
+            if (x < 0 || y < 0 || x >= width || y >= height) {
+                if (file == null)
+                    throw new RuntimeException("Tile coordinates are out of range.");
+                else
+                    throw new RuntimeException("Tile coordinates are out of range in file \"" + file + "\".");
+            }
             tiles[y * width + x] = tile;
         }
 
@@ -125,8 +129,14 @@ public final class Tilemap
             x /= tileWidth;
             y /= tileHeight;
 
-            if (x < 0 || y < 0 || x >= width || y >= height)
-                throw new RuntimeException("Object coordinates are out of range.");
+            if (x < 0 || y < 0 || x >= width || y >= height) {
+                if (file == null)
+                    throw new RuntimeException("Coordinates of object \"" + name + "\" are out of range.");
+                else {
+                    throw new RuntimeException(
+                        "Coordinates of object \"" + name + "\" are out of range in file \"" + file + "\".");
+                }
+            }
 
             ArrayList<Obj> list = objects[y * width + x];
             if (list == null) {
@@ -139,6 +149,7 @@ public final class Tilemap
         }
     }
 
+    private final File file;
     @AccessibleWithJNI private int width;
     @AccessibleWithJNI private int height;
     @AccessibleWithJNI private int tileWidth;
@@ -148,11 +159,13 @@ public final class Tilemap
 
     public Tilemap(File file)
     {
+        this.file = file;
         loadXml(file.getAbsolutePath());
     }
 
     public Tilemap(int width, int height, int tileWidth, int tileHeight)
     {
+        this.file = null;
         this.width = width;
         this.height = height;
         this.tileWidth = tileWidth;
