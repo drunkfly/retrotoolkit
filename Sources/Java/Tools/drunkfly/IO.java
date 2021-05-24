@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 public final class IO
 {
@@ -66,11 +65,7 @@ public final class IO
 
     public static void writeFile(File file, String data) throws IOException
     {
-        try {
-            writeFile(file, data.getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Unable to write \"" + file + "\".", e);
-        }
+        writeFile(file, Util.toUtf8(data));
     }
 
     public static void writeFile(File file, StringBuilder data) throws IOException

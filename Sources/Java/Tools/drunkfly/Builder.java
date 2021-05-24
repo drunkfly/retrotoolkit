@@ -6,7 +6,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 
@@ -92,11 +91,7 @@ public abstract class Builder
 
     public String loadText(String path)
     {
-        try {
-            return new String(loadBytes(path), "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Unable to load \"" + path + "\".", e);
-        }
+        return Util.fromUtf8(loadBytes(path));
     }
 
     public Gfx loadGfx(String path)
@@ -133,11 +128,7 @@ public abstract class Builder
 
     public void writeFile(String path, String data)
     {
-        try {
-            writeFile(path, data.getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Unable to write \"" + path + "\".", e);
-        }
+        writeFile(path, Util.toUtf8(data));
     }
 
     public void writeFile(String path, StringBuilder data)
