@@ -118,7 +118,12 @@ public abstract class Builder
 
     public void writeFile(String path, byte[] data)
     {
-        File file = registerOutputFile(path);
+        writeFile(path, data, true);
+    }
+
+    public void writeFile(String path, byte[] data, boolean addSource)
+    {
+        File file = registerOutputFile(path, addSource);
         try {
             IO.writeFile(file, data);
         } catch (IOException e) {
@@ -128,12 +133,44 @@ public abstract class Builder
 
     public void writeFile(String path, String data)
     {
-        writeFile(path, Util.toUtf8(data));
+        writeFile(path, Util.toUtf8(data), true);
+    }
+
+    public void writeFile(String path, String data, boolean addSource)
+    {
+        writeFile(path, Util.toUtf8(data), addSource);
     }
 
     public void writeFile(String path, StringBuilder data)
     {
-        writeFile(path, data.toString());
+        writeFile(path, data.toString(), true);
+    }
+
+    public void writeFile(String path, StringBuilder data, boolean addSource)
+    {
+        writeFile(path, data.toString(), addSource);
+    }
+
+    public void writePNG(String path, Gfx gfx)
+    {
+        writePNG(path, gfx, true);
+    }
+
+    public void writePNG(String path, Gfx gfx, boolean addSource)
+    {
+        File file = registerOutputFile(path, addSource);
+        gfx.write(file, "png");
+    }
+
+    public void writeJPG(String path, Gfx gfx)
+    {
+        writeJPG(path, gfx, true);
+    }
+
+    public void writeJPG(String path, Gfx gfx, boolean addSource)
+    {
+        File file = registerOutputFile(path, addSource);
+        gfx.write(file, "jpg");
     }
 
     // Dependency management
@@ -161,10 +198,11 @@ public abstract class Builder
         return file;
     }
 
-    private File registerOutputFile(String path)
+    private File registerOutputFile(String path, boolean addSource)
     {
         File file = resolveOutputFile(path);
-        compilerAddSource(path, file.getAbsolutePath());
+        if (addSource)
+            compilerAddSource(path, file.getAbsolutePath());
         outputFiles.add(new OutputFile(path, file));
         return file;
     }

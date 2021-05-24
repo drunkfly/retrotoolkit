@@ -1,6 +1,9 @@
 package drunkfly;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 
 public final class Gfx
 {
@@ -138,5 +141,14 @@ public final class Gfx
         ZXScreen screen = new ZXScreen();
         screen.putImage(0, 0, this);
         return screen;
+    }
+
+    public void write(File output, String format)
+    {
+        try {
+            ImageIO.write(image, format, output);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write \"" + output + "\".", e);
+        }
     }
 }
